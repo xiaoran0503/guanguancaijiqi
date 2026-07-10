@@ -153,8 +153,8 @@
     <FilterPattern />
     <Method>Match</Method>
     <Options>None</Options>
-    <Pattern />
-    <RegexName />
+    <Pattern>(?is)&lt;div[^&gt;]+class=["']pic["'][^&gt;]*&gt;\s*&lt;img[^&gt;]+src=["'](?&lt;str&gt;[^"']+)["']</Pattern>
+    <RegexName>NovelCover</RegexName>
   </NovelCover>
   <NovelDefaultCoverUrl>
     <FilterPattern />

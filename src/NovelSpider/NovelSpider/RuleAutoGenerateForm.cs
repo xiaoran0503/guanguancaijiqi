@@ -169,6 +169,7 @@ public class RuleAutoGenerateForm : DockContent
 		rule.NovelName = RegexInfo("NovelName", BuildTitlePattern(novelHtml));
 		rule.NovelAuthor = RegexInfo("NovelAuthor", "作者[：:]\\s*(?<str>[^<\\s]+)");
 		rule.NovelIntro = RegexInfo("NovelIntro", "(?is)<meta[^>]+name=[\"']description[\"'][^>]+content=[\"'](?<str>.*?)[\"']");
+		rule.NovelCover = RegexInfo("NovelCover", BuildCoverPattern(novelHtml));
 		rule.PubVolumeContent = RegexInfo("PubVolumeContent", BuildDirectoryContentPattern(indexHtml));
 		rule.PubVolumeSplit = RegexInfo("PubVolumeSplit", "(?!)");
 		rule.PubVolumeName = RegexInfo("PubVolumeName", string.Empty);
@@ -416,6 +417,23 @@ public class RuleAutoGenerateForm : DockContent
 		return Regex.IsMatch(html ?? string.Empty, "<h1", RegexOptions.IgnoreCase)
 			? "(?is)<h1[^>]*>(?<str>.*?)</h1>"
 			: "(?is)<title[^>]*>(?<str>.*?)</title>";
+	}
+
+	private static string BuildCoverPattern(string html)
+	{
+		if (Regex.IsMatch(html ?? string.Empty, """property=["']og:image["']""", RegexOptions.IgnoreCase))
+		{
+			return """(?is)<meta[^>]+property=["']og:image["'][^>]+content=["'](?<str>[^"']+)["']""";
+		}
+		if (Regex.IsMatch(html ?? string.Empty, """class=["']pic["'][^>]*>\s*<img""", RegexOptions.IgnoreCase))
+		{
+			return """(?is)<div[^>]+class=["']pic["'][^>]*>\s*<img[^>]+src=["'](?<str>[^"']+)["']""";
+		}
+		if (Regex.IsMatch(html ?? string.Empty, """<img[^>]+src=["'][^"']+(cover|images|image)[^"']+["']""", RegexOptions.IgnoreCase))
+		{
+			return """(?is)<img[^>]+src=["'](?<str>[^"']+(?:cover|images|image)[^"']*)["']""";
+		}
+		return string.Empty;
 	}
 
 	private static string BuildContentPattern(string html)

@@ -1,3 +1,9 @@
+V10.3.4 Net10 Test    2026-07-10
+
+- 版本迭代为 `10.3.4.0 / 10.3.4-net10-test`。
+- 自动规则生成器补齐封面规则推断，优先识别 `og:image`、小说页主图 `.pic img` 和常见 image/cover 路径。
+- 修正 `www.qbxs.net` 规则种子的 `NovelCover`，封面可从 `https://www.qbxs.net/images/0/1/1s.jpg` 正常获取。
+- 用核心采集器验证 `神话从童子功开始` 封面获取成功，图片尺寸 `300x400`。
 V10.3.3 Net10 Test    2026-07-10
 
 - 版本迭代为 `10.3.3.0 / 10.3.3-net10-test`。
