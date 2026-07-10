@@ -1,0 +1,117 @@
+<?xml version="1.0"?>
+<TaskConfigInfo xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Isboy>false</Isboy>
+  <ChapterUrlWait>500</ChapterUrlWait>
+  <CheckRepeat>true</CheckRepeat>
+  <CheckVolume>false</CheckVolume>
+  <CompulsoryDeleteChapter>false</CompulsoryDeleteChapter>
+  <isChkMD5>false</isChkMD5>
+  <ForceReplace>false</ForceReplace>
+  <DeleteChapter>false</DeleteChapter>
+  <DelForHtml>true</DelForHtml>
+  <DelForTxt>true</DelForTxt>
+  <DonnotCollectLastChapterNo>0</DonnotCollectLastChapterNo>
+  <DownImage>true</DownImage>
+  <DownImageError>1</DownImageError>
+  <DuanImage>false</DuanImage>
+  <DuanImageCheck>false</DuanImageCheck>
+  <EmptyChapter>0</EmptyChapter>
+  <EqualsChapter>4</EqualsChapter>
+  <FilterChapterName>
+    <string>章节</string>
+    <string>章节1</string>
+    <string>章节2</string>
+  </FilterChapterName>
+  <FilterContinueChapterName>
+    <string>章节11</string>
+    <string>章节111</string>
+    <string>章节211</string>
+  </FilterContinueChapterName>
+  <FilterContinueVolume>
+    <string>正文</string>
+    <string>章节目录</string>
+  </FilterContinueVolume>
+  <FilterFinish>true</FilterFinish>
+  <FilterNovel>
+    <string />
+  </FilterNovel>
+  <FilterNovelType>0</FilterNovelType>
+  <FilterVolume>
+    <string />
+  </FilterVolume>
+  <FindMaxChapterNum>10000</FindMaxChapterNum>
+  <Finish>true</Finish>
+  <GetListUrl>
+    <string>https://www.biquge85.com/</string>
+  </GetListUrl>
+  <GetOrderMaxId>24000</GetOrderMaxId>
+  <GetOrderMinId>5000</GetOrderMinId>
+  <GetSinceId>
+    <string>25811</string>
+  </GetSinceId>
+  <Hidebook>false</Hidebook>
+  <ID>8FE7D2B6-427C-4CA3-A16D-CDC5604A02C4</ID>
+  <IndexUrlWait>800</IndexUrlWait>
+  <Interval>120</Interval>
+  <Log>true</Log>
+  <MinChapterNum>0</MinChapterNum>
+  <MinChapterTextLength>10</MinChapterTextLength>
+  <NameAndAuthor>true</NameAndAuthor>
+  <NewBook>true</NewBook>
+  <NoPBar>false</NoPBar>
+  <NovelUrlWait>1000</NovelUrlWait>
+  <OldBook>true</OldBook>
+  <OnlyReplaceSort>true</OnlyReplaceSort>
+  <OnlyText>true</OnlyText>
+  <OrderChapter>2</OrderChapter>
+  <OtherEncoding>gb2312</OtherEncoding>
+  <OtherListUrl>http://www.qidian.com/Book/NewVipBookChapterList.aspx</OtherListUrl>
+  <OtherRegex>bs\[\d*\] = new Book\('\d*','(.+?)','\d*'</OtherRegex>
+  <ProhibitionVolume>true</ProhibitionVolume>
+  <Proxy>false</Proxy>
+  <ProxyDomain />
+  <ProxyHost>104.192.84.129</ProxyHost>
+  <ProxyPassword />
+  <ProxyPort>8080</ProxyPort>
+  <ProxyUser />
+  <PutOrderMaxId>0</PutOrderMaxId>
+  <PutOrderMinId>0</PutOrderMinId>
+  <PutSinceId>
+    <string />
+  </PutSinceId>
+  <RadioBy>GetOrderId</RadioBy>
+  <RepeatChapter>4</RepeatChapter>
+  <RepeatChapterHandle>1</RepeatChapterHandle>
+  <ReplaceChapter>true</ReplaceChapter>
+  <ReplaceChapterNameNun>0</ReplaceChapterNameNun>
+  <ReplaceChapterNun>0</ReplaceChapterNun>
+  <ReplaceFullflag>true</ReplaceFullflag>
+  <ReplaceImgflag>true</ReplaceImgflag>
+  <ReplaceIntro>true</ReplaceIntro>
+  <ReplaceSort>true</ReplaceSort>
+  <ReplaceSortId>0</ReplaceSortId>
+  <RuleFile>Rules\018-www.biquge85.com.xml</RuleFile>
+  <StrongReplaceFullflag>false</StrongReplaceFullflag>
+  <StrongReplaceImgflag>false</StrongReplaceImgflag>
+  <StrongReplaceIntro>false</StrongReplaceIntro>
+  <Timing>true</Timing>
+  <Typesetting>true</Typesetting>
+  <UnDownUrl />
+  <UpdateDefault>true</UpdateDefault>
+  <vip标示>0</vip标示>
+  <上架标示>0</上架标示>
+  <ReplaceChapterIndex>true</ReplaceChapterIndex>
+  <ReplaceChapterTime>true</ReplaceChapterTime>
+  <ReplaceChapterTimeMin>0</ReplaceChapterTimeMin>
+  <ReplaceChapterTimeMax>3</ReplaceChapterTimeMax>
+  <PubContentUrlProxy>false</PubContentUrlProxy>
+  <PubIndexUrlProxy>false</PubIndexUrlProxy>
+  <NovelListUrlProxy>false</NovelListUrlProxy>
+  <NovelUrlProxy>false</NovelUrlProxy>
+  <GoRepeatChapter>0</GoRepeatChapter>
+  <DelChapter>true</DelChapter>
+  <ReplaceChapterNameOn>true</ReplaceChapterNameOn>
+  <IpStatic>false</IpStatic>
+  <IpStaticNum>0</IpStaticNum>
+  <IpTimeNum>0</IpTimeNum>
+</TaskConfigInfo>

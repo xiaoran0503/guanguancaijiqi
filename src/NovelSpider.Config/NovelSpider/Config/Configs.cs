@@ -72,7 +72,7 @@ public class Configs
 		HaveFunction = "ZhanQunPinyinDir中译英";
 		UserID = Guid.NewGuid();
 		AssemblyVersion = Assembly.GetExecutingAssembly().GetName().Version;
-		DisplayVersion = "10.0.1-net10-test";
+		DisplayVersion = "10.0.2-net10-test";
 		TaskNovelInfo = new Hashtable();
 		IsDemo = false;
 		Build = new DateTime(2026, 7, 9);

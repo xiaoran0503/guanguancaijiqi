@@ -4,7 +4,7 @@
 
 - 当前主线：`net10.0-windows`
 - 当前平台：Windows-only `win-x64` / `x64`
-- 当前版本：`10.0.1-net10-test / 10.0.1.0`
+- 当前版本：`10.0.2-net10-test / 10.0.2.0`
 - 当前工作目录：`E:\采集器\Modernized_Net10_Working`
 - 当前发布目录：`E:\采集器\ModernizedOutput_Net10_Test`
 - 固定 SDK：`.NET SDK 10.0.301`
@@ -51,6 +51,12 @@
 .\scripts\publish-all.ps1
 .\scripts\check-version.ps1
 ```
+
+GitHub Actions:
+
+- Push `net10-v10` or `main` to run CI build and upload artifact.
+- Push `v10.*-net10` tags to create GitHub Releases.
+- Each milestone must update version metadata and `src\NovelSpider\Resources\CHANGELOG.md` before tagging.
 
 ## 开发约束
 

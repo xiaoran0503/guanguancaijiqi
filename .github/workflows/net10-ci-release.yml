@@ -1,0 +1,126 @@
+name: Net10 CI and Release
+
+on:
+  push:
+    branches:
+      - main
+      - net10-v10
+    tags:
+      - "v10.*-net10"
+  pull_request:
+    branches:
+      - main
+      - net10-v10
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Windows x64
+    runs-on: windows-latest
+
+    env:
+      DOTNET_NOLOGO: "true"
+      NUGET_XMLDOC_MODE: skip
+      NOVELSPIDER_PUBLISH_DIR: ${{ github.workspace }}\artifacts\NovelSpider-Net10-win-x64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET from global.json
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Show .NET info
+        shell: pwsh
+        run: dotnet --info
+
+      - name: Build
+        shell: pwsh
+        run: .\scripts\build-release.ps1
+
+      - name: Check vulnerable packages
+        shell: pwsh
+        run: .\scripts\check-vulnerable.ps1
+
+      - name: Publish
+        shell: pwsh
+        run: .\scripts\publish-all.ps1
+
+      - name: Verify package
+        shell: pwsh
+        run: |
+          .\scripts\check-version.ps1
+
+          $required = @(
+            "NovelSpider.exe",
+            "NovelAdmin.exe",
+            "NovelVip.exe",
+            "Rules",
+            "Tasks"
+          )
+          foreach ($name in $required) {
+            $path = Join-Path $env:NOVELSPIDER_PUBLISH_DIR $name
+            if (-not (Test-Path -LiteralPath $path)) {
+              throw "Missing published item: $path"
+            }
+          }
+
+          $retired = @(
+            "NovelSpider.Local.Qiwen.dll",
+            "Microsoft.Data.SqlClient.dll",
+            "System.Data.SqlClient.dll"
+          )
+          foreach ($name in $retired) {
+            $path = Join-Path $env:NOVELSPIDER_PUBLISH_DIR $name
+            if (Test-Path -LiteralPath $path) {
+              throw "Retired dependency leaked into package: $path"
+            }
+          }
+
+      - name: Create zip
+        shell: pwsh
+        run: |
+          $tagOrSha = if ("${{ github.ref_type }}" -eq "tag") { "${{ github.ref_name }}" } else { "${{ github.sha }}".Substring(0, 7) }
+          $zipPath = Join-Path "${{ github.workspace }}\artifacts" "NovelSpider-Net10-win-x64-$tagOrSha.zip"
+          if (Test-Path -LiteralPath $zipPath) {
+            Remove-Item -LiteralPath $zipPath -Force
+          }
+          Compress-Archive -Path (Join-Path $env:NOVELSPIDER_PUBLISH_DIR "*") -DestinationPath $zipPath -Force
+          "PACKAGE_ZIP=$zipPath" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NovelSpider-Net10-win-x64
+          path: artifacts\NovelSpider-Net10-win-x64-*.zip
+          if-no-files-found: error
+
+      - name: Create GitHub release
+        if: startsWith(github.ref, 'refs/tags/v10.')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $notes = @"
+          NovelSpider Net10 Windows x64 release.
+
+          - Version/tag: ${{ github.ref_name }}
+          - Target framework: net10.0-windows
+          - Runtime identifier: win-x64
+          - Platform target: x64
+          - Publish mode: framework-dependent
+          - Qiwen and SqlClient retired DLLs are excluded from the package.
+          "@
+          $notesPath = Join-Path "${{ github.workspace }}" "RELEASE_NOTES.md"
+          Set-Content -LiteralPath $notesPath -Value $notes -Encoding UTF8
+
+          gh release create "${{ github.ref_name }}" "$env:PACKAGE_ZIP" `
+            --repo "${{ github.repository }}" `
+            --title "NovelSpider Net10 ${{ github.ref_name }}" `
+            --notes-file "$notesPath" `
+            --verify-tag

@@ -10,7 +10,7 @@
 - Runtime identifier: `win-x64`
 - SDK pinned by `global.json`: `10.0.301`
 - Runtime tested against: `.NET 10.0.9`
-- Test version: `10.0.1-net10-test / 10.0.1.0`
+- Test version: `10.0.2-net10-test / 10.0.2.0`
 
 ## Migration Boundaries
 
@@ -24,6 +24,7 @@
 - `NetworkCompatibility` no longer sets `ServicePointManager`; .NET 10 uses runtime-native TLS defaults. The initializer now keeps only code-page registration and regex cache sizing.
 - The active Net10 solution is Windows-only and x64-only: solution configurations use `x64`, active projects set `PlatformTarget=x64`, and publish uses `win-x64`.
 - Startup UI avoids constructing the heavy `ConfigForm` during main-window load; configuration pages are created lazily on first use, and the welcome changelog text is filled after the first paint.
+- GitHub Actions build and release automation is available on `net10-v10`, `main`, and `v10.*-net10` tags. CI uses repository-relative scripts and `runtime\Rules` / `runtime\Tasks` seed data.
 
 ## Dependency Audit
 

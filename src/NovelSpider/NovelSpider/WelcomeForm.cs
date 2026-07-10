@@ -127,6 +127,13 @@ public class WelcomeForm : DockContent
 		{
 			"更新日志",
 			"",
+			"V10.0.2 Net10 Test    2026-07-10",
+			"- 新增 GitHub Actions 自动构建与自动发布流程：推送 net10-v10 / main 自动构建并上传 Windows x64 artifact，推送 v10.*-net10 tag 自动创建 GitHub Release。",
+			"- 构建、漏洞检查、发布、版本检查脚本改为仓库相对路径，支持本机和 GitHub Runner 共用。",
+			"- 新增 runtime\\Rules 和 runtime\\Tasks 种子数据，CI 发布包可自动补齐规则与任务目录。",
+			"- 新增仓库 README.md 和 .gitignore，记录 Net10 Windows x64 分支、构建、发布和里程碑规则。",
+			"- 版本迭代为 10.0.2.0 / 10.0.2-net10-test。",
+			"",
 			"V10.0.1 Net10 Test    2026-07-09",
 			"- 优化主程序启动首屏响应：配置窗体改为首次打开配置菜单时懒加载，避免启动阶段同步构造大型 WinForms 页面。",
 			"- 欢迎页更新日志改为窗体显示后再填充文本，减少首次 Dock 页打开时 RichTextBox 排版阻塞。",

@@ -1,15 +1,21 @@
 $ErrorActionPreference = "Stop"
-$output = "E:\采集器\ModernizedOutput_Net10_Test"
+$repoRoot = Split-Path -Parent $PSScriptRoot
+$output = if ($env:NOVELSPIDER_PUBLISH_DIR) {
+  $env:NOVELSPIDER_PUBLISH_DIR
+} else {
+  Join-Path $repoRoot "artifacts\NovelSpider-Net10-win-x64"
+}
+$seedDataRoot = Join-Path $repoRoot "runtime"
 $fallbackDataRoot = "E:\采集器\ModernizedOutput_Net8_Final_Baseline_V8.17.1"
 $runtimeDataDirs = @("Rules", "Tasks")
 $backupRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("NovelSpiderPublishData_" + [guid]::NewGuid().ToString("N"))
 $projects = @(
-  "E:\采集器\Modernized_Net10_Working\src\NovelSpider\NovelSpider.csproj",
-  "E:\采集器\Modernized_Net10_Working\src\NovelAdmin\NovelAdmin.csproj",
-  "E:\采集器\Modernized_Net10_Working\src\NovelVip\NovelVip.csproj"
+  (Join-Path $repoRoot "src\NovelSpider\NovelSpider.csproj"),
+  (Join-Path $repoRoot "src\NovelAdmin\NovelAdmin.csproj"),
+  (Join-Path $repoRoot "src\NovelVip\NovelVip.csproj")
 )
 if (-not (Test-Path -LiteralPath $output)) {
-  New-Item -ItemType Directory -Path $output | Out-Null
+  New-Item -ItemType Directory -Path $output -Force | Out-Null
 }
 New-Item -ItemType Directory -Path $backupRoot | Out-Null
 foreach ($dir in $runtimeDataDirs) {
@@ -36,14 +42,22 @@ foreach ($file in $retiredFiles) {
 foreach ($dir in $runtimeDataDirs) {
   $target = Join-Path $output $dir
   $backup = Join-Path $backupRoot $dir
+  $seed = Join-Path $seedDataRoot $dir
   $fallback = Join-Path $fallbackDataRoot $dir
   if (Test-Path -LiteralPath $backup) {
     if (Test-Path -LiteralPath $target) {
       Remove-Item -LiteralPath $target -Recurse -Force
     }
     Copy-Item -LiteralPath $backup -Destination $target -Recurse
+  } elseif (Test-Path -LiteralPath $seed) {
+    if (Test-Path -LiteralPath $target) {
+      Remove-Item -LiteralPath $target -Recurse -Force
+    }
+    Copy-Item -LiteralPath $seed -Destination $target -Recurse
   } elseif (-not (Test-Path -LiteralPath $target) -and (Test-Path -LiteralPath $fallback)) {
     Copy-Item -LiteralPath $fallback -Destination $target -Recurse
+  } elseif (-not (Test-Path -LiteralPath $target)) {
+    New-Item -ItemType Directory -Path $target | Out-Null
   }
 }
 Remove-Item -LiteralPath $backupRoot -Recurse -Force

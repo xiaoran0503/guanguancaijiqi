@@ -4,7 +4,7 @@ This branch contains the independent .NET 10 / Windows x64 migration line for No
 
 ## Current Baseline
 
-- Version: `10.0.1-net10-test / 10.0.1.0`
+- Version: `10.0.2-net10-test / 10.0.2.0`
 - Branch: `net10-v10`
 - Target framework: `net10.0-windows`
 - Platform: Windows-only `win-x64` / `x64`
@@ -34,13 +34,26 @@ dotnet --info
 
 The active build scripts compile and publish as Windows x64. Build outputs are generated under `bin\x64\Release\net10.0-windows\win-x64`.
 
+By default, `publish-all.ps1` writes to `artifacts\NovelSpider-Net10-win-x64`. Set `NOVELSPIDER_PUBLISH_DIR` to override the publish directory.
+
+## GitHub Actions
+
+`.github/workflows/net10-ci-release.yml` runs on:
+
+- Pushes to `net10-v10`
+- Pushes to `main`
+- Pull requests targeting `net10-v10` or `main`
+- Tags matching `v10.*-net10`
+- Manual `workflow_dispatch`
+
+Branch and pull request builds compile, audit, publish, verify, zip, and upload a Windows x64 artifact. Tag builds also create a GitHub Release and upload the zip package.
+
 ## Milestone
 
-The first Net10 milestone is:
+Net10 milestones:
 
-- Source archive: `E:\采集器\Modernized_Net10_V10.0.1_Milestone`
-- Runtime archive: `E:\采集器\ModernizedOutput_Net10_V10.0.1_Milestone`
-- Git tag: `v10.0.1-net10`
+- `v10.0.1-net10`: first Windows x64 Net10 source/runtime archive.
+- `v10.0.2-net10`: GitHub Actions automatic build and release baseline.
 
 Every future milestone should update the version, update `src\NovelSpider\Resources\CHANGELOG.md`, and create an independent Git tag.
 

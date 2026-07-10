@@ -1,5 +1,10 @@
 $ErrorActionPreference = "Stop"
-$output = "E:\采集器\ModernizedOutput_Net10_Test"
+$repoRoot = Split-Path -Parent $PSScriptRoot
+$output = if ($env:NOVELSPIDER_PUBLISH_DIR) {
+  $env:NOVELSPIDER_PUBLISH_DIR
+} else {
+  Join-Path $repoRoot "artifacts\NovelSpider-Net10-win-x64"
+}
 $files = @("NovelSpider.exe", "NovelAdmin.exe", "NovelVip.exe")
 foreach ($file in $files) {
   $path = Join-Path $output $file
