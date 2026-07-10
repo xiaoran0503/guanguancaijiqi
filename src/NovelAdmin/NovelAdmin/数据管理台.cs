@@ -398,20 +398,7 @@ public class 数据管理台 : DockContent
 				items[num].SubItems.Add(chapterInfo.ChapterName);
 				items[num].SubItems.Add(chapterInfo.PostTime.ToString("yyyy-MM-dd HH:mm:ss"));
 				items[num].SubItems.Add(chapterInfo.LastTime.ToString("yyyy-MM-dd HH:mm:ss"));
-				argument.LastChapter.PutID = chapterInfo.PutID;
-				string chapterText = LocalProvider.GetInstance().GetChapterText(argument, on: false);
-				if (string.IsNullOrEmpty(chapterText))
-				{
-					items[num].SubItems.Add("无法获取");
-				}
-				else if (chapterText.Length > 300)
-				{
-					items[num].SubItems.Add("文本正常");
-				}
-				else
-				{
-					items[num].SubItems.Add("文字较少");
-				}
+				items[num].SubItems.Add("未检测");
 				items[num].SubItems.Add(chapterInfo.Size.ToString());
 				num++;
 				backgroundWorker1.ReportProgress(2, num);

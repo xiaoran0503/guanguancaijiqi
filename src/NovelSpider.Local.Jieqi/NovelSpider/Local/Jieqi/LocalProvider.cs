@@ -3411,54 +3411,71 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 		return text;
 	}
 
+	private static async Task<T> ExecuteSynchronousProviderMethodAsync<T>(Func<T> action, string operation, string subject, CancellationToken cancellationToken)
+	{
+		cancellationToken.ThrowIfCancellationRequested();
+		using IDisposable measure = PerformanceTelemetry.Measure("mysql", operation, subject);
+		await Task.Yield();
+		cancellationToken.ThrowIfCancellationRequested();
+		return action();
+	}
+
+	private static async Task ExecuteSynchronousProviderMethodAsync(Action action, string operation, string subject, CancellationToken cancellationToken)
+	{
+		cancellationToken.ThrowIfCancellationRequested();
+		using IDisposable measure = PerformanceTelemetry.Measure("mysql", operation, subject);
+		await Task.Yield();
+		cancellationToken.ThrowIfCancellationRequested();
+		action();
+	}
+
+	private static Task UpdateLastChapterCoreAsync(NovelInfo novelInfo_0, CancellationToken cancellationToken)
+	{
+		return MySqlHelper.ExecuteInTransactionAsync(async (mySqlTransaction, token) =>
+		{
+			using IDisposable measure = PerformanceTelemetry.Measure("mysql", "update_last_chapter_async", novelInfo_0?.Name ?? string.Empty);
+			MySqlCommand selectCommand = new MySqlCommand("SELECT `chapterid`,`chaptername`,`chapterorder` FROM `jieqi_article_chapter` WHERE `articleid`=@articleid ORDER BY `chapterorder` DESC LIMIT 1", mySqlTransaction.Connection, mySqlTransaction);
+			selectCommand.Parameters.Add(new MySqlParameter("@articleid", novelInfo_0.PutID));
+			await using MySqlDataReader reader = await selectCommand.ExecuteReaderAsync(token).ConfigureAwait(false);
+			if (!await reader.ReadAsync(token).ConfigureAwait(false))
+			{
+				return;
+			}
+			object chapterId = reader["chapterid"];
+			object chapterName = reader["chaptername"];
+			object chapters = reader["chapterorder"];
+			await reader.CloseAsync().ConfigureAwait(false);
+			await MySqlHelper.ExecuteNonQueryAsync(mySqlTransaction, CommandType.Text, "UPDATE `jieqi_article_article` SET `lastupdate`=@lastupdate,`lastvolumeid`=0,`lastvolume`='',`lastchapterid`=@lastchapterid,`lastchapter`=@lastchapter,`lastsummary`='',`chapters`=@chapters WHERE `articleid`=@articleid", token,
+				new MySqlParameter("@lastupdate", FormatText.GetNow()),
+				new MySqlParameter("@lastchapterid", chapterId),
+				new MySqlParameter("@lastchapter", chapterName),
+				new MySqlParameter("@chapters", chapters),
+				new MySqlParameter("@articleid", novelInfo_0.PutID)).ConfigureAwait(false);
+		}, cancellationToken);
+	}
 	public Task<ChapterInfo> InsertChapterAsync(NovelInfo novelInfo_0, TaskConfigInfo taskConfigInfo_0, CancellationToken cancellationToken = default)
 	{
-		return Task.Run(() =>
-		{
-			cancellationToken.ThrowIfCancellationRequested();
-			using IDisposable measure = PerformanceTelemetry.Measure("mysql", "insert_chapter", novelInfo_0?.Name ?? string.Empty);
-			return InsertChapter(novelInfo_0, taskConfigInfo_0);
-		}, cancellationToken);
+		return ExecuteSynchronousProviderMethodAsync(() => InsertChapter(novelInfo_0, taskConfigInfo_0), "insert_chapter", novelInfo_0?.Name ?? string.Empty, cancellationToken);
 	}
 
 	public Task<ChapterInfo> InsertChapterByOrderAsync(NovelInfo novelInfo_0, TaskConfigInfo taskConfigInfo_0, int int_0, CancellationToken cancellationToken = default)
 	{
-		return Task.Run(() =>
-		{
-			cancellationToken.ThrowIfCancellationRequested();
-			using IDisposable measure = PerformanceTelemetry.Measure("mysql", "insert_chapter_by_order", novelInfo_0?.Name ?? string.Empty);
-			return InsertChapterByOrder(novelInfo_0, taskConfigInfo_0, int_0);
-		}, cancellationToken);
+		return ExecuteSynchronousProviderMethodAsync(() => InsertChapterByOrder(novelInfo_0, taskConfigInfo_0, int_0), "insert_chapter_by_order", novelInfo_0?.Name ?? string.Empty, cancellationToken);
 	}
 
 	public Task<NovelInfo> InsertNovelAsync(NovelInfo novelInfo_0, CancellationToken cancellationToken = default)
 	{
-		return Task.Run(() =>
-		{
-			cancellationToken.ThrowIfCancellationRequested();
-			using IDisposable measure = PerformanceTelemetry.Measure("mysql", "insert_novel", novelInfo_0?.Name ?? string.Empty);
-			return InsertNovel(novelInfo_0);
-		}, cancellationToken);
+		return ExecuteSynchronousProviderMethodAsync(() => InsertNovel(novelInfo_0), "insert_novel", novelInfo_0?.Name ?? string.Empty, cancellationToken);
 	}
 
 	public Task UpdateLastChapterAsync(NovelInfo novelInfo_0, CancellationToken cancellationToken = default)
 	{
-		return Task.Run(() =>
-		{
-			cancellationToken.ThrowIfCancellationRequested();
-			using IDisposable measure = PerformanceTelemetry.Measure("mysql", "update_last_chapter", novelInfo_0?.Name ?? string.Empty);
-			UpdateLastChapter(novelInfo_0);
-		}, cancellationToken);
+		return UpdateLastChapterCoreAsync(novelInfo_0, cancellationToken);
 	}
 
 	public Task UpdateLastChapterAsync(NovelInfo novelInfo_0, ChapterInfo chapterInfo_0, CancellationToken cancellationToken = default)
 	{
-		return Task.Run(() =>
-		{
-			cancellationToken.ThrowIfCancellationRequested();
-			using IDisposable measure = PerformanceTelemetry.Measure("mysql", "update_last_chapter_explicit", novelInfo_0?.Name ?? string.Empty);
-			UpdateLastChapter(novelInfo_0, chapterInfo_0);
-		}, cancellationToken);
+		return ExecuteSynchronousProviderMethodAsync(() => UpdateLastChapter(novelInfo_0, chapterInfo_0), "update_last_chapter_explicit", novelInfo_0?.Name ?? string.Empty, cancellationToken);
 	}
 	public ChapterInfo InsertChapter(NovelInfo novelInfo_0, TaskConfigInfo taskConfigInfo_0)
 	{
@@ -3518,13 +3535,11 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 			{
 				if (shouldInsertVolume)
 				{
-					MySqlHelper.ExecuteNonQuery(mySqlTransaction, CommandType.Text, BuildChapterInsertSql(), CreateChapterParameters(novelInfo_0, novelInfo_0.LastChapter.VolumeName, num2, 0, 1, now));
-					num3 = Convert.ToInt32(MySqlHelper.ExecuteScalar(mySqlTransaction, CommandType.Text, "SELECT LAST_INSERT_ID()"));
+					num3 = Convert.ToInt32(MySqlHelper.ExecuteNonQueryWithLastInsertId(mySqlTransaction, CommandType.Text, BuildChapterInsertSql(), CreateChapterParameters(novelInfo_0, novelInfo_0.LastChapter.VolumeName, num2, 0, 1, now)));
 					num2++;
 					text = novelInfo_0.LastChapter.VolumeName;
 				}
-				MySqlHelper.ExecuteNonQuery(mySqlTransaction, CommandType.Text, BuildChapterInsertSql(), CreateChapterParameters(novelInfo_0, novelInfo_0.LastChapter.ChapterName, num2, chapterInsertSize, 0, now));
-				novelInfo_0.LastChapter.PutID = Convert.ToInt32(MySqlHelper.ExecuteScalar(mySqlTransaction, CommandType.Text, "SELECT LAST_INSERT_ID()"));
+				novelInfo_0.LastChapter.PutID = Convert.ToInt32(MySqlHelper.ExecuteNonQueryWithLastInsertId(mySqlTransaction, CommandType.Text, BuildChapterInsertSql(), CreateChapterParameters(novelInfo_0, novelInfo_0.LastChapter.ChapterName, num2, chapterInsertSize, 0, now)));
 				if (IsCms18OrNewer())
 				{
 					MySqlHelper.ExecuteNonQuery(mySqlTransaction, CommandType.Text, "UPDATE `jieqi_article_chapter` SET `chaptername`=@chaptername WHERE `chapterid`=@chapterid", new MySqlParameter("@chaptername", novelInfo_0.LastChapter.ChapterName), new MySqlParameter("@chapterid", novelInfo_0.LastChapter.PutID));
@@ -3604,13 +3619,11 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 			{
 				if (shouldInsertVolume)
 				{
-					MySqlHelper.ExecuteNonQuery(mySqlTransaction, CommandType.Text, BuildChapterInsertSql(), CreateChapterParameters(novelInfo_0, novelInfo_0.LastChapter.VolumeName, num, 0, 1, now));
-					num2 = Convert.ToInt32(MySqlHelper.ExecuteScalar(mySqlTransaction, CommandType.Text, "SELECT LAST_INSERT_ID()"));
+					num2 = Convert.ToInt32(MySqlHelper.ExecuteNonQueryWithLastInsertId(mySqlTransaction, CommandType.Text, BuildChapterInsertSql(), CreateChapterParameters(novelInfo_0, novelInfo_0.LastChapter.VolumeName, num, 0, 1, now)));
 					num++;
 					text = novelInfo_0.LastChapter.VolumeName;
 				}
-				MySqlHelper.ExecuteNonQuery(mySqlTransaction, CommandType.Text, BuildChapterInsertSql(), CreateChapterParameters(novelInfo_0, novelInfo_0.LastChapter.ChapterName, num, chapterInsertSize, 0, now));
-				novelInfo_0.LastChapter.PutID = Convert.ToInt32(MySqlHelper.ExecuteScalar(mySqlTransaction, CommandType.Text, "SELECT LAST_INSERT_ID()"));
+				novelInfo_0.LastChapter.PutID = Convert.ToInt32(MySqlHelper.ExecuteNonQueryWithLastInsertId(mySqlTransaction, CommandType.Text, BuildChapterInsertSql(), CreateChapterParameters(novelInfo_0, novelInfo_0.LastChapter.ChapterName, num, chapterInsertSize, 0, now)));
 				if (IsCms18OrNewer())
 				{
 					MySqlHelper.ExecuteNonQuery(mySqlTransaction, CommandType.Text, "UPDATE `jieqi_article_chapter` SET `chaptername`=@chaptername WHERE `chapterid`=@chapterid", new MySqlParameter("@chaptername", novelInfo_0.LastChapter.ChapterName), new MySqlParameter("@chapterid", novelInfo_0.LastChapter.PutID));
@@ -4225,17 +4238,22 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 	{
 		MySqlHelper.ExecuteInTransaction(delegate(MySqlTransaction mySqlTransaction)
 		{
-			DataTable dataTable = MySqlHelper.ExecuteDataTable(mySqlTransaction, CommandType.Text, "SELECT `chapterid`,`chaptername`,`chapterorder` FROM `jieqi_article_chapter` WHERE `articleid`=@articleid ORDER BY `chapterorder` DESC LIMIT 1", new MySqlParameter("@articleid", novelInfo_0.PutID));
-			if (dataTable.Rows.Count == 0)
+			MySqlCommand selectCommand = new MySqlCommand("SELECT `chapterid`,`chaptername`,`chapterorder` FROM `jieqi_article_chapter` WHERE `articleid`=@articleid ORDER BY `chapterorder` DESC LIMIT 1", mySqlTransaction.Connection, mySqlTransaction);
+			selectCommand.Parameters.Add(new MySqlParameter("@articleid", novelInfo_0.PutID));
+			using MySqlDataReader reader = selectCommand.ExecuteReader();
+			if (!reader.Read())
 			{
 				return;
 			}
-			DataRow dataRow = dataTable.Rows[0];
+			object chapterId = reader["chapterid"];
+			object chapterName = reader["chaptername"];
+			object chapters = reader["chapterorder"];
+			reader.Close();
 			MySqlHelper.ExecuteNonQuery(mySqlTransaction, CommandType.Text, "UPDATE `jieqi_article_article` SET `lastupdate`=@lastupdate,`lastvolumeid`=0,`lastvolume`='',`lastchapterid`=@lastchapterid,`lastchapter`=@lastchapter,`lastsummary`='',`chapters`=@chapters WHERE `articleid`=@articleid",
 				new MySqlParameter("@lastupdate", FormatText.GetNow()),
-				new MySqlParameter("@lastchapterid", dataRow["chapterid"]),
-				new MySqlParameter("@lastchapter", dataRow["chaptername"]),
-				new MySqlParameter("@chapters", dataRow["chapterorder"]),
+				new MySqlParameter("@lastchapterid", chapterId),
+				new MySqlParameter("@lastchapter", chapterName),
+				new MySqlParameter("@chapters", chapters),
 				new MySqlParameter("@articleid", novelInfo_0.PutID));
 		});
 	}

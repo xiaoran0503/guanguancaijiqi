@@ -10,7 +10,7 @@ using System.Runtime.Versioning;
 [assembly: Guid("c9fd2cc2-7f5f-4ac0-88d3-1f5018ed8f6d")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyTitle("YY文章管理工具")]
-[assembly: AssemblyFileVersion("10.1.0.0")]
+[assembly: AssemblyFileVersion("10.1.1.0")]
 [assembly: AssemblyKeyName("")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyDelaySign(false)]
@@ -19,6 +19,6 @@ using System.Runtime.Versioning;
 [assembly: AssemblyProduct("YYSpider")]
 [assembly: AssemblyConfiguration("")]
 [assembly: NeutralResourcesLanguage("")]
-[assembly: AssemblyVersion("10.1.0.0")]
+[assembly: AssemblyVersion("10.1.1.0")]
 
 

@@ -10,13 +10,13 @@ using System.Runtime.Versioning;
 [assembly: AssemblyCopyright("Copyright © Lenovo 2014")]
 [assembly: AssemblyDelaySign(false)]
 [assembly: AssemblyDescription("")]
-[assembly: AssemblyFileVersion("10.1.0.0")]
+[assembly: AssemblyFileVersion("10.1.1.0")]
 [assembly: AssemblyKeyName("")]
 [assembly: AssemblyProduct("NovelVip")]
 [assembly: AssemblyTitle("NovelVip")]
 [assembly: AssemblyTrademark("")]
 [assembly: ComVisible(false)]
 [assembly: Guid("32778ea9-4fdd-4852-a4f7-aaa0a01fbe0d")]
-[assembly: AssemblyVersion("10.1.0.0")]
+[assembly: AssemblyVersion("10.1.1.0")]
 
 

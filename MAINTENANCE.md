@@ -4,7 +4,7 @@
 
 - 当前主线：`net10.0-windows`
 - 当前平台：Windows-only `win-x64` / `x64`
-- 当前版本：`10.1.0-net10-test / 10.1.0.0`
+- 当前版本：`10.1.1-net10-test / 10.1.1.0`
 - 当前工作目录：`E:\采集器\Modernized_Net10_Working`
 - 当前发布目录：`E:\采集器\ModernizedOutput_Net10_Test`
 - 固定 SDK：`.NET SDK 10.0.301`
@@ -77,3 +77,9 @@ GitHub Actions:
 - 代理请求不使用目标站 DNS 缓存，避免绕过代理链路。
 - Jieqi 异步写库目前通过可选接口接入后台链路；其他 Provider 自动回退同步接口。
 - 大列表加载以 200 条为一批追加，新增查询或重新加载会丢弃旧批次。
+
+## V10.1.1 Database Notes
+
+- 管理台章节列表默认显示 未检测，正文状态在详情读取时按需确认。
+- Jieqi 插章使用 LastInsertedId 减少自增 ID 查询往返；失败仍回滚当前事务。
+- 最后章节刷新使用 reader 读取单行，减少 DataTable 分配。

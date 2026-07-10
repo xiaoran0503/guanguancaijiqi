@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Data;
+using System.Threading;
+using System.Threading.Tasks;
 using NovelSpider.Common;
 using MySqlConnector;
 using NovelSpider.Config;
@@ -87,6 +89,37 @@ public abstract class MySqlHelper
 		return result;
 	}
 
+	public static long ExecuteNonQueryWithLastInsertId(MySqlTransaction mySqlTransaction_0, CommandType commandType_0, string string_0, params MySqlParameter[] mySqlParameter_0)
+	{
+		using IDisposable scope = PerformanceTelemetry.Measure("mysql", "insert_tx_last_id", GetCommandSubject(string_0));
+		MySqlCommand mySqlCommand = new MySqlCommand();
+		smethod_0(mySqlCommand, mySqlTransaction_0.Connection, mySqlTransaction_0, commandType_0, string_0, mySqlParameter_0);
+		mySqlCommand.ExecuteNonQuery();
+		long result = mySqlCommand.LastInsertedId;
+		mySqlCommand.Parameters.Clear();
+		return result;
+	}
+
+	public static async Task<int> ExecuteNonQueryAsync(MySqlTransaction mySqlTransaction_0, CommandType commandType_0, string string_0, CancellationToken cancellationToken = default, params MySqlParameter[] mySqlParameter_0)
+	{
+		using IDisposable scope = PerformanceTelemetry.Measure("mysql", "nonquery_tx_async", GetCommandSubject(string_0));
+		MySqlCommand mySqlCommand = new MySqlCommand();
+		smethod_0(mySqlCommand, mySqlTransaction_0.Connection, mySqlTransaction_0, commandType_0, string_0, mySqlParameter_0);
+		int result = await mySqlCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+		mySqlCommand.Parameters.Clear();
+		return result;
+	}
+
+	public static async Task<long> ExecuteNonQueryWithLastInsertIdAsync(MySqlTransaction mySqlTransaction_0, CommandType commandType_0, string string_0, CancellationToken cancellationToken = default, params MySqlParameter[] mySqlParameter_0)
+	{
+		using IDisposable scope = PerformanceTelemetry.Measure("mysql", "insert_tx_last_id_async", GetCommandSubject(string_0));
+		MySqlCommand mySqlCommand = new MySqlCommand();
+		smethod_0(mySqlCommand, mySqlTransaction_0.Connection, mySqlTransaction_0, commandType_0, string_0, mySqlParameter_0);
+		await mySqlCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+		long result = mySqlCommand.LastInsertedId;
+		mySqlCommand.Parameters.Clear();
+		return result;
+	}
 	public static int ExecuteNonQuery(string string_0, CommandType commandType_0, string string_1, params MySqlParameter[] mySqlParameter_0)
 	{
 		using IDisposable scope = PerformanceTelemetry.Measure("mysql", "nonquery", GetCommandSubject(string_1));
@@ -147,6 +180,54 @@ public abstract class MySqlHelper
 		}
 	}
 
+	public static async Task ExecuteInTransactionAsync(Func<MySqlTransaction, CancellationToken, Task> action, CancellationToken cancellationToken = default)
+	{
+		using IDisposable scope = PerformanceTelemetry.Measure("mysql", "transaction_async");
+		await using MySqlConnection mySqlConnection = new MySqlConnection(NormalizeConnectionString(ConnectionString));
+		await mySqlConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
+		await using MySqlTransaction mySqlTransaction = await mySqlConnection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+		try
+		{
+			await action(mySqlTransaction, cancellationToken).ConfigureAwait(false);
+			await mySqlTransaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+		}
+		catch
+		{
+			try
+			{
+				await mySqlTransaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+			}
+			catch
+			{
+			}
+			throw;
+		}
+	}
+
+	public static async Task<T> ExecuteInTransactionAsync<T>(Func<MySqlTransaction, CancellationToken, Task<T>> action, CancellationToken cancellationToken = default)
+	{
+		using IDisposable scope = PerformanceTelemetry.Measure("mysql", "transaction_async");
+		await using MySqlConnection mySqlConnection = new MySqlConnection(NormalizeConnectionString(ConnectionString));
+		await mySqlConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
+		await using MySqlTransaction mySqlTransaction = await mySqlConnection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+		try
+		{
+			T result = await action(mySqlTransaction, cancellationToken).ConfigureAwait(false);
+			await mySqlTransaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+			return result;
+		}
+		catch
+		{
+			try
+			{
+				await mySqlTransaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+			}
+			catch
+			{
+			}
+			throw;
+		}
+	}
 	public static MySqlDataReader ExecuteReader(string string_0, CommandType commandType_0, string string_1, params MySqlParameter[] mySqlParameter_0)
 	{
 		using IDisposable scope = PerformanceTelemetry.Measure("mysql", "reader", GetCommandSubject(string_1));

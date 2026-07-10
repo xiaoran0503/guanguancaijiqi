@@ -1,3 +1,9 @@
+V10.1.1 Net10 Test    2026-07-10
+
+- 版本迭代为 `10.1.1.0 / 10.1.1-net10-test`。
+- 管理台章节列表改为按需检测正文，避免加载列表时逐章读取正文造成 N+1 查询。
+- Jieqi 插章路径使用 MySqlConnector LastInsertedId 获取自增 ID，减少插入后 `SELECT LAST_INSERT_ID()` 往返。
+- 最后章节刷新改用轻量 reader，避免 DataTable 分配；异步路径补充真实 async 事务入口。
 V10.1.0 Net10 Test    2026-07-10
 
 - 版本迭代为 `10.1.0.0 / 10.1.0-net10-test`。
