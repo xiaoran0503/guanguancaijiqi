@@ -88,24 +88,33 @@ public class RuleTestForm : Form
 		taskConfigInfo_0.Proxy = false;
 		BackgroundWorker backgroundWorker = sender as BackgroundWorker;
 		Page page = new Page(ruleConfigInfo_0, taskConfigInfo_0);
-		backgroundWorker.ReportProgress(0, "====== 开始测试获得最新列表 ======");
-		string[] array = ruleConfigInfo_0.NovelListUrl.Pattern.Replace("\r\n", "♂").Split('♂');
-		NovelInfo[] novelList = page.GetNovelList(array);
-		if (novelList.Length == 0)
+		bool hasSingleNovelId = string_0 != "0" && string_0 != "";
+		NovelInfo[] novelList = Array.Empty<NovelInfo>();
+		if (!hasSingleNovelId || !string.IsNullOrWhiteSpace(ruleConfigInfo_0.NovelListUrl.Pattern))
 		{
-			throw new ApplicationException("没有获得小说列表");
+			backgroundWorker.ReportProgress(0, "====== 开始测试获得最新列表 ======");
+			string[] array = ruleConfigInfo_0.NovelListUrl.Pattern.Replace("\r\n", "♂").Split('♂');
+			novelList = page.GetNovelList(array);
+			if (novelList.Length == 0 && !hasSingleNovelId)
+			{
+				throw new ApplicationException("没有获得小说列表");
+			}
+			string text = "";
+			for (int i = 0; i < novelList.Length; i++)
+			{
+				text = text + novelList[i].GetID + "\t" + novelList[i].Name + "\n";
+			}
+			backgroundWorker.ReportProgress(0, text);
+			backgroundWorker.ReportProgress(0, "");
 		}
-		string text = "";
-		for (int i = 0; i < novelList.Length; i++)
+		else
 		{
-			text = text + novelList[i].GetID + "\t" + novelList[i].Name + "\n";
+			backgroundWorker.ReportProgress(0, "====== 已填写单本小说ID，跳过最新列表测试 ======");
 		}
-		backgroundWorker.ReportProgress(0, text);
-		backgroundWorker.ReportProgress(0, "");
 		backgroundWorker.ReportProgress(0, "====== 开始测试小说信息页 ======");
 		Random random = new Random();
 		NovelInfo novelInfo_;
-		if (string_0 != "0" && string_0 != "")
+		if (hasSingleNovelId)
 		{
 			NovelInfo novelInfo = new NovelInfo
 			{
@@ -162,38 +171,45 @@ public class RuleTestForm : Form
 				if (chapterList[k].GetID == string_1)
 				{
 					novelInfo2.LastChapter = chapterList[k];
-					chapterInfo = page.GetChapterInfo(novelInfo2, isvip: false);
-					array3 = new object[4]
-					{
-						"PubContentUrl:\t",
-						chapterInfo.LastChapter.ChapterUrl,
-						"\nPubTextUrl:\t",
-						chapterInfo.LastChapter.TextUrl
-					};
-					backgroundWorker.ReportProgress(0, string.Concat(array3));
-					chapterInfo.LastChapter.ChapterText = page.Replace(chapterInfo.LastChapter.ChapterText, ruleConfigInfo_0.PubContentReplace);
-					backgroundWorker.ReportProgress(0, "PubContentText:\t" + chapterInfo.LastChapter.ChapterText);
-					return;
+					break;
 				}
 			}
+			if (novelInfo2.LastChapter == null)
+			{
+				throw new ApplicationException("没有找到指定章节ID：" + string_1);
+			}
+			backgroundWorker.ReportProgress(0, "PubContentUrl:\t" + novelInfo2.LastChapter.GetID);
+			chapterInfo = page.GetChapterInfo(novelInfo2, isvip: false);
+			array3 = new object[6]
+			{
+				"ChapterName:\t",
+				chapterInfo.LastChapter.ChapterName,
+				"\nChapterUrl:\t",
+				chapterInfo.LastChapter.ChapterUrl,
+				"\nChapterText:\t",
+				null
+			};
 		}
 		else
 		{
 			novelInfo2.LastChapter = chapterList[random.Next(chapterList.Length)];
+			backgroundWorker.ReportProgress(0, "PubContentUrl:\t" + novelInfo2.LastChapter.GetID);
+			chapterInfo = page.GetChapterInfo(novelInfo2, isvip: false);
+			array3 = new object[6]
+			{
+				"ChapterName:\t",
+				chapterInfo.LastChapter.ChapterName,
+				"\nChapterUrl:\t",
+				chapterInfo.LastChapter.ChapterUrl,
+				"\nChapterText:\t",
+				null
+			};
 		}
-		chapterInfo = page.GetChapterInfo(novelInfo2, isvip: false);
-		array3 = new object[4]
-		{
-			"PubContentUrl:\t",
-			chapterInfo.LastChapter.ChapterUrl,
-			"\nPubTextUrl:\t",
-			chapterInfo.LastChapter.TextUrl
-		};
-		backgroundWorker.ReportProgress(0, string.Concat(array3));
 		chapterInfo.LastChapter.ChapterText = page.Replace(chapterInfo.LastChapter.ChapterText, ruleConfigInfo_0.PubContentReplace);
+		array3[5] = chapterInfo.LastChapter.ChapterText;
+		backgroundWorker.ReportProgress(0, string.Concat(array3));
 		backgroundWorker.ReportProgress(0, "PubContentText:\t" + chapterInfo.LastChapter.ChapterText);
 	}
-
 	private void backgroundWorker_0_ProgressChanged(object sender, ProgressChangedEventArgs e)
 	{
 		TestResult.AppendText(e.UserState.ToString() + "\n");

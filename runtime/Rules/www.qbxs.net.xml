@@ -1,0 +1,328 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<RuleConfigInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <RuleVersion>
+    <FilterPattern>
+    </FilterPattern>
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern>10.3-auto</Pattern>
+    <RegexName>RuleVersion</RegexName>
+  </RuleVersion>
+  <RuleID>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern>20260710163628-www.qbxs.net</Pattern>
+    <RegexName>RuleID</RegexName>
+  </RuleID>
+  <GetSiteName>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern>www.qbxs.net</Pattern>
+    <RegexName>GetSiteName</RegexName>
+  </GetSiteName>
+  <GetSiteCharset>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern>utf-8</Pattern>
+    <RegexName>GetSiteCharset</RegexName>
+  </GetSiteCharset>
+  <GetSiteUrl>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern>https://www.qbxs.net</Pattern>
+    <RegexName>GetSiteUrl</RegexName>
+  </GetSiteUrl>
+  <NovelSearchUrl>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern />
+    <RegexName />
+  </NovelSearchUrl>
+  <NovelSearchData>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern />
+    <RegexName />
+  </NovelSearchData>
+  <NovelSearch_GetNovelKey>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern />
+    <RegexName />
+  </NovelSearch_GetNovelKey>
+  <NovelListUrl>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern />
+    <RegexName />
+  </NovelListUrl>
+  <NovelListFilter>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern />
+    <RegexName />
+  </NovelListFilter>
+  <NovelList_GetNovelKey>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern />
+    <RegexName />
+  </NovelList_GetNovelKey>
+  <NovelUrl>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern>https://www.qbxs.net/book/1/</Pattern>
+    <RegexName>NovelUrl</RegexName>
+  </NovelUrl>
+  <NovelName>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern>(?is)&lt;h1[^&gt;]*&gt;(?&lt;str&gt;.*?)&lt;/h1&gt;</Pattern>
+    <RegexName>NovelName</RegexName>
+  </NovelName>
+  <NovelErr>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern>(?!)</Pattern>
+    <RegexName>NovelErr</RegexName>
+  </NovelErr>
+  <NovelAuthor>
+    <FilterPattern>
+    </FilterPattern>
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern>作者[：:]\s*(?:&lt;a[^&gt;]*&gt;)?(?&lt;str&gt;[^&lt;\s]+)</Pattern>
+    <RegexName>NovelAuthor</RegexName>
+  </NovelAuthor>
+  <Isboy>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern />
+    <RegexName />
+  </Isboy>
+  <LagerSort>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern />
+    <RegexName />
+  </LagerSort>
+  <SmallSort>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern />
+    <RegexName />
+  </SmallSort>
+  <NovelIntro>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern>(?is)&lt;meta[^&gt;]+name=["']description["'][^&gt;]+content=["'](?&lt;str&gt;.*?)["']</Pattern>
+    <RegexName>NovelIntro</RegexName>
+  </NovelIntro>
+  <NovelKeyword>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern />
+    <RegexName />
+  </NovelKeyword>
+  <NovelDegree>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern />
+    <RegexName />
+  </NovelDegree>
+  <NovelCover>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern />
+    <RegexName />
+  </NovelCover>
+  <NovelDefaultCoverUrl>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern />
+    <RegexName />
+  </NovelDefaultCoverUrl>
+  <NovelInfo_GetNovelPubKey>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern />
+    <RegexName />
+  </NovelInfo_GetNovelPubKey>
+  <PubCookies>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern />
+    <RegexName />
+  </PubCookies>
+  <PubIndexUrl>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern>https://www.qbxs.net/book/1/</Pattern>
+    <RegexName>PubIndexUrl</RegexName>
+  </PubIndexUrl>
+  <PubIndexErr>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern>(?!)</Pattern>
+    <RegexName>PubIndexErr</RegexName>
+  </PubIndexErr>
+  <PubVolumeContent>
+    <FilterPattern>
+    </FilterPattern>
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern>(?is)&lt;h3&gt;\s*&lt;a&gt;\s*全部章节\s*&lt;/a&gt;\s*&lt;/h3&gt;\s*&lt;ul[^&gt;]*&gt;(?&lt;str&gt;.*?)&lt;/ul&gt;</Pattern>
+    <RegexName>PubVolumeContent</RegexName>
+  </PubVolumeContent>
+  <PubVolumeSplit>
+    <FilterPattern>
+    </FilterPattern>
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern>(?!)</Pattern>
+    <RegexName>PubVolumeSplit</RegexName>
+  </PubVolumeSplit>
+  <PubVolumeName>
+    <FilterPattern>
+    </FilterPattern>
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern>
+    </Pattern>
+    <RegexName>PubVolumeName</RegexName>
+  </PubVolumeName>
+  <PubChapterName>
+    <FilterPattern>
+    </FilterPattern>
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern>(?is)&lt;li[^&gt;]*&gt;\s*&lt;a[^&gt;]+href=["']/read/\d+/\d+\.html["'][^&gt;]*&gt;(?&lt;str&gt;[^&lt;]{1,120})&lt;/a&gt;</Pattern>
+    <RegexName>PubChapterName</RegexName>
+  </PubChapterName>
+  <PubChapter_GetChapterKey>
+    <FilterPattern>
+    </FilterPattern>
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern>(?is)&lt;li[^&gt;]*&gt;\s*&lt;a[^&gt;]+href=["'](?&lt;str&gt;/read/\d+/\d+\.html)["'][^&gt;]*&gt;[^&lt;]{1,120}&lt;/a&gt;</Pattern>
+    <RegexName>PubChapter_GetChapterKey</RegexName>
+  </PubChapter_GetChapterKey>
+  <PubContentUrl>
+    <FilterPattern>
+    </FilterPattern>
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern>{ChapterKey}</Pattern>
+    <RegexName>PubContentUrl</RegexName>
+  </PubContentUrl>
+  <PubContentErr>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern>(?!)</Pattern>
+    <RegexName>PubContentErr</RegexName>
+  </PubContentErr>
+  <PubContent_GetTextKey>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern />
+    <RegexName />
+  </PubContent_GetTextKey>
+  <PubTextUrl>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern />
+    <RegexName />
+  </PubTextUrl>
+  <PubContentText>
+    <FilterPattern>
+    </FilterPattern>
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern>(?is)&lt;div[^&gt;]+id=["']articlecontent["'][^&gt;]*&gt;(?&lt;str&gt;.*?)&lt;/div&gt;</Pattern>
+    <RegexName>PubContentText</RegexName>
+  </PubContentText>
+  <PubContentPageArea>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern />
+    <RegexName />
+  </PubContentPageArea>
+  <PubContentPage>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern />
+    <RegexName />
+  </PubContentPage>
+  <PubContentPageUrl>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern />
+    <RegexName />
+  </PubContentPageUrl>
+  <PubContentPageKey>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern />
+    <RegexName />
+  </PubContentPageKey>
+  <PubContentChapterName>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern />
+    <RegexName />
+  </PubContentChapterName>
+  <PubContentChapterNum>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern />
+    <RegexName />
+  </PubContentChapterNum>
+  <PubContentImages>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern />
+    <RegexName />
+  </PubContentImages>
+  <PubContentReplace>
+    <FilterPattern />
+    <Method>Match</Method>
+    <Options>None</Options>
+    <Pattern />
+    <RegexName />
+  </PubContentReplace>
+</RuleConfigInfo>
