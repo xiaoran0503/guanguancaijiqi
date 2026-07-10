@@ -8,6 +8,8 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Web;
 using System.Windows.Forms;
 using ICSharpCode.SharpZipLib.Zip;
@@ -21,7 +23,7 @@ using PanGu;
 
 namespace NovelSpider.Local.Jieqi;
 
-public class LocalProvider : ILocalProvider
+public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 {
 	private List<string> keywordlist = new List<string>();
 
@@ -3409,6 +3411,55 @@ public class LocalProvider : ILocalProvider
 		return text;
 	}
 
+	public Task<ChapterInfo> InsertChapterAsync(NovelInfo novelInfo_0, TaskConfigInfo taskConfigInfo_0, CancellationToken cancellationToken = default)
+	{
+		return Task.Run(() =>
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			using IDisposable measure = PerformanceTelemetry.Measure("mysql", "insert_chapter", novelInfo_0?.Name ?? string.Empty);
+			return InsertChapter(novelInfo_0, taskConfigInfo_0);
+		}, cancellationToken);
+	}
+
+	public Task<ChapterInfo> InsertChapterByOrderAsync(NovelInfo novelInfo_0, TaskConfigInfo taskConfigInfo_0, int int_0, CancellationToken cancellationToken = default)
+	{
+		return Task.Run(() =>
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			using IDisposable measure = PerformanceTelemetry.Measure("mysql", "insert_chapter_by_order", novelInfo_0?.Name ?? string.Empty);
+			return InsertChapterByOrder(novelInfo_0, taskConfigInfo_0, int_0);
+		}, cancellationToken);
+	}
+
+	public Task<NovelInfo> InsertNovelAsync(NovelInfo novelInfo_0, CancellationToken cancellationToken = default)
+	{
+		return Task.Run(() =>
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			using IDisposable measure = PerformanceTelemetry.Measure("mysql", "insert_novel", novelInfo_0?.Name ?? string.Empty);
+			return InsertNovel(novelInfo_0);
+		}, cancellationToken);
+	}
+
+	public Task UpdateLastChapterAsync(NovelInfo novelInfo_0, CancellationToken cancellationToken = default)
+	{
+		return Task.Run(() =>
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			using IDisposable measure = PerformanceTelemetry.Measure("mysql", "update_last_chapter", novelInfo_0?.Name ?? string.Empty);
+			UpdateLastChapter(novelInfo_0);
+		}, cancellationToken);
+	}
+
+	public Task UpdateLastChapterAsync(NovelInfo novelInfo_0, ChapterInfo chapterInfo_0, CancellationToken cancellationToken = default)
+	{
+		return Task.Run(() =>
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			using IDisposable measure = PerformanceTelemetry.Measure("mysql", "update_last_chapter_explicit", novelInfo_0?.Name ?? string.Empty);
+			UpdateLastChapter(novelInfo_0, chapterInfo_0);
+		}, cancellationToken);
+	}
 	public ChapterInfo InsertChapter(NovelInfo novelInfo_0, TaskConfigInfo taskConfigInfo_0)
 	{
 		SpiderException.Debug("InsertChapter 获得本书最新分卷");

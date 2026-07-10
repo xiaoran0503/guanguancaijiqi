@@ -700,7 +700,7 @@ public class 自动采集模式 : DockContent
 			num++;
 		}
 		listView1.Items.Clear();
-		listView1.Items.AddRange(array2);
+		ProgressiveListViewLoader.ReplaceItems(listView1, array2);
 	}
 
 	private void btnSaveConfigClick(object sender, EventArgs e)
@@ -999,7 +999,7 @@ public class 自动采集模式 : DockContent
 					}
 				}
 				SpiderException.Debug(tInfo.ID, "CollectAuto.Collect 正式入库小说信息");
-				novelInfo_0 = LocalProvider.GetInstance().InsertNovel(novelInfo_0);
+				novelInfo_0 = LocalProviderAsyncBridge.InsertNovel(LocalProvider.GetInstance(), novelInfo_0);
 				flag2 = true;
 				AutoWorker.ReportProgress(0, novelInfo_0.GetID + " | " + novelInfo_0.Name + " | " + novelInfo_0.PutID);
 			}
@@ -1611,7 +1611,7 @@ public class 自动采集模式 : DockContent
 										NativeMethods.ChapterCount++;
 										continue;
 									}
-									LocalProvider.GetInstance().InsertChapter(novelInfo_0, tInfo);
+									LocalProviderAsyncBridge.InsertChapter(LocalProvider.GetInstance(), novelInfo_0, tInfo);
 									goto IL_1c53;
 									IL_1c53:
 									NativeMethods.ChapterCount++;
@@ -1912,7 +1912,7 @@ public class 自动采集模式 : DockContent
 						}
 					}
 					SpiderException.Debug(tInfo.ID, "CollectAuto.Collect 正式入库小说信息");
-					novelInfo_0 = LocalProvider.GetInstance().InsertNovel(novelInfo_0);
+					novelInfo_0 = LocalProviderAsyncBridge.InsertNovel(LocalProvider.GetInstance(), novelInfo_0);
 					flag2 = true;
 					AutoWorker.ReportProgress(0, novelInfo_0.GetID + " | " + novelInfo_0.Name + " | " + novelInfo_0.PutID);
 				}
@@ -2462,7 +2462,7 @@ public class 自动采集模式 : DockContent
 									if (novelInfo_0.LastChapter.PutID <= 0)
 									{
 										flag3 = true;
-										LocalProvider.GetInstance().InsertChapter(novelInfo_0, tInfo);
+										LocalProviderAsyncBridge.InsertChapter(LocalProvider.GetInstance(), novelInfo_0, tInfo);
 										goto IL_2405;
 									}
 									bool flag9 = true;
@@ -2546,7 +2546,7 @@ public class 自动采集模式 : DockContent
 						AutoWorker.ReportProgress(2, "清理正在生成目录Html (此过程将同时生成OPF和其他格式)");
 						if (flag3)
 						{
-							LocalProvider.GetInstance().UpdateLastChapter(novelInfo_0);
+							LocalProviderAsyncBridge.UpdateLastChapter(LocalProvider.GetInstance(), novelInfo_0);
 						}
 						LocalProvider.GetInstance().CreateIndex(novelInfo_0, Configs.BaseConfig.IndexHtml, Configs.BaseConfig.FullHtml, Configs.BaseConfig.CreateOPF, Configs.BaseConfig.CreateZIP, Configs.BaseConfig.CreateTXT, Configs.BaseConfig.CreateUMD, Configs.BaseConfig.CreateJAR, Configs.BaseConfig.CreateCHM, bool_8: false, bool_9: false, 0);
 					}
@@ -4472,7 +4472,7 @@ public class 自动采集模式 : DockContent
 			Invoke((MethodInvoker)delegate
 			{
 				listView1.Items.Clear();
-				listView1.Items.AddRange(items);
+				ProgressiveListViewLoader.ReplaceItems(listView1, items);
 			});
 		}
 		else

@@ -312,7 +312,7 @@ public class 数据管理台 : DockContent
 			}
 			Invoke((EventHandler)delegate
 			{
-				小说信息list.Items.AddRange(items);
+				ProgressiveListViewLoader.ReplaceItems(小说信息list, items, toolStripStatusLabel_1, "书籍加载");
 			});
 		}
 		backgroundWorker_0.ReportProgress(2, 1);
@@ -418,7 +418,7 @@ public class 数据管理台 : DockContent
 			}
 			Invoke((EventHandler)delegate
 			{
-				章节列表list.Items.AddRange(items);
+				ProgressiveListViewLoader.ReplaceItems(章节列表list, items, toolStripStatusLabel_1, "章节加载");
 			});
 		}
 		backgroundWorker1.ReportProgress(1, "执行完毕");

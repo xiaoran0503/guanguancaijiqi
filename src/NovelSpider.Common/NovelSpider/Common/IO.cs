@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 
 namespace NovelSpider.Common;
@@ -6,10 +7,10 @@ public class IO
 {
 	public static void CopyFiles(string string_0, string string_1, bool bool_0, bool bool_1)
 	{
-		string[] files = Directory.GetFiles(string_0);
+		IEnumerable<string> files = Directory.EnumerateFiles(string_0);
 		if (bool_0)
 		{
-			string[] array = files;
+			IEnumerable<string> array = files;
 			foreach (string text in array)
 			{
 				if (!Directory.Exists(string_1))
@@ -21,7 +22,7 @@ public class IO
 		}
 		else
 		{
-			string[] array2 = files;
+			IEnumerable<string> array2 = files;
 			foreach (string text2 in array2)
 			{
 				if (!File.Exists(string_1 + text2.Substring(text2.LastIndexOf("\\"))))
@@ -34,7 +35,7 @@ public class IO
 		{
 			return;
 		}
-		string[] directories = Directory.GetDirectories(string_0);
+		IEnumerable<string> directories = Directory.EnumerateDirectories(string_0);
 		foreach (string text3 in directories)
 		{
 			string text4 = string_1 + text3.Substring(text3.LastIndexOf("\\"));

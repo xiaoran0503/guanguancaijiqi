@@ -4,7 +4,7 @@ This branch contains the independent .NET 10 / Windows x64 migration line for No
 
 ## Current Baseline
 
-- Version: `10.0.4-net10-test / 10.0.4.0`
+- Version: `10.1.0-net10-test / 10.1.0.0`
 - Branch: `net10-v10`
 - Target framework: `net10.0-windows`
 - Platform: Windows-only `win-x64` / `x64`
@@ -56,6 +56,7 @@ Net10 milestones:
 - `v10.0.2-net10`: GitHub Actions automatic build and release baseline.
 - `v10.0.3-net10`: CI publish fallback path fix for GitHub Windows Runner.
 - `v10.0.4-net10`: regex cache, lazy image browser, deferred welcome page, and buffered performance telemetry.
+- `v10.1.0-net10`: DNS process cache, progressive large-list loading, async Jieqi persistence bridge, and expanded performance telemetry.
 
 Every future milestone should update the version, update `src\NovelSpider\Resources\CHANGELOG.md`, and create an independent Git tag.
 
@@ -70,3 +71,10 @@ Every future milestone should update the version, update `src\NovelSpider\Resour
 - See `NET10_MIGRATION_NOTES.md` for migration boundaries and dependency audit details.
 - See `MAINTENANCE.md` for release checks and development constraints.
 - See `PROJECT_DEVELOPMENT.md` for project structure and historical migration notes.
+
+## Net10 V10.1.0 Performance Notes
+
+- Direct HTTP requests use a 30-minute in-process DNS cache with a 512-host cap; proxy requests keep the default proxy path.
+- Cached DNS entries are dropped when all cached addresses fail, then the same request resolves once again before surfacing the network error.
+- Large WinForms lists append in 200-item UI batches so windows stay responsive during initial population.
+- Set `NOVELSPIDER_PERFORMANCE=1` to record DNS, HTTP, UI batch, regex, TXT, and MySQL timing data under `Log\Performance`.

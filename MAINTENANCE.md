@@ -4,7 +4,7 @@
 
 - 当前主线：`net10.0-windows`
 - 当前平台：Windows-only `win-x64` / `x64`
-- 当前版本：`10.0.4-net10-test / 10.0.4.0`
+- 当前版本：`10.1.0-net10-test / 10.1.0.0`
 - 当前工作目录：`E:\采集器\Modernized_Net10_Working`
 - 当前发布目录：`E:\采集器\ModernizedOutput_Net10_Test`
 - 固定 SDK：`.NET SDK 10.0.301`
@@ -70,3 +70,10 @@ GitHub Actions:
 - 不把归档 `NovelSpider.Local.Qiwen` 的 `Microsoft.Data.SqlClient` 版本作为 active solution 依赖状态；Qiwen 重新启用时再独立迁移和验证 SQL Server。
 - 不把本分支的 Net10/x64 改动回写到 `Modernized_Working` Net8 维护分支。
 - 大改前先封存当前可用源码和运行包。
+
+## V10.1.0 Runtime Notes
+
+- DNS 缓存固定 30 分钟，仅驻留当前进程，不写入配置或磁盘。
+- 代理请求不使用目标站 DNS 缓存，避免绕过代理链路。
+- Jieqi 异步写库目前通过可选接口接入后台链路；其他 Provider 自动回退同步接口。
+- 大列表加载以 200 条为一批追加，新增查询或重新加载会丢弃旧批次。

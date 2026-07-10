@@ -869,7 +869,7 @@ public class CollectManual : DockContent
 			}
 			backgroundWorker.ReportProgress(32, chapterInfo_1[i]);
 		}
-		NovelSpider.Local.LocalProvider.GetInstance().UpdateLastChapter(chapterInfo);
+		LocalProviderAsyncBridge.UpdateLastChapter(NovelSpider.Local.LocalProvider.GetInstance(), chapterInfo);
 		NovelSpider.Local.LocalProvider.GetInstance().CreateIndex(chapterInfo, Configs.BaseConfig.IndexHtml, Configs.BaseConfig.FullHtml, Configs.BaseConfig.CreateOPF, Configs.BaseConfig.CreateZIP, Configs.BaseConfig.CreateTXT, Configs.BaseConfig.CreateUMD, Configs.BaseConfig.CreateJAR, Configs.BaseConfig.CreateCHM, bool_8: false, bool_9: false, 0);
 	}
 
@@ -1047,7 +1047,7 @@ public class CollectManual : DockContent
 					SpiderException.Show("空章节或字数过少", chapterInfo, taskConfigInfo_0.Log, str5);
 					break;
 				}
-				NovelSpider.Local.LocalProvider.GetInstance().InsertChapter(chapterInfo, taskConfigInfo_0);
+				LocalProviderAsyncBridge.InsertChapter(NovelSpider.Local.LocalProvider.GetInstance(), chapterInfo, taskConfigInfo_0);
 				if (Configs.BaseConfig.ChapterHtml)
 				{
 					NovelSpider.Local.LocalProvider.GetInstance().CreateChapter(chapterInfo);
@@ -1115,7 +1115,7 @@ public class CollectManual : DockContent
 			if (array[i].PutID == 0)
 			{
 				array[i] = new Page(ruleConfigInfo_0, taskConfigInfo_0).GetNovelInfo(array[i]);
-				array[i] = NovelSpider.Local.LocalProvider.GetInstance().InsertNovel(array[i]);
+				array[i] = LocalProviderAsyncBridge.InsertNovel(NovelSpider.Local.LocalProvider.GetInstance(), array[i]);
 			}
 			backgroundWorker.ReportProgress(12, array[i]);
 		}
@@ -1153,7 +1153,7 @@ public class CollectManual : DockContent
 				SpiderException.Show("发现图片章节", chapterInfo, taskConfigInfo_0.Log, strTask2);
 				break;
 			}
-			NovelSpider.Local.LocalProvider.GetInstance().InsertChapterByOrder(chapterInfo, taskConfigInfo_0, array[0] + i);
+			LocalProviderAsyncBridge.InsertChapterByOrder(NovelSpider.Local.LocalProvider.GetInstance(), chapterInfo, taskConfigInfo_0, array[0] + i);
 			if (Configs.BaseConfig.ChapterHtml)
 			{
 				NovelSpider.Local.LocalProvider.GetInstance().CreateChapter(chapterInfo);
@@ -1172,7 +1172,7 @@ public class CollectManual : DockContent
 		ChapterInfo chapterInfo5 = chapterInfo4;
 		NovelSpider.Local.LocalProvider.GetInstance().CreateChapter(chapterInfo, chapterInfo3);
 		NovelSpider.Local.LocalProvider.GetInstance().CreateChapter(chapterInfo, chapterInfo5);
-		NovelSpider.Local.LocalProvider.GetInstance().UpdateLastChapter(chapterInfo);
+		LocalProviderAsyncBridge.UpdateLastChapter(NovelSpider.Local.LocalProvider.GetInstance(), chapterInfo);
 		NovelSpider.Local.LocalProvider.GetInstance().CreateIndex(chapterInfo, Configs.BaseConfig.IndexHtml, Configs.BaseConfig.FullHtml, Configs.BaseConfig.CreateOPF, Configs.BaseConfig.CreateZIP, Configs.BaseConfig.CreateTXT, Configs.BaseConfig.CreateUMD, Configs.BaseConfig.CreateJAR, Configs.BaseConfig.CreateCHM, bool_8: false, bool_9: false, 0);
 	}
 
