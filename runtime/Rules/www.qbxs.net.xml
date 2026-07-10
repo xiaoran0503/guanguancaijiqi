@@ -61,8 +61,8 @@
     <FilterPattern />
     <Method>Match</Method>
     <Options>None</Options>
-    <Pattern />
-    <RegexName />
+    <Pattern>https://www.qbxs.net/</Pattern>
+    <RegexName>NovelListUrl</RegexName>
   </NovelListUrl>
   <NovelListFilter>
     <FilterPattern />
@@ -75,14 +75,14 @@
     <FilterPattern />
     <Method>Match</Method>
     <Options>None</Options>
-    <Pattern />
-    <RegexName />
+    <Pattern>(?is)&lt;a[^&gt;]+href=["']/book/(?&lt;str&gt;\d+)/["'][^&gt;]*&gt;(?&lt;name&gt;[^&lt;]{1,120})&lt;/a&gt;</Pattern>
+    <RegexName>NovelList_GetNovelKey</RegexName>
   </NovelList_GetNovelKey>
   <NovelUrl>
     <FilterPattern />
     <Method>Match</Method>
     <Options>None</Options>
-    <Pattern>https://www.qbxs.net/book/1/</Pattern>
+    <Pattern>https://www.qbxs.net/book/{NovelKey}/</Pattern>
     <RegexName>NovelUrl</RegexName>
   </NovelUrl>
   <NovelName>
@@ -181,7 +181,7 @@
     <FilterPattern />
     <Method>Match</Method>
     <Options>None</Options>
-    <Pattern>https://www.qbxs.net/book/1/</Pattern>
+    <Pattern>https://www.qbxs.net/book/{NovelKey}/</Pattern>
     <RegexName>PubIndexUrl</RegexName>
   </PubIndexUrl>
   <PubIndexErr>

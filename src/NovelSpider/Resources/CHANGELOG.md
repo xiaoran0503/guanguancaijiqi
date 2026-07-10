@@ -1,3 +1,9 @@
+V10.3.3 Net10 Test    2026-07-10
+
+- 版本迭代为 `10.3.3.0 / 10.3.3-net10-test`。
+- 自动规则生成器会从示例小说页反推 `NovelUrl` / `PubIndexUrl` 的 `{NovelKey}` 模板，例如 `https://www.qbxs.net/book/1/` 推为 `https://www.qbxs.net/book/{NovelKey}/`。
+- 自动规则生成器会抓取站点首页并从同类 `/book/数字/` 链接推断 `NovelListUrl` / `NovelList_GetNovelKey`，避免单本规则在最新列表测试阶段误报失败。
+- 用 `www.qbxs.net` 首页、小说页、目录页和章节页交叉验证：最新列表、小说信息、章节目录和正文链路均可命中。
 V10.3.2 Net10 Test    2026-07-10
 
 - 版本迭代为 `10.3.2.0 / 10.3.2-net10-test`。

@@ -120,10 +120,11 @@ public class RuleAutoGenerateForm : DockContent
 				MessageBox.Show("请至少填写一个可访问的网址。", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
 				return;
 			}
+			string siteHtml = string.IsNullOrWhiteSpace(siteUrl) ? string.Empty : await FetchTextAsync(siteUrl);
 			string novelHtml = await FetchTextAsync(string.IsNullOrWhiteSpace(novelUrl) ? siteUrl : novelUrl);
 			string indexHtml = string.IsNullOrWhiteSpace(indexUrl) ? novelHtml : await FetchTextAsync(indexUrl);
 			string chapterHtml = string.IsNullOrWhiteSpace(chapterUrl) ? "" : await FetchTextAsync(chapterUrl);
-			generatedRule = BuildLocalRule(siteUrl, novelUrl, indexUrl, chapterUrl, novelHtml, indexHtml, chapterHtml);
+			generatedRule = BuildLocalRule(siteUrl, novelUrl, indexUrl, chapterUrl, siteHtml, novelHtml, indexHtml, chapterHtml);
 			if (!string.IsNullOrWhiteSpace(aiKeyBox.Text) && !string.IsNullOrWhiteSpace(aiModelBox.Text))
 			{
 				previewBox.Text = await BuildAiSuggestionAsync(generatedRule, novelHtml, indexHtml, chapterHtml);
@@ -144,7 +145,7 @@ public class RuleAutoGenerateForm : DockContent
 		}
 	}
 
-	private static RuleConfigInfo BuildLocalRule(string siteUrl, string novelUrl, string indexUrl, string chapterUrl, string novelHtml, string indexHtml, string chapterHtml)
+	private static RuleConfigInfo BuildLocalRule(string siteUrl, string novelUrl, string indexUrl, string chapterUrl, string siteHtml, string novelHtml, string indexHtml, string chapterHtml)
 	{
 		Uri baseUri = CreateUri(siteUrl) ?? CreateUri(novelUrl) ?? CreateUri(indexUrl) ?? CreateUri(chapterUrl);
 		Uri indexUri = CreateUri(indexUrl) ?? CreateUri(novelUrl) ?? baseUri;
@@ -156,8 +157,11 @@ public class RuleAutoGenerateForm : DockContent
 		rule.GetSiteName = RegexInfo("GetSiteName", host);
 		rule.GetSiteCharset = RegexInfo("GetSiteCharset", "utf-8");
 		rule.GetSiteUrl = RegexInfo("GetSiteUrl", baseUri?.GetLeftPart(UriPartial.Authority) ?? siteUrl);
-		rule.NovelUrl = RegexInfo("NovelUrl", string.IsNullOrWhiteSpace(novelUrl) ? siteUrl : novelUrl);
-		rule.PubIndexUrl = RegexInfo("PubIndexUrl", string.IsNullOrWhiteSpace(indexUrl) ? novelUrl : indexUrl);
+		string novelUrlPattern = BuildNovelUrlPattern(novelUrl, siteUrl);
+		rule.NovelListUrl = RegexInfo("NovelListUrl", siteUrl);
+		rule.NovelList_GetNovelKey = RegexInfo("NovelList_GetNovelKey", BuildNovelListKeyPattern(siteHtml, novelUrl, baseUri));
+		rule.NovelUrl = RegexInfo("NovelUrl", novelUrlPattern);
+		rule.PubIndexUrl = RegexInfo("PubIndexUrl", string.IsNullOrWhiteSpace(indexUrl) || string.Equals(indexUrl, novelUrl, StringComparison.OrdinalIgnoreCase) ? novelUrlPattern : BuildNovelUrlPattern(indexUrl, siteUrl));
 		rule.NovelErr = RegexInfo("NovelErr", "(?!)");
 		rule.PubIndexErr = RegexInfo("PubIndexErr", "(?!)");
 		rule.PubContentErr = RegexInfo("PubContentErr", "(?!)");
@@ -174,6 +178,64 @@ public class RuleAutoGenerateForm : DockContent
 		return rule;
 	}
 
+	private static string BuildNovelUrlPattern(string novelUrl, string siteUrl)
+	{
+		Uri novelUri = CreateUri(novelUrl);
+		if (novelUri == null)
+		{
+			return string.IsNullOrWhiteSpace(novelUrl) ? siteUrl : novelUrl;
+		}
+		string path = novelUri.AbsolutePath;
+		Match lastNumber = Regex.Match(path, @"(?<prefix>.*/)(?<id>\d+)/?$", RegexOptions.IgnoreCase);
+		if (!lastNumber.Success)
+		{
+			return novelUri.AbsoluteUri;
+		}
+		string prefix = lastNumber.Groups["prefix"].Value;
+		string id = lastNumber.Groups["id"].Value;
+		string pathPattern = prefix + "{NovelKey}/";
+		Match bucket = Regex.Match(prefix, @"^(?<before>.*/)(?<bucket>\d+)/$", RegexOptions.IgnoreCase);
+		if (bucket.Success && int.TryParse(id, out int novelId) && int.TryParse(bucket.Groups["bucket"].Value, out int bucketId) && bucketId == novelId / 1000)
+		{
+			pathPattern = bucket.Groups["before"].Value + "{NovelKey/1000}/{NovelKey}/";
+		}
+		return novelUri.GetLeftPart(UriPartial.Authority) + pathPattern;
+	}
+
+	private static string BuildNovelListKeyPattern(string siteHtml, string novelUrl, Uri baseUri)
+	{
+		Uri novelUri = CreateUri(novelUrl);
+		if (novelUri == null)
+		{
+			return string.Empty;
+		}
+		string href = ToPageHref(novelUri, baseUri);
+		Match pathPattern = Regex.Match(href, @"^(?<prefix>.*/)(?<id>\d+)/?$", RegexOptions.IgnoreCase);
+		if (!pathPattern.Success)
+		{
+			return string.Empty;
+		}
+		string prefix = pathPattern.Groups["prefix"].Value;
+		string hrefPattern = Regex.Escape(prefix) + @"(?<str>\d+)/";
+		int count = Regex.Matches(siteHtml ?? string.Empty, "href=[\"']" + hrefPattern + "[\"']", RegexOptions.IgnoreCase).Count;
+		if (count == 0 && Uri.TryCreate(href, UriKind.Absolute, out Uri absoluteHref))
+		{
+			string absolutePrefix = absoluteHref.GetLeftPart(UriPartial.Authority) + prefix;
+			hrefPattern = Regex.Escape(absolutePrefix) + @"(?<str>\d+)/";
+		}
+				string textLinkPattern = "(?is)<a[^>]+href=[\"']" + hrefPattern + "[\"'][^>]*>(?<name>[^<]{1,120})</a>";
+		MatchCollection textLinks = Regex.Matches(siteHtml ?? string.Empty, textLinkPattern, RegexOptions.IgnoreCase);
+		int usefulTextLinks = 0;
+		foreach (Match link in textLinks)
+		{
+			string name = link.Groups["name"].Value.Trim();
+			if (!string.IsNullOrWhiteSpace(name) && !Regex.IsMatch(name, "阅读本书|立即阅读|加入书架|更多|目录"))
+			{
+				usefulTextLinks++;
+			}
+		}
+		return usefulTextLinks > 0 ? textLinkPattern : "(?is)<a[^>]+href=[\"']" + hrefPattern + "[\"'][^>]*>.*?</a>";
+	}
 	private sealed class ChapterLinkPatterns
 	{
 		public string ChapterNamePattern { get; init; } = "(?is)<a[^>]+href=[\"'][^\"']+[\"'][^>]*>(?<str>[^<]{2,120})</a>";
