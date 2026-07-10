@@ -127,7 +127,12 @@ public class WelcomeForm : DockContent
 		{
 			"更新日志",
 			"",
-			"V10.1.1 Net10 Test    2026-07-10",
+			"V10.1.2 Net10 Test    2026-07-10",
+			"- 版本迭代为 10.1.2.0 / 10.1.2-net10-test。",
+			"- 修复发布包 Resources\\CHANGELOG.md 未强制刷新导致运行包更新日志停留旧版的问题。",
+			"- 发布脚本现在发布后强制复制源码更新日志到输出目录。",
+			"- 配置页启用 .NET 10 WinForms 截图隐私保护；剪贴板文本写入改为 Unicode text API。",
+			"",			"V10.1.1 Net10 Test    2026-07-10",
 			"- 版本迭代为 10.1.1.0 / 10.1.1-net10-test。",
 			"- 管理台章节列表改为按需检测正文，避免逐章读取造成 N+1 查询。",
 			"- Jieqi 插章使用 LastInsertedId 获取自增 ID，减少数据库往返。",

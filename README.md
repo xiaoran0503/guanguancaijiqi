@@ -4,7 +4,7 @@ This branch contains the independent .NET 10 / Windows x64 migration line for No
 
 ## Current Baseline
 
-- Version: `10.1.1-net10-test / 10.1.1.0`
+- Version: `10.1.2-net10-test / 10.1.2.0`
 - Branch: `net10-v10`
 - Target framework: `net10.0-windows`
 - Platform: Windows-only `win-x64` / `x64`
@@ -58,6 +58,7 @@ Net10 milestones:
 - `v10.0.4-net10`: regex cache, lazy image browser, deferred welcome page, and buffered performance telemetry.
 - `v10.1.0-net10`: DNS process cache, progressive large-list loading, async Jieqi persistence bridge, and expanded performance telemetry.
 - `v10.1.1-net10`: database round-trip reduction, on-demand chapter text checks, and lighter Jieqi refresh queries.
+- `v10.1.2-net10`: forced published changelog refresh, sensitive-form screen capture protection, and Unicode clipboard text path.
 
 Every future milestone should update the version, update `src\NovelSpider\Resources\CHANGELOG.md`, and create an independent Git tag.
 

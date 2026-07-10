@@ -64,4 +64,10 @@ foreach ($dir in $runtimeDataDirs) {
     New-Item -ItemType Directory -Path $target | Out-Null
   }
 }
+$changeLogSource = Join-Path $repoRoot "src\NovelSpider\Resources\CHANGELOG.md"
+$changeLogTargetDir = Join-Path $output "Resources"
+if (Test-Path -LiteralPath $changeLogSource) {
+  New-Item -ItemType Directory -Path $changeLogTargetDir -Force | Out-Null
+  Copy-Item -LiteralPath $changeLogSource -Destination (Join-Path $changeLogTargetDir "CHANGELOG.md") -Force
+}
 Remove-Item -LiteralPath $backupRoot -Recurse -Force

@@ -4,7 +4,7 @@
 
 - 当前主线：`net10.0-windows`
 - 当前平台：Windows-only `win-x64` / `x64`
-- 当前版本：`10.1.1-net10-test / 10.1.1.0`
+- 当前版本：`10.1.2-net10-test / 10.1.2.0`
 - 当前工作目录：`E:\采集器\Modernized_Net10_Working`
 - 当前发布目录：`E:\采集器\ModernizedOutput_Net10_Test`
 - 固定 SDK：`.NET SDK 10.0.301`
@@ -83,3 +83,9 @@ GitHub Actions:
 - 管理台章节列表默认显示 未检测，正文状态在详情读取时按需确认。
 - Jieqi 插章使用 LastInsertedId 减少自增 ID 查询往返；失败仍回滚当前事务。
 - 最后章节刷新使用 reader 读取单行，减少 DataTable 分配。
+
+
+## V10.1.2 Changelog Notes
+
+- publish-all.ps1 must force-copy src\\NovelSpider\\Resources\\CHANGELOG.md into output Resources\\CHANGELOG.md after publish.
+- Release validation must inspect the published changelog top entry, not only the source changelog.

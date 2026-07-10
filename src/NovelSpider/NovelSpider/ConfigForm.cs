@@ -655,6 +655,7 @@ public class ConfigForm : DockContent
 		imgHeight = 0;
 		text = string.Empty;
 		InitializeComponent();
+		WinFormsNet10Features.ProtectSensitiveForm(this);
 	}
 
 	private WebBrowser EnsureImageBrowser()

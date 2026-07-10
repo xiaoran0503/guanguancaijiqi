@@ -3019,7 +3019,7 @@ public class CollectManual : DockContent
 				text = text + chapterInfo.VolumeName + "\n" + chapterInfo.ChapterName + "\n";
 			}
 		}
-		Clipboard.SetDataObject(text + novelInfo.LastChapter.VolumeName + "\n" + novelInfo.LastChapter.ChapterName + "\n");
+		WinFormsNet10Features.SetClipboardText(text + novelInfo.LastChapter.VolumeName + "\n" + novelInfo.LastChapter.ChapterName + "\n");
 		MessageBox.Show("复制成功，可直接Ctrl+V复制到QQ中。");
 	}
 
