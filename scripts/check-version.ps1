@@ -5,7 +5,7 @@ $output = if ($env:NOVELSPIDER_PUBLISH_DIR) {
 } else {
   Join-Path $repoRoot "artifacts\NovelSpider-Net10-win-x64"
 }
-$files = @("NovelSpider.exe", "NovelAdmin.exe", "NovelVip.exe")
+$files = @("NovelSpider.exe")
 foreach ($file in $files) {
   $path = Join-Path $output $file
   if (-not (Test-Path -LiteralPath $path)) {

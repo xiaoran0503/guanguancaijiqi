@@ -84,9 +84,9 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 		string sizeColumn = GetChapterSizeColumn();
 		if (!IsCms18OrNewer())
 		{
-			return "INSERT INTO `jieqi_article_chapter` (`chapterid`,`articleid`,`articlename`,`volumeid`,`posterid`,`poster`,`postdate`,`lastupdate`,`chaptername`,`chapterorder`,`size`,`saleprice`,`salenum`,`totalcost`,`attachment`,`isvip`,`chaptertype`,`power`,`display`) VALUES (NULL,@articleid,@articlename,0,1,'admin',@postdate,@lastupdate,@chaptername,@chapterorder,@chapterSize,0,0,0,'',0,@chaptertype,0,0);";
+			return "INSERT INTO `jieqi_article_chapter` (`chapterid`,`articleid`,`articlename`,`volumeid`,`posterid`,`poster`,`postdate`,`lastupdate`,`chaptername`,`chapterorder`,`size`,`saleprice`,`salenum`,	otalcost`,`attachment`,`isvip`,`chaptertype`,`power`,`display`) VALUES (NULL,@articleid,@articlename,0,1,'admin',@postdate,@lastupdate,@chaptername,@chapterorder,@chapterSize,0,0,0,'',0,@chaptertype,0,0);";
 		}
-		return "INSERT INTO `jieqi_article_chapter` (`chapterid`,`articleid`,`articlename`,`volumeid`,`posterid`,`poster`,`postdate`,`lastupdate`,`chaptername`,`chapterorder`,`" + sizeColumn + "`,`saleprice`,`salenum`,`totalcost`,`attachment`,`isvip`,`chaptertype`,`power`,`display`,`preface`,`notice`,`foreword`) VALUES (NULL,@articleid,@articlename,0,1,'admin',@postdate,@lastupdate,@chaptername,@chapterorder,@chapterSize,0,0,0,'',0,@chaptertype,0,0,'','','');";
+		return "INSERT INTO `jieqi_article_chapter` (`chapterid`,`articleid`,`articlename`,`volumeid`,`posterid`,`poster`,`postdate`,`lastupdate`,`chaptername`,`chapterorder`,`" + sizeColumn + "`,`saleprice`,`salenum`,	otalcost`,`attachment`,`isvip`,`chaptertype`,`power`,`display`,`preface`,`notice`,`foreword`) VALUES (NULL,@articleid,@articlename,0,1,'admin',@postdate,@lastupdate,@chaptername,@chapterorder,@chapterSize,0,0,0,'',0,@chaptertype,0,0,'','','');";
 	}
 
 	private static MySqlParameter[] CreateChapterParameters(NovelInfo novelInfo, string chapterName, int chapterOrder, int chapterSize, int chapterType, int timestamp)
@@ -104,21 +104,15 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 		};
 	}
 
-	private static Encoding GetCmsTextEncoding()
-	{
-		return Configs.BaseConfig.CmsEncoding == "utf-8"
-			? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)
-			: FormatText.GetCharset(Configs.BaseConfig.CmsEncoding, Config.JieqiCharset);
-	}
 
 	private static void WriteChapterTextFile(string directory, int chapterId, string chapterText)
 	{
-		ChapterFileWriter.WriteChapterText(directory, chapterId, chapterText, GetCmsTextEncoding());
+		ChapterFileWriter.WriteChapterText(directory, chapterId, TextEncodingPolicy.NormalizeDatabaseText(chapterText), TextEncodingPolicy.Utf8NoBom);
 	}
 
 	private static void WriteGeneratedTextFile(string path, string content)
 	{
-		ChapterFileWriter.WriteTextAtomic(path, content, GetCmsTextEncoding());
+		ChapterFileWriter.WriteTextAtomic(path, TextEncodingPolicy.NormalizeDatabaseText(content), TextEncodingPolicy.Utf8NoBom);
 	}
 
 	private static object DbValue(object value)
@@ -143,9 +137,9 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 		}
 		if (IsCms24())
 		{
-			return "INSERT INTO `jieqi_article_article` (`articleid`,`postdate`,`lastupdate`,`infoupdate`,`articlename`,`articlecode`,`initial`,`author`,`posterid`,`poster`,`agentid`,`agent`,`sortid`,`typeid`,`intro`,`notice`,`setting`,`lastvolumeid`,`lastvolume`,`lastchapterid`,`lastchapter`,`words`,`lastvisit`,`permission`,`fullflag`,`imgflag`,`chapters`,`keywords`,`rgroup`,`display`,`freetime`,`freewords`,`isvip`,`issign`,`siteid`,`pubinfo`,`buyinfo`,`vipsummary`) VALUES (NULL,@now,@now,@now,@articlename,@articlecode,@initial,@author,1,'admin',0,0,@sortid,@typeid,@intro,'','',0,'最新分卷',0,'最新章节',1,@now,0,@fullflag,@imgflag,1,@keywords,@rgroup,2,@now,1,0,0,@siteid,'','','');";
+			return "INSERT INTO `jieqi_article_article` (`articleid`,`postdate`,`lastupdate`,`infoupdate`,`articlename`,`articlecode`,`initial`,`author`,`posterid`,`poster`,`agentid`,`agent`,`sortid`,	ypeid`,`intro`,`notice`,`setting`,`lastvolumeid`,`lastvolume`,`lastchapterid`,`lastchapter`,`words`,`lastvisit`,`permission`,`fullflag`,`imgflag`,`chapters`,`keywords`,`rgroup`,`display`,`freetime`,`freewords`,`isvip`,`issign`,`siteid`,`pubinfo`,`buyinfo`,`vipsummary`) VALUES (NULL,@now,@now,@now,@articlename,@articlecode,@initial,@author,1,'admin',0,0,@sortid,@typeid,@intro,'','',0,'最新分卷',0,'最新章节',1,@now,0,@fullflag,@imgflag,1,@keywords,@rgroup,2,@now,1,0,0,@siteid,'','','');";
 		}
-		return "INSERT INTO `jieqi_article_article` (`articleid`,`postdate`,`lastupdate`,`infoupdate`,`articlename`,`articlecode`,`initial`,`author`,`posterid`,`poster`,`agentid`,`agent`,`sortid`,`typeid`,`intro`,`notice`,`setting`,`lastvolumeid`,`lastvolume`,`lastchapterid`,`lastchapter`,`size`,`lastvisit`,`permission`,`fullflag`,`imgflag`,`chapters`,`keywords`,`rgroup`,`display`,`freetime`,`freesize`,`isvip`,`issign`,`siteid`) VALUES (NULL,@now,@now,@now,@articlename,@articlecode,@initial,@author,1,'admin',0,0,@sortid,@typeid,@intro,'','',0,'最新分卷',0,'最新章节',1,@now,0,@fullflag,@imgflag,1,@keywords,@rgroup,2,@now,1,0,0,@siteid);";
+		return "INSERT INTO `jieqi_article_article` (`articleid`,`postdate`,`lastupdate`,`infoupdate`,`articlename`,`articlecode`,`initial`,`author`,`posterid`,`poster`,`agentid`,`agent`,`sortid`,	ypeid`,`intro`,`notice`,`setting`,`lastvolumeid`,`lastvolume`,`lastchapterid`,`lastchapter`,`size`,`lastvisit`,`permission`,`fullflag`,`imgflag`,`chapters`,`keywords`,`rgroup`,`display`,`freetime`,`freesize`,`isvip`,`issign`,`siteid`) VALUES (NULL,@now,@now,@now,@articlename,@articlecode,@initial,@author,1,'admin',0,0,@sortid,@typeid,@intro,'','',0,'最新分卷',0,'最新章节',1,@now,0,@fullflag,@imgflag,1,@keywords,@rgroup,2,@now,1,0,0,@siteid);";
 	}
 
 	private static MySqlParameter[] CreateNovelInsertParameters(NovelInfo novelInfo, int coverFlag, int now)
@@ -206,7 +200,7 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 				{
 					keywordlist.Add(item.Word);
 				}
-				MySqlHelper.ExecuteNonQuery(MySqlHelper.ConnectionString, CommandType.Text, "INSERT INTO `jieqi_article_tag` (`tagid`,`articleid`,`tagname`,`length`,`hits`) VALUES (NULL,@articleid,@tagname,@length,0)",
+				MySqlHelper.ExecuteNonQuery(MySqlHelper.ConnectionString, CommandType.Text, "INSERT INTO `jieqi_article_tag` (	agid`,`articleid`,	agname`,`length`,`hits`) VALUES (NULL,@articleid,@tagname,@length,0)",
 					new MySqlParameter("@articleid", novelInfo.PutID),
 					new MySqlParameter("@tagname", item.Word),
 					new MySqlParameter("@length", item.Word.Length));
@@ -1890,14 +1884,7 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 			{
 				File.Delete(path5);
 			}
-			if (Configs.BaseConfig.CmsEncoding == "utf-8")
-			{
-				ChapterFileWriter.WriteTextAtomic(path5, contents, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-			}
-			else
-			{
-				ChapterFileWriter.WriteTextAtomic(path5, contents, FormatText.GetCharset(Configs.BaseConfig.CmsEncoding, Config.JieqiCharset));
-			}
+			ChapterFileWriter.WriteTextAtomic(path5, contents, TextEncodingPolicy.Utf8NoBom);
 		}
 		if (isGenZip)
 		{
@@ -2602,7 +2589,7 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 	{
 		try
 		{
-			string string_ = ((Configs.BaseConfig.CmsVersion == "2.4") ? "CREATE TABLE IF NOT EXISTS `jieqi_article_tag` (`tagid` int(10)  primary key not  null  auto_increment,`articleid` int(10) NOT NULL,`tagname` varchar(20) NOT NULL, `length` int(20) NOT NULL, `hits` int(50) DEFAULT 0 ) ENGINE = MyISAM DEFAULT CHARSET = utf8; " : "CREATE TABLE IF NOT EXISTS `jieqi_article_tag` (`tagid` int(10)  primary key not  null  auto_increment,`articleid` int(10) NOT NULL,`tagname` varchar(20) NOT NULL, `length` int(20) NOT NULL, `hits` int(50) DEFAULT 0 ) ENGINE = MyISAM DEFAULT CHARSET = gbk; ");
+			string string_ = ((Configs.BaseConfig.CmsVersion == "2.4") ? "CREATE TABLE IF NOT EXISTS `jieqi_article_tag` (	agid` int(10)  primary key not  null  auto_increment,`articleid` int(10) NOT NULL,	agname` varchar(20) NOT NULL, `length` int(20) NOT NULL, `hits` int(50) DEFAULT 0 ) ENGINE = MyISAM DEFAULT CHARSET = utf8; " : "CREATE TABLE IF NOT EXISTS `jieqi_article_tag` (	agid` int(10)  primary key not  null  auto_increment,`articleid` int(10) NOT NULL,	agname` varchar(20) NOT NULL, `length` int(20) NOT NULL, `hits` int(50) DEFAULT 0 ) ENGINE = MyISAM DEFAULT CHARSET = gbk; ");
 			MySqlHelper.ExecuteNonQuery(MySqlHelper.ConnectionString, CommandType.Text, string_, (MySqlParameter[])null);
 			if (MessageBox.Show("标签表初始化完成！，是否为数据库中小说生成标签？", "", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK)
 			{
@@ -2624,7 +2611,7 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 						{
 							keywordlist.Add(item.Word);
 						}
-						string string_3 = "INSERT INTO `jieqi_article_tag` (`tagid`, `tagname`,`length`,`hits`) VALUES (NULL," + text + ",'" + item.Word + "'," + item.Word.Length + ",0)";
+						string string_3 = "INSERT INTO `jieqi_article_tag` (	agid`, 	agname`,`length`,`hits`) VALUES (NULL," + text + ",'" + item.Word + "'," + item.Word.Length + ",0)";
 						MySqlHelper.ExecuteNonQuery(MySqlHelper.ConnectionString, CommandType.Text, string_3, (MySqlParameter[])null);
 					}
 				}
@@ -3105,7 +3092,7 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 		string text = "";
 		novelInfo_0.PinYin = "";
 		novelInfo_0.PinYinSan = "";
-		MySqlDataReader mySqlDataReader = MySqlHelper.ExecuteReader(string_1: (Configs.BaseConfig.NumOrPinyin == "拼音目录" && Configs.HaveFunction.IndexOf("PinyinDir") >= 0) ? ((!(double.Parse(Configs.BaseConfig.CmsVersion) >= 1.8)) ? ((novelInfo_0.PutID == 0) ? ("SELECT `articlename`,`articlecode`,`articleid`,`author`,`intro`,`sortid`,`lastvolume`,`lastchapterid`,`lastchapter`,`chapters`,`keywords`,`fullflag`,`postdate`,`lastupdate`,`size`,`imgflag` FROM `jieqi_article_article` WHERE `articlename` = '" + novelInfo_0.Name + "'" + (bool_0 ? (" and `author` = '" + novelInfo_0.Author + "'") : "")) : ("SELECT `articlename`,`articlecode`,`articleid`,`author`,`intro`,`sortid`,`lastvolume`,`lastchapterid`,`lastchapter`,`chapters`,`keywords`,`fullflag`,`postdate`,`lastupdate`,`size`,`imgflag`  FROM `jieqi_article_article` WHERE `articleid`='" + novelInfo_0.PutID + "'")) : ((!(Configs.BaseConfig.CmsVersion == "2.4")) ? ((novelInfo_0.PutID == 0) ? ("SELECT `articlename`,`articlecode`,`articleid`,`author`,`intro`,`sortid`,`typeid`,`lastvolume`,`lastchapterid`,`lastchapter`,`chapters`,`keywords`,`fullflag`,`postdate`,`lastupdate`,`size`,`imgflag`,`lastsummary` ,`rgroup` FROM `jieqi_article_article` WHERE `articlename` = '" + novelInfo_0.Name + "'" + (bool_0 ? (" and `author` = '" + novelInfo_0.Author + "'") : "")) : ("SELECT `articlename`,`articlecode`,`articleid`,`author`,`intro`,`sortid`,`typeid`,`lastvolume`,`lastchapterid`,`lastchapter`,`chapters`,`keywords`,`fullflag`,`postdate`,`lastupdate`,`size`,`imgflag`,`lastsummary` ,`rgroup` FROM `jieqi_article_article` WHERE `articleid`='" + novelInfo_0.PutID + "'")) : ((novelInfo_0.PutID == 0) ? ("SELECT `articlename`,`articlecode`,`articleid`,`author`,`intro`,`sortid`,`typeid`,`lastvolume`,`lastchapterid`,`lastchapter`,`chapters`,`keywords`,`fullflag`,`postdate`,`lastupdate`,`words`,`imgflag`,`lastsummary` ,`rgroup` FROM `jieqi_article_article` WHERE `articlename` = '" + novelInfo_0.Name + "'" + (bool_0 ? (" and `author` = '" + novelInfo_0.Author + "'") : "")) : ("SELECT `articlename`,`articlecode`,`articleid`,`author`,`intro`,`sortid`,`typeid`,`lastvolume`,`lastchapterid`,`lastchapter`,`chapters`,`keywords`,`fullflag`,`postdate`,`lastupdate`,`words`,`imgflag`,`lastsummary` ,`rgroup` FROM `jieqi_article_article` WHERE `articleid`='" + novelInfo_0.PutID + "'")))) : ((!(double.Parse(Configs.BaseConfig.CmsVersion) >= 1.8)) ? ((novelInfo_0.PutID == 0) ? ("SELECT `articlename`,`articleid`,`author`,`intro`,`sortid`,`lastvolume`,`lastchapterid`,`lastchapter`,`chapters`,`keywords`,`fullflag`,`postdate`,`lastupdate`,`size`,`imgflag` FROM `jieqi_article_article` WHERE `articlename` = '" + novelInfo_0.Name + "'" + (bool_0 ? (" and `author` = '" + novelInfo_0.Author + "'") : "")) : ("SELECT `articlename`,`articleid`,`author`,`intro`,`sortid`,`lastvolume`,`lastchapterid`,`lastchapter`,`chapters`,`keywords`,`fullflag`,`postdate`,`lastupdate`,`size`,`imgflag`  FROM `jieqi_article_article` WHERE `articleid`='" + novelInfo_0.PutID + "'")) : ((!(Configs.BaseConfig.CmsVersion == "2.4")) ? ((novelInfo_0.PutID == 0) ? ("SELECT `articlename`,`articlecode`,`articleid`,`author`,`intro`,`sortid`,`typeid`,`lastvolume`,`lastchapterid`,`lastchapter`,`chapters`,`keywords`,`fullflag`,`postdate`,`lastupdate`,`size`,`imgflag`,`lastsummary` ,`rgroup` FROM `jieqi_article_article` WHERE `articlename` = '" + novelInfo_0.Name + "'" + (bool_0 ? (" and `author` = '" + novelInfo_0.Author + "'") : "")) : ("SELECT `articlename`,`articlecode`,`articleid`,`author`,`intro`,`sortid`,`typeid`,`lastvolume`,`lastchapterid`,`lastchapter`,`chapters`,`keywords`,`fullflag`,`postdate`,`lastupdate`,`size`,`imgflag`,`lastsummary` ,`rgroup`  FROM `jieqi_article_article` WHERE `articleid`='" + novelInfo_0.PutID + "'")) : ((novelInfo_0.PutID == 0) ? ("SELECT `articlename`,`articlecode`,`articleid`,`author`,`intro`,`sortid`,`typeid`,`lastvolume`,`lastchapterid`,`lastchapter`,`chapters`,`keywords`,`fullflag`,`postdate`,`lastupdate`,`words`,`imgflag`,`lastsummary` ,`rgroup` FROM `jieqi_article_article` WHERE `articlename` = '" + novelInfo_0.Name + "'" + (bool_0 ? (" and `author` = '" + novelInfo_0.Author + "'") : "")) : ("SELECT `articlename`,`articlecode`,`articleid`,`author`,`intro`,`sortid`,`typeid`,`lastvolume`,`lastchapterid`,`lastchapter`,`chapters`,`keywords`,`fullflag`,`postdate`,`lastupdate`,`words`,`imgflag`,`lastsummary` ,`rgroup`  FROM `jieqi_article_article` WHERE `articleid`='" + novelInfo_0.PutID + "'")))), string_0: MySqlHelper.ConnectionString, commandType_0: CommandType.Text, mySqlParameter_0: (MySqlParameter[])null);
+		MySqlDataReader mySqlDataReader = MySqlHelper.ExecuteReader(string_1: (Configs.BaseConfig.NumOrPinyin == "拼音目录" && Configs.HaveFunction.IndexOf("PinyinDir") >= 0) ? ((!(double.Parse(Configs.BaseConfig.CmsVersion) >= 1.8)) ? ((novelInfo_0.PutID == 0) ? ("SELECT `articlename`,`articlecode`,`articleid`,`author`,`intro`,`sortid`,`lastvolume`,`lastchapterid`,`lastchapter`,`chapters`,`keywords`,`fullflag`,`postdate`,`lastupdate`,`size`,`imgflag` FROM `jieqi_article_article` WHERE `articlename` = '" + novelInfo_0.Name + "'" + (bool_0 ? (" and `author` = '" + novelInfo_0.Author + "'") : "")) : ("SELECT `articlename`,`articlecode`,`articleid`,`author`,`intro`,`sortid`,`lastvolume`,`lastchapterid`,`lastchapter`,`chapters`,`keywords`,`fullflag`,`postdate`,`lastupdate`,`size`,`imgflag`  FROM `jieqi_article_article` WHERE `articleid`='" + novelInfo_0.PutID + "'")) : ((!(Configs.BaseConfig.CmsVersion == "2.4")) ? ((novelInfo_0.PutID == 0) ? ("SELECT `articlename`,`articlecode`,`articleid`,`author`,`intro`,`sortid`,	ypeid`,`lastvolume`,`lastchapterid`,`lastchapter`,`chapters`,`keywords`,`fullflag`,`postdate`,`lastupdate`,`size`,`imgflag`,`lastsummary` ,`rgroup` FROM `jieqi_article_article` WHERE `articlename` = '" + novelInfo_0.Name + "'" + (bool_0 ? (" and `author` = '" + novelInfo_0.Author + "'") : "")) : ("SELECT `articlename`,`articlecode`,`articleid`,`author`,`intro`,`sortid`,	ypeid`,`lastvolume`,`lastchapterid`,`lastchapter`,`chapters`,`keywords`,`fullflag`,`postdate`,`lastupdate`,`size`,`imgflag`,`lastsummary` ,`rgroup` FROM `jieqi_article_article` WHERE `articleid`='" + novelInfo_0.PutID + "'")) : ((novelInfo_0.PutID == 0) ? ("SELECT `articlename`,`articlecode`,`articleid`,`author`,`intro`,`sortid`,	ypeid`,`lastvolume`,`lastchapterid`,`lastchapter`,`chapters`,`keywords`,`fullflag`,`postdate`,`lastupdate`,`words`,`imgflag`,`lastsummary` ,`rgroup` FROM `jieqi_article_article` WHERE `articlename` = '" + novelInfo_0.Name + "'" + (bool_0 ? (" and `author` = '" + novelInfo_0.Author + "'") : "")) : ("SELECT `articlename`,`articlecode`,`articleid`,`author`,`intro`,`sortid`,	ypeid`,`lastvolume`,`lastchapterid`,`lastchapter`,`chapters`,`keywords`,`fullflag`,`postdate`,`lastupdate`,`words`,`imgflag`,`lastsummary` ,`rgroup` FROM `jieqi_article_article` WHERE `articleid`='" + novelInfo_0.PutID + "'")))) : ((!(double.Parse(Configs.BaseConfig.CmsVersion) >= 1.8)) ? ((novelInfo_0.PutID == 0) ? ("SELECT `articlename`,`articleid`,`author`,`intro`,`sortid`,`lastvolume`,`lastchapterid`,`lastchapter`,`chapters`,`keywords`,`fullflag`,`postdate`,`lastupdate`,`size`,`imgflag` FROM `jieqi_article_article` WHERE `articlename` = '" + novelInfo_0.Name + "'" + (bool_0 ? (" and `author` = '" + novelInfo_0.Author + "'") : "")) : ("SELECT `articlename`,`articleid`,`author`,`intro`,`sortid`,`lastvolume`,`lastchapterid`,`lastchapter`,`chapters`,`keywords`,`fullflag`,`postdate`,`lastupdate`,`size`,`imgflag`  FROM `jieqi_article_article` WHERE `articleid`='" + novelInfo_0.PutID + "'")) : ((!(Configs.BaseConfig.CmsVersion == "2.4")) ? ((novelInfo_0.PutID == 0) ? ("SELECT `articlename`,`articlecode`,`articleid`,`author`,`intro`,`sortid`,	ypeid`,`lastvolume`,`lastchapterid`,`lastchapter`,`chapters`,`keywords`,`fullflag`,`postdate`,`lastupdate`,`size`,`imgflag`,`lastsummary` ,`rgroup` FROM `jieqi_article_article` WHERE `articlename` = '" + novelInfo_0.Name + "'" + (bool_0 ? (" and `author` = '" + novelInfo_0.Author + "'") : "")) : ("SELECT `articlename`,`articlecode`,`articleid`,`author`,`intro`,`sortid`,	ypeid`,`lastvolume`,`lastchapterid`,`lastchapter`,`chapters`,`keywords`,`fullflag`,`postdate`,`lastupdate`,`size`,`imgflag`,`lastsummary` ,`rgroup`  FROM `jieqi_article_article` WHERE `articleid`='" + novelInfo_0.PutID + "'")) : ((novelInfo_0.PutID == 0) ? ("SELECT `articlename`,`articlecode`,`articleid`,`author`,`intro`,`sortid`,	ypeid`,`lastvolume`,`lastchapterid`,`lastchapter`,`chapters`,`keywords`,`fullflag`,`postdate`,`lastupdate`,`words`,`imgflag`,`lastsummary` ,`rgroup` FROM `jieqi_article_article` WHERE `articlename` = '" + novelInfo_0.Name + "'" + (bool_0 ? (" and `author` = '" + novelInfo_0.Author + "'") : "")) : ("SELECT `articlename`,`articlecode`,`articleid`,`author`,`intro`,`sortid`,	ypeid`,`lastvolume`,`lastchapterid`,`lastchapter`,`chapters`,`keywords`,`fullflag`,`postdate`,`lastupdate`,`words`,`imgflag`,`lastsummary` ,`rgroup`  FROM `jieqi_article_article` WHERE `articleid`='" + novelInfo_0.PutID + "'")))), string_0: MySqlHelper.ConnectionString, commandType_0: CommandType.Text, mySqlParameter_0: (MySqlParameter[])null);
 		if (mySqlDataReader.Read())
 		{
 			if (Configs.BaseConfig.NumOrPinyin == "拼音目录" && Configs.HaveFunction.IndexOf("PinyinDir") >= 0)
@@ -3315,7 +3302,7 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 
 	public string[] GetNovelTj(NovelInfo novelInfo, int intTuijianNum)
 	{
-		string string_ = "SELECT * FROM `jieqi_article_article` where `articleid` <> '" + novelInfo.PutID + "' and `display`='0'  And `sortid`='" + novelInfo.LagerSortID + "' Order By `toptime` desc limit 0," + intTuijianNum;
+		string string_ = "SELECT * FROM `jieqi_article_article` where `articleid` <> '" + novelInfo.PutID + "' and `display`='0'  And `sortid`='" + novelInfo.LagerSortID + "' Order By 	optime` desc limit 0," + intTuijianNum;
 		switch (Configs.BaseConfig.TuijianType)
 		{
 		case "日点击榜":
@@ -3394,7 +3381,7 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 		string text2 = text;
 		if (keywordlist.Count <= 0)
 		{
-			string string_ = " SELECT  DISTINCT `tagname` FROM `jieqi_article_tag` ORDER by `length` DESC ";
+			string string_ = " SELECT  DISTINCT 	agname` FROM `jieqi_article_tag` ORDER by `length` DESC ";
 			MySqlDataReader mySqlDataReader = MySqlHelper.ExecuteReader(MySqlHelper.ConnectionString, CommandType.Text, string_, (MySqlParameter[])null);
 			while (mySqlDataReader.Read())
 			{
@@ -4365,6 +4352,8 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 		return stringBuilder.ToString();
 	}
 }
+
+
 
 
 

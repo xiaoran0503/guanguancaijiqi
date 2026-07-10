@@ -4,7 +4,7 @@
 
 - 当前主线：`net10.0-windows`
 - 当前平台：Windows-only `win-x64` / `x64`
-- 当前版本：`10.2.0-net10-test / 10.2.0.0`
+- 当前版本：`10.3.0-net10-test / 10.3.0.0`
 - 当前工作目录：`E:\采集器\Modernized_Net10_Working`
 - 当前发布目录：`E:\采集器\ModernizedOutput_Net10_Test`
 - 固定 SDK：`.NET SDK 10.0.301`
@@ -91,7 +91,7 @@ GitHub Actions:
 - Release validation must inspect the published changelog top entry, not only the source changelog.
 
 
-## V10.2.0 Native Notes
+## V10.3.0 Native Notes
 
 - 技术兼容层命名改为 Net10 原生命名；业务兼容仍保留 GBK/GB2312、XML 规则和 Jieqi 多版本字段策略。
 - 当前 SDK 未暴露 WinForms ScreenCaptureMode 强类型 API，禁止使用反射兜底；该能力延后。
@@ -99,4 +99,13 @@ GitHub Actions:
 - Jieqi 分词统一通过 `JiebaTextSegmenter`，不得恢复 `PanGu` 命名空间外壳。
 - 原生化验收允许低频图像/UMD 老格式生成器继续保留 ArrayList/Hashtable。
 
+
+
+
+
+## V10.3.0 Active Scope
+- Active 发布包只保留 NovelSpider.exe；NovelAdmin / NovelVip 源码保留但不再进入 solution、CI 或发布包。
+- 新写入 TXT 固定 UTF-8 无 BOM；CmsEncoding 仅用于网页解码和旧 TXT 读取。
+- 数据库连接串保存和运行时统一强制 Charset=utf8mb4。
+- 自动规则生成默认本地分析，AI Key 仅由用户在窗体中手动输入，不写入日志。
 

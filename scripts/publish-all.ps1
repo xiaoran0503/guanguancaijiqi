@@ -10,9 +10,7 @@ $fallbackDataRoot = "E:\采集器\ModernizedOutput_Net8_Final_Baseline_V8.17.1"
 $runtimeDataDirs = @("Rules", "Tasks")
 $backupRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("NovelSpiderPublishData_" + [guid]::NewGuid().ToString("N"))
 $projects = @(
-  (Join-Path $repoRoot "src\NovelSpider\NovelSpider.csproj"),
-  (Join-Path $repoRoot "src\NovelAdmin\NovelAdmin.csproj"),
-  (Join-Path $repoRoot "src\NovelVip\NovelVip.csproj")
+  (Join-Path $repoRoot "src\NovelSpider\NovelSpider.csproj")
 )
 if (-not (Test-Path -LiteralPath $output)) {
   New-Item -ItemType Directory -Path $output -Force | Out-Null
@@ -31,7 +29,17 @@ $retiredFiles = @(
   "NovelSpider.Local.Qiwen.dll",
   "NovelSpider.Local.Qiwen.pdb",
   "Microsoft.Data.SqlClient.dll",
-  "System.Data.SqlClient.dll"
+  "System.Data.SqlClient.dll",
+  "NovelAdmin.exe",
+  "NovelAdmin.dll",
+  "NovelAdmin.pdb",
+  "NovelAdmin.deps.json",
+  "NovelAdmin.runtimeconfig.json",
+  "NovelVip.exe",
+  "NovelVip.dll",
+  "NovelVip.pdb",
+  "NovelVip.deps.json",
+  "NovelVip.runtimeconfig.json"
 )
 foreach ($file in $retiredFiles) {
   $retiredPath = Join-Path $output $file

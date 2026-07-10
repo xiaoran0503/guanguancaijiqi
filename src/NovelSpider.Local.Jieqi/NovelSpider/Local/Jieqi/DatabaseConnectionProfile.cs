@@ -161,7 +161,7 @@ public class DatabaseConnectionProfile
 		StringBuilder messageBuilder = new StringBuilder();
 		if (serverType == MariaDb)
 		{
-			changed |= SetCharacterSetIfMissing(builder, connectionString, "utf8mb4");
+			changed |= ForceCharacterSet(builder, "utf8mb4");
 			changed |= SetSslModeIfMissing(builder, connectionString, MySqlSslMode.Preferred);
 			if (changed)
 			{
@@ -180,7 +180,7 @@ public class DatabaseConnectionProfile
 			}
 			else
 			{
-				messageBuilder.AppendLine("Percona Server 5.7.x 使用保守兼容策略，未强制修改连接串。");
+				messageBuilder.AppendLine("Percona Server 5.7.x 保留认证兼容策略，但写库字符集强制为 utf8mb4。");
 			}
 		}
 		else if (majorVersion >= 8)
@@ -201,7 +201,7 @@ public class DatabaseConnectionProfile
 		}
 		else
 		{
-			messageBuilder.AppendLine("MySQL 5.7.x 使用保守兼容策略，未强制修改连接串。");
+			messageBuilder.AppendLine("MySQL 5.7.x 保留认证兼容策略，但写库字符集强制为 utf8mb4。");
 		}
 		recommendationMessage = messageBuilder.ToString().TrimEnd();
 		return changed ? builder.ConnectionString : connectionString;
@@ -211,7 +211,7 @@ public class DatabaseConnectionProfile
 	{
 		bool changed = false;
 		string connectionString = builder.ConnectionString;
-		changed |= SetCharacterSetIfMissing(builder, connectionString, "utf8mb4");
+		changed |= ForceCharacterSet(builder, "utf8mb4");
 		changed |= SetSslModeIfMissing(builder, connectionString, MySqlSslMode.Preferred);
 		changed |= SetAllowPublicKeyRetrievalIfMissing(builder, connectionString, true);
 		return changed;
@@ -221,15 +221,15 @@ public class DatabaseConnectionProfile
 	{
 		bool changed = false;
 		string connectionString = builder.ConnectionString;
-		changed |= SetCharacterSetIfMissing(builder, connectionString, "utf8mb4");
+		changed |= ForceCharacterSet(builder, "utf8mb4");
 		changed |= SetSslModeIfMissing(builder, connectionString, MySqlSslMode.Preferred);
 		changed |= SetAllowPublicKeyRetrievalIfMissing(builder, connectionString, true);
 		return changed;
 	}
 
-	private static bool SetCharacterSetIfMissing(MySqlConnectionStringBuilder builder, string connectionString, string value)
+	private static bool ForceCharacterSet(MySqlConnectionStringBuilder builder, string value)
 	{
-		if (ContainsAnyKey(connectionString, "Character Set", "CharacterSet", "Charset", "CharSet"))
+		if (string.Equals(builder.CharacterSet, value, StringComparison.OrdinalIgnoreCase))
 		{
 			return false;
 		}
@@ -288,3 +288,5 @@ public class DatabaseConnectionProfile
 		return (optionName ?? "").Replace(" ", "").Replace("_", "").Replace("-", "").Trim().ToLowerInvariant();
 	}
 }
+
+

@@ -127,6 +127,13 @@ public class WelcomeForm : DockContent
 		{
 			"更新日志",
 			"",
+			"V10.3.0 Net10 Test    2026-07-10",
+			"- 版本迭代为 10.3.0.0 / 10.3.0-net10-test。",
+			"- 数据库写入强制 utf8mb4，章节 TXT 新写入固定 UTF-8 无 BOM。",
+			"- 规则菜单新增自动生成采集规则，支持本地分析和 AI 建议入口。",
+			"- 发布包只保留 NovelSpider.exe，NovelAdmin / NovelVip active 下架。",
+			"- 帮助内容、查看日志、高级功能、MYSQL 时间换算菜单下架。",
+			"",
 			"V10.2.0 Net10 Test    2026-07-10",
 			"- 版本迭代为 10.2.0.0 / 10.2.0-net10-test。",
 			"- 技术兼容命名原生化，启动初始化改为 Net10RuntimeBootstrap。",
@@ -322,6 +329,9 @@ public class WelcomeForm : DockContent
 		});
 	}
 }
+
+
+
 
 
 

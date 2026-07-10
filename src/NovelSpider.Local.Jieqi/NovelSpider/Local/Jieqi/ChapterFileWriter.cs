@@ -43,7 +43,7 @@ internal static class ChapterFileWriter
 				Options = FileOptions.SequentialScan
 			};
 			using (FileStream stream = new FileStream(tempPath, options))
-			using (StreamWriter writer = new StreamWriter(stream, encoding ?? Encoding.UTF8, BufferSize))
+			using (StreamWriter writer = new StreamWriter(stream, TextEncodingPolicy.Utf8NoBom, BufferSize))
 			{
 				writer.Write(content ?? string.Empty);
 			}
@@ -65,3 +65,4 @@ internal static class ChapterFileWriter
 		}
 	}
 }
+

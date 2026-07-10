@@ -1327,18 +1327,8 @@ public class CollectManual : DockContent
 					}
 					if (novelInfo.LastChapter.ChapterText != "恭喜中奖了！又碰到无TXT文本的章节！或些章节为图片章节！")
 					{
-						if (Configs.BaseConfig.CmsEncoding == "utf-8")
-						{
-							StreamWriter streamWriter = new StreamWriter(NovelSpider.Local.Jieqi.Config.TxtDir + "/" + novelInfo.PutID / 1000 + "/" + novelInfo.PutID.ToString() + "/" + chapterInfo.PutID.ToString() + ".txt", append: false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-							streamWriter.Write(novelInfo.LastChapter.ChapterText);
-							streamWriter.Close();
-						}
-						else
-						{
-							StreamWriter streamWriter = new StreamWriter(NovelSpider.Local.Jieqi.Config.TxtDir + "/" + novelInfo.PutID / 1000 + "/" + novelInfo.PutID.ToString() + "/" + chapterInfo.PutID.ToString() + ".txt", append: false, FormatText.GetCharset(Configs.BaseConfig.CmsEncoding, "gbk"));
-							streamWriter.Write(novelInfo.LastChapter.ChapterText);
-							streamWriter.Close();
-						}
+						string chapterPath = NovelSpider.Local.Jieqi.Config.TxtDir + "/" + novelInfo.PutID / 1000 + "/" + novelInfo.PutID.ToString() + "/" + chapterInfo.PutID.ToString() + ".txt";
+						File.WriteAllText(chapterPath, NovelSpider.Local.Jieqi.TextEncodingPolicy.NormalizeDatabaseText(novelInfo.LastChapter.ChapterText), NovelSpider.Local.Jieqi.TextEncodingPolicy.Utf8NoBom);
 					}
 					backgroundWorker1.RunWorkerAsync(novelInfo);
 				}
@@ -1383,18 +1373,8 @@ public class CollectManual : DockContent
 				novelInfo.Author = posterBox.Text;
 				if (novelInfo.LastChapter.ChapterText != "恭喜中奖了！又碰到无TXT文本的章节！或些章节为图片章节！")
 				{
-					if (Configs.BaseConfig.CmsEncoding == "utf-8")
-					{
-						StreamWriter streamWriter = new StreamWriter(NovelSpider.Local.Jieqi.Config.TxtDir + "/" + novelInfo.PutID / 1000 + "/" + novelInfo.PutID.ToString() + "/" + chapterInfo.PutID.ToString() + ".txt", append: false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-						streamWriter.Write(novelInfo.LastChapter.ChapterText);
-						streamWriter.Close();
-					}
-					else
-					{
-						StreamWriter streamWriter = new StreamWriter(NovelSpider.Local.Jieqi.Config.TxtDir + "/" + novelInfo.PutID / 1000 + "/" + novelInfo.PutID.ToString() + "/" + chapterInfo.PutID.ToString() + ".txt", append: false, FormatText.GetCharset(Configs.BaseConfig.CmsEncoding, "gbk"));
-						streamWriter.Write(novelInfo.LastChapter.ChapterText);
-						streamWriter.Close();
-					}
+					string chapterPath = NovelSpider.Local.Jieqi.Config.TxtDir + "/" + novelInfo.PutID / 1000 + "/" + novelInfo.PutID.ToString() + "/" + chapterInfo.PutID.ToString() + ".txt";
+					File.WriteAllText(chapterPath, NovelSpider.Local.Jieqi.TextEncodingPolicy.NormalizeDatabaseText(novelInfo.LastChapter.ChapterText), NovelSpider.Local.Jieqi.TextEncodingPolicy.Utf8NoBom);
 				}
 				backgroundWorker1.RunWorkerAsync(novelInfo);
 			}
@@ -3343,7 +3323,7 @@ public class CollectManual : DockContent
 					string path = NovelSpider.Local.Jieqi.Config.TxtDir + "/" + novelInfo.PutID / 1000 + "/" + novelInfo.PutID.ToString() + "/" + chapterInfo.PutID.ToString() + ".txt";
 					if (File.Exists(path))
 					{
-						chapterInfo.ChapterText = File.ReadAllText(path, FormatText.GetCharset(Configs.BaseConfig.CmsEncoding, "gbk"));
+						chapterInfo.ChapterText = NovelSpider.Local.Jieqi.TextEncodingPolicy.ReadLegacyChapterText(path);
 					}
 					else
 					{
@@ -3384,7 +3364,7 @@ public class CollectManual : DockContent
 				string path = NovelSpider.Local.Jieqi.Config.TxtDir + "/" + novelInfo.PutID / 1000 + "/" + novelInfo.PutID.ToString() + "/" + chapterInfo.PutID.ToString() + ".txt";
 				if (File.Exists(path))
 				{
-					chapterInfo.ChapterText = File.ReadAllText(path, FormatText.GetCharset(Configs.BaseConfig.CmsEncoding, "gbk"));
+					chapterInfo.ChapterText = NovelSpider.Local.Jieqi.TextEncodingPolicy.ReadLegacyChapterText(path);
 				}
 				else
 				{
@@ -3562,6 +3542,8 @@ public class CollectManual : DockContent
 		}
 	}
 }
+
+
 
 
 

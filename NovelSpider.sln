@@ -1,3 +1,4 @@
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
@@ -15,10 +16,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovelSpider.Local.Jieqi", "src\NovelSpider.Local.Jieqi\NovelSpider.Local.Jieqi.csproj", "{A98B7A70-5765-4527-8A90-6CC6B322BD74}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovelSpider", "src\NovelSpider\NovelSpider.csproj", "{948BD9E1-E00A-46EA-9439-B531896FA793}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovelAdmin", "src\NovelAdmin\NovelAdmin.csproj", "{93EEFB4C-2FB9-4FB3-A3DD-652AE0539FC4}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovelVip", "src\NovelVip\NovelVip.csproj", "{E97218B8-6DB7-47AD-A693-8BE3673D3DBA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -54,14 +51,8 @@ Global
 		{948BD9E1-E00A-46EA-9439-B531896FA793}.Debug|x64.Build.0 = Debug|x64
 		{948BD9E1-E00A-46EA-9439-B531896FA793}.Release|x64.ActiveCfg = Release|x64
 		{948BD9E1-E00A-46EA-9439-B531896FA793}.Release|x64.Build.0 = Release|x64
-		{93EEFB4C-2FB9-4FB3-A3DD-652AE0539FC4}.Debug|x64.ActiveCfg = Debug|x64
-		{93EEFB4C-2FB9-4FB3-A3DD-652AE0539FC4}.Debug|x64.Build.0 = Debug|x64
-		{93EEFB4C-2FB9-4FB3-A3DD-652AE0539FC4}.Release|x64.ActiveCfg = Release|x64
-		{93EEFB4C-2FB9-4FB3-A3DD-652AE0539FC4}.Release|x64.Build.0 = Release|x64
-		{E97218B8-6DB7-47AD-A693-8BE3673D3DBA}.Debug|x64.ActiveCfg = Debug|x64
-		{E97218B8-6DB7-47AD-A693-8BE3673D3DBA}.Debug|x64.Build.0 = Debug|x64
-		{E97218B8-6DB7-47AD-A693-8BE3673D3DBA}.Release|x64.ActiveCfg = Release|x64
-		{E97218B8-6DB7-47AD-A693-8BE3673D3DBA}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal
-

@@ -58,8 +58,6 @@ jobs:
 
           $required = @(
             "NovelSpider.exe",
-            "NovelAdmin.exe",
-            "NovelVip.exe",
             "Rules",
             "Tasks"
           )
@@ -73,7 +71,9 @@ jobs:
           $retired = @(
             "NovelSpider.Local.Qiwen.dll",
             "Microsoft.Data.SqlClient.dll",
-            "System.Data.SqlClient.dll"
+            "System.Data.SqlClient.dll",
+            "NovelAdmin.exe",
+            "NovelVip.exe"
           )
           foreach ($name in $retired) {
             $path = Join-Path $env:NOVELSPIDER_PUBLISH_DIR $name
@@ -114,7 +114,7 @@ jobs:
           - Runtime identifier: win-x64
           - Platform target: x64
           - Publish mode: framework-dependent
-          - Qiwen and SqlClient retired DLLs are excluded from the package.
+          - Active package contains only NovelSpider.exe; NovelAdmin, NovelVip, Qiwen, and SqlClient retired DLLs are excluded.
           "@
           $notesPath = Join-Path "${{ github.workspace }}" "RELEASE_NOTES.md"
           Set-Content -LiteralPath $notesPath -Value $notes -Encoding UTF8

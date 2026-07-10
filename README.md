@@ -4,7 +4,7 @@ This branch contains the independent .NET 10 / Windows x64 migration line for No
 
 ## Current Baseline
 
-- Version: `10.2.0-net10-test / 10.2.0.0`
+- Version: `10.3.0-net10-test / 10.3.0.0`
 - Branch: `net10-v10`
 - Target framework: `net10.0-windows`
 - Platform: Windows-only `win-x64` / `x64`
@@ -59,7 +59,7 @@ Net10 milestones:
 - `v10.1.0-net10`: DNS process cache, progressive large-list loading, async Jieqi persistence bridge, and expanded performance telemetry.
 - `v10.1.1-net10`: database round-trip reduction, on-demand chapter text checks, and lighter Jieqi refresh queries.
 - `v10.1.2-net10`: forced published changelog refresh, sensitive-form screen capture protection, and Unicode clipboard text path.
-- `v10.2.0-net10`: Net10 runtime naming cleanup, generic collection hot paths, and removal of reflection-based WinForms feature fallback.
+- `v10.3.0-net10`: Net10 runtime naming cleanup, generic collection hot paths, and removal of reflection-based WinForms feature fallback.
 
 Every future milestone should update the version, update `src\NovelSpider\Resources\CHANGELOG.md`, and create an independent Git tag.
 
@@ -81,3 +81,4 @@ Every future milestone should update the version, update `src\NovelSpider\Resour
 - Cached DNS entries are dropped when all cached addresses fail, then the same request resolves once again before surfacing the network error.
 - Large WinForms lists append in 200-item UI batches so windows stay responsive during initial population.
 - Set `NOVELSPIDER_PERFORMANCE=1` to record DNS, HTTP, UI batch, regex, TXT, and MySQL timing data under `Log\Performance`.
+

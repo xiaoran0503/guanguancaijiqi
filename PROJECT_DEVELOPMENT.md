@@ -69,7 +69,7 @@ V8.0、V8.2、V8.4、V8.5、V8.6、V8.7、V8.8、V8.10.3、V8.13.3、V8.17.1 已
 Net10 迁移测试分支补充：
 
 - 当前 active solution 目标框架为 `.NET 10 / net10.0-windows`，SDK 固定为 `10.0.301`。
-- 当前 Net10 测试版本为 `10.2.0-net10-test / 10.2.0.0`，发布平台固定为 Windows-only `win-x64` / `x64`。
+- 当前 Net10 测试版本为 `10.3.0-net10-test / 10.3.0.0`，发布平台固定为 Windows-only `win-x64` / `x64`。
 - GitHub Actions 已加入 `net10-v10` 分支：推送 `net10-v10` / `main` 自动构建并上传 Windows x64 artifact，推送 `v10.*-net10` tag 自动创建 GitHub Release。
 - active solution 依赖采用 NuGet 稳定最新版策略；截至 2026-07-09，`MySqlConnector 2.6.1`、`Newtonsoft.Json 13.0.4`、`System.Data.SQLite.Core 1.0.119`、DockPanelSuite `3.1.1`、SharpZipLib `1.4.2`、CHSPinYinConv `1.0.0`、jieba.NET `0.42.2`、`System.Management 10.0.9` 和 `Microsoft.Extensions.* 10.0.9` 均无 stable 更新。
 - 不采用 beta/preview 包，例如 `Newtonsoft.Json 13.0.5-beta1`、`Microsoft.Data.SqlClient 7.1.0-preview1.*` 或 `.NET 11 preview` 包。
@@ -94,8 +94,8 @@ E:\采集器\Modernized_Working\NovelSpider.sln
 | 项目 | 类型 | 说明 |
 | --- | --- | --- |
 | `NovelSpider` | WinExe | 主采集器程序，入口为 `NovelSpider.exe` |
-| `NovelAdmin` | WinExe | 数据管理台，入口为 `NovelAdmin.exe` |
-| `NovelVip` | WinExe | 高级功能工具，入口为 `NovelVip.exe` |
+| `NovelAdmin` | Archived WinExe | V10.3.0 起 active 下架，源码保留不构建不发布 |
+| `NovelVip` | Archived WinExe | V10.3.0 起 active 下架，源码保留不构建不发布 |
 | `NovelSpider.Config` | Library | 全局配置、基础配置、任务配置、版本信息 |
 | `NovelSpider.Common` | Library | 公共工具、文本处理、拼音、压缩、SQLite、授权兼容逻辑 |
 | `NovelSpider.Entity` | Library | 实体模型，例如小说、章节、规则等数据结构 |
@@ -109,8 +109,8 @@ E:\采集器\Modernized_Working\NovelSpider.sln
 | 程序 | 入口文件 | 说明 |
 | --- | --- | --- |
 | 主程序 | `src\NovelSpider\NovelSpider\Program.cs` | 加载配置，开放本地功能，启动 `MdiForm` |
-| 管理台 | `src\NovelAdmin\NovelAdmin\Program.cs` | 加载配置，启动 `数据管理台` |
-| 高级工具 | `src\NovelVip\NovelVip\Program.cs` | 启动 `form1` |
+| 管理台 | `src\NovelAdmin\NovelAdmin\Program.cs` | 归档源码，不在 active solution 中构建 |
+| 高级工具 | `src\NovelVip\NovelVip\Program.cs` | 归档源码，不在 active solution 中构建 |
 
 主程序启动流程简述：
 
@@ -234,8 +234,6 @@ dotnet build "E:\采集器\Modernized_Working\NovelSpider.sln" -c Release -v:min
 $out = "E:\采集器\ModernizedOutput"
 $projects = @(
   "E:\采集器\Modernized_Working\src\NovelSpider\NovelSpider.csproj",
-  "E:\采集器\Modernized_Working\src\NovelAdmin\NovelAdmin.csproj",
-  "E:\采集器\Modernized_Working\src\NovelVip\NovelVip.csproj"
 )
 foreach ($project in $projects) {
   dotnet publish $project -c Release -o $out -v:quiet -p:WarningLevel=0
@@ -246,7 +244,7 @@ foreach ($project in $projects) {
 发布后应检查：
 
 ```powershell
-Get-ChildItem -LiteralPath "E:\采集器\ModernizedOutput" -Include NovelSpider.exe,NovelAdmin.exe,NovelVip.exe -File |
+Get-ChildItem -LiteralPath "E:\采集器\ModernizedOutput" -Include NovelSpider.exe -File |
   ForEach-Object { $_.VersionInfo.FileVersion }
 ```
 
@@ -360,7 +358,7 @@ V8.13.1 热修事项：
 
 - 修复规则测试和采集规则使用 `gbk` / `gb2312` 编码时，.NET 8 未注册代码页导致 `'gbk' is not a supported encoding name` 的问题。
 - `Net10RuntimeBootstrap.Initialize()` 现在同时注册 `CodePagesEncodingProvider.Instance`，并继续设置系统默认 TLS 与正则缓存。
-- `NovelSpider.Program` 和 `NovelAdmin.Program` 在 `Configs.LoadConfigs()` 前执行网络/编码兼容初始化。
+- `NovelSpider.Program` 在 `Configs.LoadConfigs()` 前执行网络/编码兼容初始化。
 - `FormatText.GetCharset()` 增加编码注册兜底；当 CMS 编码配置为 `gbk` 时明确返回 `Encoding.GetEncoding("gbk")`。
 - `Page` 和公共 `HttpClient` 增加类内初始化兜底，避免规则测试或独立调用绕过启动初始化。
 - `scripts\publish-all.ps1` 发布前会备份当前运行目录 `Rules` / `Tasks` 并在发布后恢复；当前输出目录缺失时会从 V8.10.3 里程碑补齐，避免采集运行包缺少规则任务。
@@ -480,7 +478,7 @@ V8.2 新增事项：
 
 - 修复 HTTPS 采集时报 The requested security protocol is not supported 的问题。
 - 公共网络初始化统一使用 SecurityProtocolType.SystemDefault，避免强制启用已废弃的 Ssl3/Tls1.0/Tls1.1。
-- NovelSpider.exe、NovelAdmin.exe、NovelVip.exe 启动时统一执行网络兼容初始化。
+- NovelSpider.exe 启动时统一执行网络兼容初始化。
 - 本次不改采集规则、Cookie、代理、编码和旧 HttpWebRequest 行为。
 
 ## 25. 当前 V8.0 基线记录
@@ -508,6 +506,10 @@ V8.0 已完成事项：
 - 检查 SQL 拼接逻辑，逐步改为参数化查询。
 - 梳理采集规则导入导出和异常日志，提升排错能力。
 - 为关键文本处理、拼音和分词逻辑补充最小单元测试。
+
+
+
+
 
 
 
