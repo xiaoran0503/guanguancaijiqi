@@ -13,7 +13,7 @@ using NovelSpider.Entity;
 
 namespace NovelSpider.Target;
 
-public class Page
+public partial class Page
 {
 	private static byte byte_0;
 
@@ -229,7 +229,7 @@ public class Page
 				{
 				}
 			}
-			MatchCollection matchCollection = Regex.Matches(input, text3, ruleConfigInfo_0.PubContentPage.Options);
+			MatchCollection matchCollection = RuleRegexCache.Get(text3, ruleConfigInfo_0.PubContentPage.Options).Matches(input);
 			for (int i = 0; i < matchCollection.Count; i++)
 			{
 				text = ruleConfigInfo_0.PubContentUrl.Pattern;
@@ -356,7 +356,7 @@ public class Page
 		{
 			text2 = httpClient.GetStringWork();
 		}
-		if (Regex.IsMatch(text2, ruleConfigInfo_0.PubIndexErr.Pattern) || text2 == null || text2 == "")
+		if (string.IsNullOrEmpty(text2) || RuleRegexCache.Get(ruleConfigInfo_0.PubIndexErr.Pattern, ruleConfigInfo_0.PubIndexErr.Options).IsMatch(text2))
 		{
 			throw new ApplicationException("当前小说页不存在");
 		}
@@ -367,12 +367,12 @@ public class Page
 			text2 = RnReplace(text2, string_, ruleConfigInfo_0.PubVolumeContent);
 		}
 		ArrayList arrayList = new ArrayList();
-		string[] array = Regex.Split(text2, ruleConfigInfo_0.PubVolumeSplit.Pattern, ruleConfigInfo_0.PubVolumeSplit.Options);
+		string[] array = RuleRegexCache.Get(ruleConfigInfo_0.PubVolumeSplit.Pattern, ruleConfigInfo_0.PubVolumeSplit.Options).Split(text2);
 		for (int i = 0; i < array.Length; i++)
 		{
-			string text3 = Regex.Replace(Match(array[i], ruleConfigInfo_0.PubVolumeName, bool_0: true).Replace("{$小说名称$}", novelInfo_0.Name).Replace("{$分类名称$}", novelInfo_0.LagerSort).Replace("{$小说作者$}", novelInfo_0.Author), "\\s+", " ").Replace("&nbsp;", " ").Trim();
-			MatchCollection matchCollection = Regex.Matches(array[i], ruleConfigInfo_0.PubChapterName.Pattern, ruleConfigInfo_0.PubChapterName.Options);
-			MatchCollection matchCollection2 = Regex.Matches(array[i], ruleConfigInfo_0.PubChapter_GetChapterKey.Pattern, ruleConfigInfo_0.PubChapter_GetChapterKey.Options);
+			string text3 = WhitespaceRegex().Replace(Match(array[i], ruleConfigInfo_0.PubVolumeName, bool_0: true).Replace("{$小说名称$}", novelInfo_0.Name).Replace("{$分类名称$}", novelInfo_0.LagerSort).Replace("{$小说作者$}", novelInfo_0.Author), " ").Replace("&nbsp;", " ").Trim();
+			MatchCollection matchCollection = RuleRegexCache.Get(ruleConfigInfo_0.PubChapterName.Pattern, ruleConfigInfo_0.PubChapterName.Options).Matches(array[i]);
+			MatchCollection matchCollection2 = RuleRegexCache.Get(ruleConfigInfo_0.PubChapter_GetChapterKey.Pattern, ruleConfigInfo_0.PubChapter_GetChapterKey.Options).Matches(array[i]);
 			if (matchCollection.Count != matchCollection2.Count)
 			{
 				throw new ApplicationException("VolumeSplit第" + i + "段中PubChapterName和PubChapter_GetChapterKey匹配数量不相等！");
@@ -385,13 +385,13 @@ public class Page
 					text3 = Configs.BaseConfig.DefaultVolumeName;
 				}
 				chapterInfo.VolumeName = text3.Trim();
-				string string_2 = Regex.Replace(matchCollection[j].Groups[1].Value.Trim(), "\\s+", " ").Replace("'", "").Trim();
+				string string_2 = WhitespaceRegex().Replace(matchCollection[j].Groups[1].Value.Trim(), " ").Replace("'", "").Trim();
 				string string_3 = ruleConfigInfo_0.PubChapterName.FilterPattern.Replace("{$书卷名称$}", chapterInfo.VolumeName).Replace("{$小说名称$}", novelInfo_0.Name).Replace("{$分类名称$}", novelInfo_0.LagerSort)
 					.Replace("{$小说作者$}", novelInfo_0.Author);
 				chapterInfo.ChapterName = RnReplace(string_2, string_3, ruleConfigInfo_0.PubChapterName).Trim();
 				chapterInfo.ChapterName = chapterInfo.ChapterName.Replace("&nbsp;", " ");
 				chapterInfo.ChapterName = Translate(chapterInfo.ChapterName);
-				chapterInfo.GetID = Regex.Replace(matchCollection2[j].Groups[1].Value.Trim(), ruleConfigInfo_0.PubChapter_GetChapterKey.FilterPattern, "");
+				chapterInfo.GetID = RuleRegexCache.Get(ruleConfigInfo_0.PubChapter_GetChapterKey.FilterPattern).Replace(matchCollection2[j].Groups[1].Value.Trim(), "");
 				arrayList.Add(chapterInfo);
 			}
 		}
@@ -532,7 +532,7 @@ public class Page
 		{
 			text2 = httpClient.GetStringWork();
 		}
-		if (Regex.IsMatch(text2, ruleConfigInfo_0.PubIndexErr.Pattern) || text2 == null || text2 == "")
+		if (string.IsNullOrEmpty(text2) || RuleRegexCache.Get(ruleConfigInfo_0.PubIndexErr.Pattern, ruleConfigInfo_0.PubIndexErr.Options).IsMatch(text2))
 		{
 			throw new ApplicationException("当前小说页不存在");
 		}
@@ -543,15 +543,15 @@ public class Page
 			text2 = RnReplace(text2, string_, ruleConfigInfo_0.PubVolumeContent);
 		}
 		ArrayList arrayList = new ArrayList();
-		string[] array = ((!(ruleConfigInfo_0.PubVolumeSplit.Pattern != "")) ? Regex.Split(text2, "000000000000000000000", ruleConfigInfo_0.PubVolumeSplit.Options) : Regex.Split(text2, ruleConfigInfo_0.PubVolumeSplit.Pattern, ruleConfigInfo_0.PubVolumeSplit.Options));
+		string[] array = ((!(ruleConfigInfo_0.PubVolumeSplit.Pattern != "")) ? RuleRegexCache.Get("000000000000000000000", ruleConfigInfo_0.PubVolumeSplit.Options).Split(text2) : RuleRegexCache.Get(ruleConfigInfo_0.PubVolumeSplit.Pattern, ruleConfigInfo_0.PubVolumeSplit.Options).Split(text2));
 		for (int i = 0; i < array.Length; i++)
 		{
 			ruleConfigInfo_0.PubVolumeName.FilterPattern = ruleConfigInfo_0.PubVolumeName.FilterPattern.Replace("{$小说名称$}", novelInfo_0.Name).Replace("{$分类名称$}", novelInfo_0.LagerSort).Replace("{$小说作者$}", novelInfo_0.Author)
 				.Replace("&nbsp;", " ")
 				.Trim();
-			string text3 = Regex.Replace(Match(array[i], ruleConfigInfo_0.PubVolumeName, bool_0: true), "\\s+", " ").Replace("&nbsp;", " ").Trim();
-			MatchCollection matchCollection = Regex.Matches(array[i], ruleConfigInfo_0.PubChapterName.Pattern, ruleConfigInfo_0.PubChapterName.Options);
-			MatchCollection matchCollection2 = Regex.Matches(array[i], ruleConfigInfo_0.PubChapter_GetChapterKey.Pattern, ruleConfigInfo_0.PubChapter_GetChapterKey.Options);
+			string text3 = WhitespaceRegex().Replace(Match(array[i], ruleConfigInfo_0.PubVolumeName, bool_0: true), " ").Replace("&nbsp;", " ").Trim();
+			MatchCollection matchCollection = RuleRegexCache.Get(ruleConfigInfo_0.PubChapterName.Pattern, ruleConfigInfo_0.PubChapterName.Options).Matches(array[i]);
+			MatchCollection matchCollection2 = RuleRegexCache.Get(ruleConfigInfo_0.PubChapter_GetChapterKey.Pattern, ruleConfigInfo_0.PubChapter_GetChapterKey.Options).Matches(array[i]);
 			if (matchCollection.Count != matchCollection2.Count)
 			{
 				throw new ApplicationException("VolumeSplit第" + i + "段中PubChapterName和PubChapter_GetChapterKey匹配数量不相等！");
@@ -564,13 +564,13 @@ public class Page
 					text3 = Configs.BaseConfig.DefaultVolumeName;
 				}
 				chapterInfo.VolumeName = text3.Trim();
-				string string_2 = Regex.Replace(matchCollection[j].Groups[1].Value.Trim(), "\\s+", " ").Replace("'", "").Trim();
+				string string_2 = WhitespaceRegex().Replace(matchCollection[j].Groups[1].Value.Trim(), " ").Replace("'", "").Trim();
 				string string_3 = ruleConfigInfo_0.PubChapterName.FilterPattern.Replace("{$书卷名称$}", chapterInfo.VolumeName).Replace("{$小说名称$}", novelInfo_0.Name).Replace("{$分类名称$}", novelInfo_0.LagerSort)
 					.Replace("{$小说作者$}", novelInfo_0.Author);
 				chapterInfo.ChapterName = RnReplace(string_2, string_3, ruleConfigInfo_0.PubChapterName).Trim();
 				chapterInfo.ChapterName = chapterInfo.ChapterName.Replace("&nbsp;", " ");
 				chapterInfo.ChapterName = Translate(chapterInfo.ChapterName);
-				chapterInfo.GetID = Regex.Replace(matchCollection2[j].Groups[1].Value.Trim(), ruleConfigInfo_0.PubChapter_GetChapterKey.FilterPattern, "");
+				chapterInfo.GetID = RuleRegexCache.Get(ruleConfigInfo_0.PubChapter_GetChapterKey.FilterPattern).Replace(matchCollection2[j].Groups[1].Value.Trim(), "");
 				arrayList.Add(chapterInfo);
 			}
 		}
@@ -583,7 +583,7 @@ public class Page
 		foreach (string text in arrayListUrl)
 		{
 			string text2 = text;
-			Match match = new Regex("\\{(\\d*)\\-(\\d*)\\}").Match(text);
+			Match match = RangeTemplateRegex().Match(text);
 			int num = 0;
 			int num2 = 0;
 			if (match.Success)
@@ -627,7 +627,7 @@ public class Page
 				{
 					stringWork = httpClient2.GetStringWork();
 				}
-				MatchCollection matchCollection = new Regex(ruleConfigInfo_0.NovelList_GetNovelKey.Pattern, ruleConfigInfo_0.NovelList_GetNovelKey.Options).Matches(stringWork);
+				MatchCollection matchCollection = RuleRegexCache.Get(ruleConfigInfo_0.NovelList_GetNovelKey.Pattern, ruleConfigInfo_0.NovelList_GetNovelKey.Options).Matches(stringWork);
 				for (int k = 0; k < matchCollection.Count; k++)
 				{
 					arrayList.Add(matchCollection[k].Groups[1].Value);
@@ -698,7 +698,7 @@ public class Page
 			stringWork = httpClient2.GetStringWork();
 		}
 		SpiderException.Debug("Page.GetNovelInfo Rule.NovelErr");
-		if (Regex.IsMatch(stringWork, ruleConfigInfo_0.NovelErr.Pattern) || string.IsNullOrEmpty(stringWork))
+		if (string.IsNullOrEmpty(stringWork) || RuleRegexCache.Get(ruleConfigInfo_0.NovelErr.Pattern, ruleConfigInfo_0.NovelErr.Options).IsMatch(stringWork))
 		{
 			throw new ApplicationException("当前小说页不存在");
 		}
@@ -841,7 +841,7 @@ public class Page
 		foreach (string text in string_0)
 		{
 			string text2 = text;
-			Match match = new Regex("\\{(\\d*)\\-(\\d*)\\}").Match(text);
+			Match match = RangeTemplateRegex().Match(text);
 			int num = 0;
 			int num2 = 0;
 			if (match.Success)
@@ -879,7 +879,7 @@ public class Page
 				{
 					stringWork = httpClient.GetStringWork();
 				}
-				MatchCollection matchCollection = new Regex(ruleConfigInfo_0.NovelList_GetNovelKey.Pattern, ruleConfigInfo_0.NovelList_GetNovelKey.Options).Matches(stringWork);
+				MatchCollection matchCollection = RuleRegexCache.Get(ruleConfigInfo_0.NovelList_GetNovelKey.Pattern, ruleConfigInfo_0.NovelList_GetNovelKey.Options).Matches(stringWork);
 				for (int k = 0; k < matchCollection.Count; k++)
 				{
 					NovelInfo novelInfo = new NovelInfo
@@ -911,7 +911,7 @@ public class Page
 		{
 			stringWork = httpClient.GetStringWork();
 		}
-		MatchCollection matchCollection = new Regex(string_1).Matches(stringWork);
+		MatchCollection matchCollection = RuleRegexCache.Get(string_1).Matches(stringWork);
 		for (int i = 0; i < matchCollection.Count; i++)
 		{
 			arrayList.Add(matchCollection[i].Groups[1].Value);
@@ -937,7 +937,7 @@ public class Page
 		{
 			return text;
 		}
-		Match match = new Regex(regexInfo_0.Pattern, regexInfo_0.Options).Match(string_0);
+		Match match = RuleRegexCache.Get(regexInfo_0.Pattern, regexInfo_0.Options).Match(string_0);
 		if (match.Success)
 		{
 			int num = 1;
@@ -947,7 +947,7 @@ public class Page
 		}
 		if (!string.IsNullOrEmpty(regexInfo_0.FilterPattern))
 		{
-			string[] array = Regex.Split(regexInfo_0.FilterPattern, "\\n");
+			string[] array = regexInfo_0.FilterPattern.Split('\n');
 			foreach (string text2 in array)
 			{
 				string[] array2 = text2.Trim().Split('♂');
@@ -956,7 +956,7 @@ public class Page
 				{
 					replacement = array2[1].Trim();
 				}
-				text = Regex.Replace(text, array2[0], replacement);
+				text = RuleRegexCache.Get(array2[0]).Replace(text, replacement);
 			}
 		}
 		if (string.IsNullOrEmpty(text) && !bool_0)
@@ -968,7 +968,7 @@ public class Page
 
 	public string Replace(string string_0, RegexInfo regexInfo_0)
 	{
-		string[] array = Regex.Split(regexInfo_0.Pattern, "\\n", regexInfo_0.Options);
+		string[] array = regexInfo_0.Pattern.Split('\n');
 		foreach (string text in array)
 		{
 			char[] separator = new char[1] { '♂' };
@@ -978,14 +978,14 @@ public class Page
 			{
 				replacement = array2[1];
 			}
-			string_0 = Regex.Replace(string_0, array2[0], replacement);
+			string_0 = RuleRegexCache.Get(array2[0], regexInfo_0.Options).Replace(string_0, replacement);
 		}
 		return string_0;
 	}
 
 	public string RnReplace(string string_0, string string_1, RegexInfo regexInfo_0)
 	{
-		string[] array = Regex.Split(string_1, "\\n", regexInfo_0.Options);
+		string[] array = string_1.Split('\n');
 		foreach (string text in array)
 		{
 			char[] separator = new char[1] { '♂' };
@@ -995,7 +995,7 @@ public class Page
 			{
 				replacement = array2[1];
 			}
-			string_0 = Regex.Replace(string_0, array2[0], replacement);
+			string_0 = RuleRegexCache.Get(array2[0], regexInfo_0.Options).Replace(string_0, replacement);
 		}
 		return string_0;
 	}
@@ -1075,7 +1075,7 @@ public class Page
 
 	public string Translate(string string_0)
 	{
-		if (Configs.HaveFunction.IndexOf("中译英") >= 0 && Configs.BaseConfig.Translate && Regex.IsMatch(string_0, "[一-龥]+"))
+		if (Configs.HaveFunction.IndexOf("中译英") >= 0 && Configs.BaseConfig.Translate && ChineseCharactersRegex().IsMatch(string_0))
 		{
 			if (string_0.Length > 20)
 			{
@@ -1085,7 +1085,7 @@ public class Page
 					PostData = "js=y&prev=_t&hl=zh-CN&ie=UTF-8&layout=1&eotf=1&text=" + HttpUtility.UrlEncode(FormatText.Typesetting(string_0), FormatText.GetCharset(Configs.BaseConfig.CmsEncoding, "gbk")).ToUpper() + "&file=&sl=zh-CN&tl=en",
 					Encoding = FormatText.GetCharset(Configs.BaseConfig.CmsEncoding, "gbk")
 				};
-				Match match = Regex.Match(httpClient.GetStringWork(), "<textarea name=utrans wrap=SOFT.+?>([^><]*)</textarea>");
+				Match match = GoogleTranslateLongResultRegex().Match(httpClient.GetStringWork());
 				if (match.Success)
 				{
 					return match.Groups[1].Value.Replace("'", "&apos;").Replace("&nbsp;", " ").Replace("&lt;br&gt;", "<br>")
@@ -1098,7 +1098,7 @@ public class Page
 				UriString = "http://translate.google.cn/translate_a/t?client=t&text=" + HttpUtility.UrlEncode(string_0, FormatText.GetCharset(Configs.BaseConfig.CmsEncoding, "gbk")).ToUpper() + "&sl=zh-CN&tl=en&otf=1&pc=0",
 				Encoding = FormatText.GetCharset(Configs.BaseConfig.CmsEncoding, "gbk")
 			};
-			Match match2 = Regex.Match(httpClient2.GetStringWork(), "trans\":\"(.+?)\",\"orig");
+			Match match2 = GoogleTranslateShortResultRegex().Match(httpClient2.GetStringWork());
 			if (match2.Success)
 			{
 				return match2.Groups[1].Value.Replace("'", "&apos;").Trim();
@@ -1106,4 +1106,19 @@ public class Page
 		}
 		return string_0;
 	}
+
+	[GeneratedRegex(@"\s+")]
+	private static partial Regex WhitespaceRegex();
+
+	[GeneratedRegex(@"\{(\d*)-(\d*)\}")]
+	private static partial Regex RangeTemplateRegex();
+
+	[GeneratedRegex(@"[\u4e00-\u9fa5]+")]
+	private static partial Regex ChineseCharactersRegex();
+
+	[GeneratedRegex(@"<textarea name=utrans wrap=SOFT.+?>([^><]*)</textarea>")]
+	private static partial Regex GoogleTranslateLongResultRegex();
+
+	[GeneratedRegex("trans\":\"(.+?)\",\"orig")]
+	private static partial Regex GoogleTranslateShortResultRegex();
 }

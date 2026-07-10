@@ -4,7 +4,7 @@
 
 - 当前主线：`net10.0-windows`
 - 当前平台：Windows-only `win-x64` / `x64`
-- 当前版本：`10.0.3-net10-test / 10.0.3.0`
+- 当前版本：`10.0.4-net10-test / 10.0.4.0`
 - 当前工作目录：`E:\采集器\Modernized_Net10_Working`
 - 当前发布目录：`E:\采集器\ModernizedOutput_Net10_Test`
 - 固定 SDK：`.NET SDK 10.0.301`
@@ -35,7 +35,9 @@
 
 - 性能 CSV 默认关闭；需要排障时，在启动程序前设置环境变量 `NOVELSPIDER_PERFORMANCE=1`。
 - 启用后 CSV 输出目录：运行目录 `Log\Performance\yyyyMMdd.csv`。
-- 重点看 `http`、`mysql`、`file`、`collect` 四类耗时。
+- 重点看 `ui`、`http`、`mysql`、`file`、`collect` 五类耗时。
+- 性能日志采用后台批量异步写入，队列上限为 4096 条；它只用于排障，默认仍关闭。
+- 动态 XML 规则正则经 `RuleRegexCache` 缓存，并有 10 秒执行超时；异常规则应修正规则，而不是放宽超时。
 - 若采集过快，先确认 `TaskConfigInfo.ChapterUrlWait` 是否传入，并检查 `Page.GetChapterInfo()` 的域名限速。
 - 若写库慢，先临时开启性能 CSV，看 MySQL 慢点集中在哪个 SQL 片段，再决定是否继续参数化或合并事务。
 - 若 TXT 生成慢，先临时开启性能 CSV，并优先检查索引/全集生成是否在每章重复触发。

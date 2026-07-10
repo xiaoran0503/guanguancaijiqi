@@ -4,7 +4,7 @@ This branch contains the independent .NET 10 / Windows x64 migration line for No
 
 ## Current Baseline
 
-- Version: `10.0.3-net10-test / 10.0.3.0`
+- Version: `10.0.4-net10-test / 10.0.4.0`
 - Branch: `net10-v10`
 - Target framework: `net10.0-windows`
 - Platform: Windows-only `win-x64` / `x64`
@@ -55,8 +55,15 @@ Net10 milestones:
 - `v10.0.1-net10`: first Windows x64 Net10 source/runtime archive.
 - `v10.0.2-net10`: GitHub Actions automatic build and release baseline.
 - `v10.0.3-net10`: CI publish fallback path fix for GitHub Windows Runner.
+- `v10.0.4-net10`: regex cache, lazy image browser, deferred welcome page, and buffered performance telemetry.
 
 Every future milestone should update the version, update `src\NovelSpider\Resources\CHANGELOG.md`, and create an independent Git tag.
+
+## Performance
+
+- XML rule regular expressions use a bounded cache and a 10-second execution timeout; internal fixed patterns use `GeneratedRegex`.
+- The hidden `WebBrowser` used by image-to-text is created only when that feature is invoked.
+- Set `NOVELSPIDER_PERFORMANCE=1` to record batched UI, collection, HTTP, MySQL, and file timing data.
 
 ## Notes
 

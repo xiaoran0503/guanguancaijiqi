@@ -10,7 +10,7 @@
 - Runtime identifier: `win-x64`
 - SDK pinned by `global.json`: `10.0.301`
 - Runtime tested against: `.NET 10.0.9`
-- Test version: `10.0.3-net10-test / 10.0.3.0`
+- Test version: `10.0.4-net10-test / 10.0.4.0`
 
 ## Migration Boundaries
 
@@ -23,7 +23,10 @@
 - Program icons are native executable icons: `NovelSpider.exe` uses `Decompiled\NovelSpider\app.ico`; `NovelAdmin.exe` and `NovelVip.exe` use `Decompiled\NovelVip\app.ico`.
 - `NetworkCompatibility` no longer sets `ServicePointManager`; .NET 10 uses runtime-native TLS defaults. The initializer now keeps only code-page registration and regex cache sizing.
 - The active Net10 solution is Windows-only and x64-only: solution configurations use `x64`, active projects set `PlatformTarget=x64`, and publish uses `win-x64`.
-- Startup UI avoids constructing the heavy `ConfigForm` during main-window load; configuration pages are created lazily on first use, and the welcome changelog text is filled after the first paint.
+- Startup UI avoids constructing the heavy `ConfigForm` during main-window load; the welcome page is deferred until after the main window is visible, and its changelog text is filled after the first paint.
+- The hidden `WebBrowser` used only for image-to-text is now created when that feature is invoked, rather than while constructing `ConfigForm`.
+- Dynamic XML rule regexes use a bounded cache with a 10-second timeout. Fixed internal patterns use `GeneratedRegex`; rule XML remains unchanged.
+- Enabled performance telemetry batches CSV writes in the background and includes `ui` timing points for main-window load, welcome-page open, and configuration construction/open.
 - GitHub Actions build and release automation is available on `net10-v10`, `main`, and `v10.*-net10` tags. CI uses repository-relative scripts and `runtime\Rules` / `runtime\Tasks` seed data.
 
 ## Dependency Audit

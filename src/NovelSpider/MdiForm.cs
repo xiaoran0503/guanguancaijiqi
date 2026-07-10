@@ -23,6 +23,8 @@ public class MdiForm : Form
 
 	private ConfigForm configForm_0;
 
+	private WelcomeForm welcomeForm_0;
+
 	private DockPanel dockPanel;
 
 	private IContainer icontainer_0;
@@ -445,6 +447,7 @@ public class MdiForm : Form
 
 	private void MdiForm_Load(object sender, EventArgs e)
 	{
+		using IDisposable loadScope = PerformanceTelemetry.Measure("ui", "main_form_load");
 		NovelSpider.Common.Keys.LoadText();
 		if (!string.IsNullOrEmpty(Configs.BaseConfig.WebSiteName))
 		{
@@ -460,6 +463,21 @@ public class MdiForm : Form
 		}
 	}
 
+	private WelcomeForm EnsureWelcomeForm()
+	{
+		if (welcomeForm_0 == null || welcomeForm_0.IsDisposed)
+		{
+			welcomeForm_0 = new WelcomeForm();
+		}
+		return welcomeForm_0;
+	}
+
+	private void ShowWelcomeForm()
+	{
+		using IDisposable welcomeScope = PerformanceTelemetry.Measure("ui", "welcome_form_open");
+		ShowDockContent(EnsureWelcomeForm());
+	}
+
 	private ConfigForm EnsureConfigForm()
 	{
 		if (configForm_0 == null || configForm_0.IsDisposed)
@@ -471,6 +489,7 @@ public class MdiForm : Form
 
 	private void ShowConfigForm(int logPageIndex)
 	{
+		using IDisposable configScope = PerformanceTelemetry.Measure("ui", "config_form_open", logPageIndex.ToString());
 		ConfigForm configForm = EnsureConfigForm();
 		configForm.日志记录.SelectedIndex = logPageIndex;
 		ShowDockContent(configForm);
@@ -501,8 +520,13 @@ public class MdiForm : Form
 
 	private void MdiForm_Shown(object sender, EventArgs e)
 	{
-		WelcomeForm welcomeForm = new WelcomeForm();
-		ShowDockContent(welcomeForm);
+		BeginInvoke(new MethodInvoker(() =>
+		{
+			if (!IsDisposed)
+			{
+				ShowWelcomeForm();
+			}
+		}));
 	}
 
 	private static void myTimer_Elapsed(object sender, ElapsedEventArgs e)
@@ -590,8 +614,7 @@ public class MdiForm : Form
 
 	private void toolStripMenuItem_21_Click(object sender, EventArgs e)
 	{
-		WelcomeForm welcomeForm = new WelcomeForm();
-		ShowDockContent(welcomeForm);
+		ShowWelcomeForm();
 	}
 
 	private void toolStripMenuItem_22_Click(object sender, EventArgs e)

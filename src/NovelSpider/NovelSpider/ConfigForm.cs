@@ -641,6 +641,7 @@ public class ConfigForm : DockContent
 
 	public ConfigForm()
 	{
+		using IDisposable constructionScope = PerformanceTelemetry.Measure("ui", "config_form_construct");
 		string_0 = new string[26]
 		{
 			"0 未知错误", "21 FTP负载失败", "101 子窗口冲突", "102 检查子窗口冲突失败", "120 对比最新章节失败", "121 空章节", "122 检查到重复章节", "124 只采集文字章节时发现图片章节", "125 设置不添加新书", "130 限制章节字数小于多少字的章节不采集",
@@ -654,6 +655,29 @@ public class ConfigForm : DockContent
 		imgHeight = 0;
 		text = string.Empty;
 		InitializeComponent();
+	}
+
+	private WebBrowser EnsureImageBrowser()
+	{
+		if (webBrowser != null && !webBrowser.IsDisposed)
+		{
+			return webBrowser;
+		}
+
+		webBrowser = new WebBrowser
+		{
+			Anchor = AnchorStyles.Bottom | AnchorStyles.Left,
+			Location = new Point(9, 790),
+			Margin = new Padding(0),
+			Name = "webBrowser",
+			ScriptErrorsSuppressed = true,
+			ScrollBarsEnabled = false,
+			Size = new Size(592, 119),
+			TabIndex = 13
+		};
+		webBrowser.DocumentCompleted += webBrowser_DocumentCompleted;
+		Controls.Add(webBrowser);
+		return webBrowser;
 	}
 
 	private void backgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
@@ -670,7 +694,13 @@ public class ConfigForm : DockContent
 			imgHeight = image.Height;
 			image.Dispose();
 		}
-		webBrowser.Navigate(imgPath);
+		BeginInvoke(new MethodInvoker(() =>
+		{
+			if (!IsDisposed)
+			{
+				EnsureImageBrowser().Navigate(imgPath);
+			}
+		}));
 		for (int i = 0; i < 10000; i++)
 		{
 			Thread.Sleep(100);
@@ -783,6 +813,8 @@ public class ConfigForm : DockContent
 			return;
 		}
 		imgPath = 图片文件BOX.Text;
+		picEnd = false;
+		EnsureImageBrowser();
 		if (!backgroundWorker1.IsBusy)
 		{
 			解析图片.Enabled = false;
@@ -1393,7 +1425,6 @@ public class ConfigForm : DockContent
 		this.基本配置小提示 = new System.Windows.Forms.Label();
 		this.MailWorker = new System.ComponentModel.BackgroundWorker();
 		this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
-		this.webBrowser = new System.Windows.Forms.WebBrowser();
 		this.日志记录.SuspendLayout();
 		this.基本设置.SuspendLayout();
 		((System.ComponentModel.ISupportInitialize)this.发送间隔box).BeginInit();
@@ -3607,18 +3638,8 @@ public class ConfigForm : DockContent
 		this.backgroundWorker1.WorkerReportsProgress = true;
 		this.backgroundWorker1.WorkerSupportsCancellation = true;
 		this.backgroundWorker1.DoWork += new System.ComponentModel.DoWorkEventHandler(backgroundWorker1_DoWork);
-		this.webBrowser.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left;
-		this.webBrowser.Location = new System.Drawing.Point(9, 790);
-		this.webBrowser.Margin = new System.Windows.Forms.Padding(0);
-		this.webBrowser.Name = "webBrowser";
-		this.webBrowser.ScriptErrorsSuppressed = true;
-		this.webBrowser.ScrollBarsEnabled = false;
-		this.webBrowser.Size = new System.Drawing.Size(592, 119);
-		this.webBrowser.TabIndex = 13;
-		this.webBrowser.DocumentCompleted += new System.Windows.Forms.WebBrowserDocumentCompletedEventHandler(webBrowser_DocumentCompleted);
 		base.CancelButton = this.取消配置;
 		base.ClientSize = new System.Drawing.Size(844, 457);
-		base.Controls.Add(this.webBrowser);
 		base.Controls.Add(this.基本配置小提示);
 		base.Controls.Add(this.取消配置);
 		base.Controls.Add(this.保存);

@@ -127,6 +127,11 @@ public class WelcomeForm : DockContent
 		{
 			"更新日志",
 			"",
+			"V10.0.4 Net10 Test    2026-07-10",
+			"- XML 动态规则正则新增缓存、执行超时和 .NET 源生成固定正则，减少采集循环分配。",
+			"- 配置页图片转文字浏览器改为按需创建；性能观测 CSV 改为后台批量异步写入。",
+			"- 版本迭代为 10.0.4.0 / 10.0.4-net10-test。",
+			"",
 			"V10.0.3 Net10 Test    2026-07-10",
 			"- 修复 GitHub Actions Windows Runner 没有本机 E:\\采集器 盘符时，发布脚本计算本机 fallback 目录导致失败的问题。",
 			"- 发布脚本现在只在本机 fallback 根目录存在时才使用该路径；CI 默认使用仓库 runtime\\Rules / runtime\\Tasks 种子数据。",
