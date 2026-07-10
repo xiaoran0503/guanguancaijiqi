@@ -244,7 +244,7 @@ public class HttpClient
 
 	public HttpClient()
 	{
-		NetworkCompatibility.Initialize();
+		Net10RuntimeBootstrap.Initialize();
 		bool_0 = true;
 		encoding_0 = Encoding.Default;
 	}

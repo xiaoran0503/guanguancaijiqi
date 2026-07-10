@@ -10,7 +10,7 @@
 - Runtime identifier: `win-x64`
 - SDK pinned by `global.json`: `10.0.301`
 - Runtime tested against: `.NET 10.0.9`
-- Test version: `10.1.2-net10-test / 10.1.2.0`
+- Test version: `10.2.0-net10-test / 10.2.0.0`
 
 ## Migration Boundaries
 
@@ -21,7 +21,7 @@
 - Keep archived `NovelSpider.Local.Qiwen` unchanged while archived. It may not restore against the active Net10 project graph because it remains a non-solution archival project.
 - The main WinForms project embeds the legacy `.resources` files only so existing `GetString()` calls can load form text such as `NovelSpider.ConfigForm.resources`. Code no longer calls `GetObject()` for legacy form icons or toolbar images, avoiding BinaryFormatter deserialization in .NET 10.
 - Program icons are native executable icons: `NovelSpider.exe` uses `Decompiled\NovelSpider\app.ico`; `NovelAdmin.exe` and `NovelVip.exe` use `Decompiled\NovelVip\app.ico`.
-- `NetworkCompatibility` no longer sets `ServicePointManager`; .NET 10 uses runtime-native TLS defaults. The initializer now keeps only code-page registration and regex cache sizing.
+- `Net10RuntimeBootstrap` no longer sets `ServicePointManager`; .NET 10 uses runtime-native TLS defaults. The initializer now keeps only code-page registration and regex cache sizing.
 - The active Net10 solution is Windows-only and x64-only: solution configurations use `x64`, active projects set `PlatformTarget=x64`, and publish uses `win-x64`.
 - Startup UI avoids constructing the heavy `ConfigForm` during main-window load; the welcome page is deferred until after the main window is visible, and its changelog text is filled after the first paint.
 - The hidden `WebBrowser` used only for image-to-text is now created when that feature is invoked, rather than while constructing `ConfigForm`.

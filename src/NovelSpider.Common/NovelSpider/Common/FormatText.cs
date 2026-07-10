@@ -644,7 +644,7 @@ public class FormatText
 
 	public static Encoding GetCharset(string string_0, string string_1)
 	{
-		NetworkCompatibility.Initialize();
+		Net10RuntimeBootstrap.Initialize();
 		if (string.Equals(string_0, "utf-8", StringComparison.OrdinalIgnoreCase))
 		{
 			return Encoding.UTF8;

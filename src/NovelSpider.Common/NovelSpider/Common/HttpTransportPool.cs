@@ -52,7 +52,7 @@ internal static class HttpTransportPool
 
 	public static HttpResponseMessage Send(HttpRequestMessage request, HttpTransportOptions options, int timeoutSeconds)
 	{
-		NetworkCompatibility.Initialize();
+		Net10RuntimeBootstrap.Initialize();
 		bool reusedTransport = Clients.TryGetValue(options, out Lazy<System.Net.Http.HttpClient> existingClient) && existingClient.IsValueCreated;
 		System.Net.Http.HttpClient client = Clients.GetOrAdd(options, static item => new Lazy<System.Net.Http.HttpClient>(() => CreateClient(item))).Value;
 		using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds > 0 ? timeoutSeconds : 20));

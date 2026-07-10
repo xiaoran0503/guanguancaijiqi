@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
@@ -35,7 +34,7 @@ public partial class Page
 
 	static Page()
 	{
-		NetworkCompatibility.Initialize();
+		Net10RuntimeBootstrap.Initialize();
 	}
 
 	public Page(RuleConfigInfo ruleConfigInfo_1, RepairConfigInfo repairConfigInfo_0)
@@ -364,7 +363,7 @@ public partial class Page
 			string string_ = ruleConfigInfo_0.PubVolumeContent.FilterPattern.Replace("{$小说名称$}", novelInfo_0.Name).Replace("{$分类名称$}", novelInfo_0.LagerSort).Replace("{$小说作者$}", novelInfo_0.Author);
 			text2 = RnReplace(text2, string_, ruleConfigInfo_0.PubVolumeContent);
 		}
-		ArrayList arrayList = new ArrayList();
+		List<ChapterInfo> arrayList = new List<ChapterInfo>();
 		string[] array = RuleRegexCache.Get(ruleConfigInfo_0.PubVolumeSplit.Pattern, ruleConfigInfo_0.PubVolumeSplit.Options).Split(text2);
 		for (int i = 0; i < array.Length; i++)
 		{
@@ -393,7 +392,7 @@ public partial class Page
 				arrayList.Add(chapterInfo);
 			}
 		}
-		ChapterInfo[] array2 = (ChapterInfo[])arrayList.ToArray(typeof(ChapterInfo));
+		ChapterInfo[] array2 = arrayList.ToArray();
 		List<ChapterInfo> list = new List<ChapterInfo>();
 		switch (taskConfigInfo_0.OrderChapter)
 		{
@@ -536,7 +535,7 @@ public partial class Page
 			string string_ = ruleConfigInfo_0.PubVolumeContent.FilterPattern.Replace("{$小说名称$}", novelInfo_0.Name).Replace("{$分类名称$}", novelInfo_0.LagerSort).Replace("{$小说作者$}", novelInfo_0.Author);
 			text2 = RnReplace(text2, string_, ruleConfigInfo_0.PubVolumeContent);
 		}
-		ArrayList arrayList = new ArrayList();
+		List<ChapterInfo> arrayList = new List<ChapterInfo>();
 		string[] array = ((!(ruleConfigInfo_0.PubVolumeSplit.Pattern != "")) ? RuleRegexCache.Get("000000000000000000000", ruleConfigInfo_0.PubVolumeSplit.Options).Split(text2) : RuleRegexCache.Get(ruleConfigInfo_0.PubVolumeSplit.Pattern, ruleConfigInfo_0.PubVolumeSplit.Options).Split(text2));
 		for (int i = 0; i < array.Length; i++)
 		{
@@ -568,12 +567,12 @@ public partial class Page
 				arrayList.Add(chapterInfo);
 			}
 		}
-		return (ChapterInfo[])arrayList.ToArray(typeof(ChapterInfo));
+		return arrayList.ToArray();
 	}
 
 	public string[] GetIds(string[] arrayListUrl)
 	{
-		ArrayList arrayList = new ArrayList();
+		List<string> arrayList = new List<string>();
 		foreach (string text in arrayListUrl)
 		{
 			string text2 = text;
@@ -624,7 +623,7 @@ public partial class Page
 				}
 			}
 		}
-		return (string[])arrayList.ToArray(typeof(string));
+		return arrayList.ToArray();
 	}
 
 	public NovelInfo GetNovelInfo(NovelInfo novelInfo_0)
@@ -823,7 +822,7 @@ public partial class Page
 
 	public NovelInfo[] GetNovelList(string[] string_0)
 	{
-		ArrayList arrayList = new ArrayList();
+		List<NovelInfo> arrayList = new List<NovelInfo>();
 		foreach (string text in string_0)
 		{
 			string text2 = text;
@@ -877,12 +876,12 @@ public partial class Page
 				}
 			}
 		}
-		return (NovelInfo[])arrayList.ToArray(typeof(NovelInfo));
+		return arrayList.ToArray();
 	}
 
 	public static string[] GetNovelList(string string_0, string string_1, string string_2)
 	{
-		ArrayList arrayList = new ArrayList();
+		List<string> arrayList = new List<string>();
 		HttpClient httpClient = new HttpClient
 		{
 			Encoding = Encoding.GetEncoding(string_2),
@@ -894,7 +893,7 @@ public partial class Page
 		{
 			arrayList.Add(matchCollection[i].Groups[1].Value);
 		}
-		return (string[])arrayList.ToArray(typeof(string));
+		return arrayList.ToArray();
 	}
 
 	public static string GetTimeStamp()

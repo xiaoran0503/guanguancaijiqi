@@ -118,7 +118,7 @@ public static class Config
 	public static void LoadConfig()
 	{
 		WebSitePath = Configs.BaseConfig.WebSitePath;
-		ConnectionString = DatabaseCompatibilityProfile.NormalizeConnectionString(Configs.BaseConfig.ConnectionString, Configs.BaseConfig.DatabaseServerType, Configs.BaseConfig.DatabaseServerMajorVersion);
+		ConnectionString = DatabaseConnectionProfile.NormalizeConnectionString(Configs.BaseConfig.ConnectionString, Configs.BaseConfig.DatabaseServerType, Configs.BaseConfig.DatabaseServerMajorVersion);
 		LoadJieqiConfig();
 		if (double.Parse(Configs.BaseConfig.CmsVersion) >= 1.8)
 		{

@@ -1,5 +1,5 @@
 using System;
-using System.Collections;
+using System.Collections.Concurrent;
 using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,12 +13,12 @@ public abstract class MySqlHelper
 {
 	public static string ConnectionString;
 
-	private static Hashtable hashtable_0;
+	private static ConcurrentDictionary<string, MySqlParameter[]> parameterCache;
 
 	static MySqlHelper()
 	{
 		ConnectionString = NormalizeConnectionString(Configs.BaseConfig.ConnectionString);
-		hashtable_0 = new Hashtable();
+		parameterCache = new ConcurrentDictionary<string, MySqlParameter[]>();
 	}
 
 	private static void smethod_00()
@@ -29,12 +29,12 @@ public abstract class MySqlHelper
 	private static void smethod_11()
 	{
 		ConnectionString = NormalizeConnectionString(Config.ConnectionString);
-		hashtable_0 = Hashtable.Synchronized(new Hashtable());
+		parameterCache = new ConcurrentDictionary<string, MySqlParameter[]>();
 	}
 
 	public static void CacheParameters(string string_0, params MySqlParameter[] mySqlParameter_0)
 	{
-		hashtable_0[string_0] = mySqlParameter_0;
+		parameterCache[string_0] = mySqlParameter_0;
 	}
 
 	public static DataTable ExecuteDataTable(string string_0, CommandType commandType_0, string string_1, params MySqlParameter[] mySqlParameter_0)
@@ -280,7 +280,7 @@ public abstract class MySqlHelper
 
 	public static MySqlParameter[] GetCachedParameters(string string_0)
 	{
-		MySqlParameter[] array = (MySqlParameter[])hashtable_0[string_0];
+		parameterCache.TryGetValue(string_0, out MySqlParameter[] array);
 		if (array == null)
 		{
 			return null;
@@ -322,7 +322,7 @@ public abstract class MySqlHelper
 		{
 			return connectionString;
 		}
-		return DatabaseCompatibilityProfile.NormalizeConnectionString(connectionString, Configs.BaseConfig.DatabaseServerType, Configs.BaseConfig.DatabaseServerMajorVersion);
+		return DatabaseConnectionProfile.NormalizeConnectionString(connectionString, Configs.BaseConfig.DatabaseServerType, Configs.BaseConfig.DatabaseServerMajorVersion);
 	}
 
 	private static string GetCommandSubject(string commandText)
@@ -335,3 +335,4 @@ public abstract class MySqlHelper
 		return commandText.Length <= 120 ? commandText : commandText.Substring(0, 120);
 	}
 }
+

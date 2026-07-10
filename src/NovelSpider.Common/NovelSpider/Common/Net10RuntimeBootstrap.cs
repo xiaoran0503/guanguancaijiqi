@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace NovelSpider.Common;
 
-public static class NetworkCompatibility
+public static class Net10RuntimeBootstrap
 {
 	private static bool initialized;
 

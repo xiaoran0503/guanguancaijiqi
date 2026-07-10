@@ -19,7 +19,6 @@ using Newtonsoft.Json.Linq;
 using NovelSpider.Common;
 using NovelSpider.Config;
 using NovelSpider.Entity;
-using PanGu;
 
 namespace NovelSpider.Local.Jieqi;
 
@@ -198,8 +197,8 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 		{
 			return;
 		}
-		Segment.Init();
-		foreach (WordInfo item in new Segment().DoSegment(novelInfo.Name))
+		JiebaTextSegmenter.Init();
+		foreach (SegmentedWord item in new JiebaTextSegmenter().Segment(novelInfo.Name))
 		{
 			if (item != null && item.Word.Length > 1)
 			{
@@ -263,8 +262,14 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 			using ByteArrayContent content = new ByteArrayContent(bytes);
 			content.Headers.TryAddWithoutValidation("Content-Type", "text/plain");
 			httpClient.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "curl/7.12.1");
-			using HttpResponseMessage httpResponse = httpClient.PostAsync(requestUriString, content).GetAwaiter().GetResult();
-			string value = httpResponse.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+			using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, requestUriString)
+			{
+				Content = content
+			};
+			using HttpResponseMessage httpResponse = httpClient.Send(request);
+			using Stream responseStream = httpResponse.Content.ReadAsStream();
+			using StreamReader responseReader = new StreamReader(responseStream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+			string value = responseReader.ReadToEnd();
 			JObject jObject = (JObject)JsonConvert.DeserializeObject(value);
 			int num = int.Parse(jObject["success"].ToString());
 			int num2 = int.Parse(jObject["remain"].ToString());
@@ -2609,9 +2614,9 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 			{
 				string text = mySqlDataReader["articleid"].ToString();
 				string text2 = mySqlDataReader["articlename"].ToString();
-				Segment.Init();
+				JiebaTextSegmenter.Init();
 				StringBuilder stringBuilder = new StringBuilder();
-				foreach (WordInfo item in new Segment().DoSegment(text2))
+				foreach (SegmentedWord item in new JiebaTextSegmenter().Segment(text2))
 				{
 					if (item != null && item.Word.Length > 1)
 					{
@@ -4360,3 +4365,7 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 		return stringBuilder.ToString();
 	}
 }
+
+
+
+

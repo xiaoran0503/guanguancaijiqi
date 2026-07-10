@@ -39,7 +39,7 @@ public class LocalProvider
 	{
 		try
 		{
-			Configs.CmsName = CmsCompatibility.NormalizeCmsName(Configs.CmsName);
+			Configs.CmsName = SupportedCms.NormalizeCmsName(Configs.CmsName);
 			SpiderException.Debug("动态载入DLL " + string.Format("NovelSpider.Local.{0}.LocalProvider,NovelSpider.Local.{0}", Configs.CmsName));
 			Type providerType = Type.GetType(string.Format("NovelSpider.Local.{0}.LocalProvider,NovelSpider.Local.{0}", Configs.CmsName), throwOnError: false, ignoreCase: true);
 			if (providerType == null)

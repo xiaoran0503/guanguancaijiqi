@@ -14,7 +14,7 @@ internal static class Program
 		// 授权验证已移除 - 全功能开放
 		try
 		{
-			NetworkCompatibility.Initialize();
+			Net10RuntimeBootstrap.Initialize();
 			if (!Directory.Exists("Log"))
 			{
 				Directory.CreateDirectory("Log");

@@ -1,5 +1,5 @@
 using System;
-using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Reflection;
@@ -47,7 +47,7 @@ public class RuleForm : DockContent
 
 	private RuleConfigInfo ruleConfigInfo_0;
 
-	private Hashtable ruleHash;
+	private Dictionary<string, string> ruleHash;
 
 	private RuleTestForm ruleTestForm_0;
 
@@ -69,7 +69,7 @@ public class RuleForm : DockContent
 
 	public RuleForm()
 	{
-		ruleHash = new Hashtable();
+		ruleHash = new Dictionary<string, string>();
 		int_0 = -1;
 		ruleConfigInfo_0 = new RuleConfigInfo();
 		ruleTestForm_0 = new RuleTestForm();
@@ -428,7 +428,7 @@ public class RuleForm : DockContent
 			return;
 		}
 		textBox_1.Text = propertyInfo_0[selectedIndex].Name;
-		textBox_2.Text = ruleHash[propertyInfo_0[selectedIndex].Name].ToString();
+		textBox_2.Text = ruleHash[propertyInfo_0[selectedIndex].Name];
 		if (propertyInfo_0[selectedIndex].PropertyType == typeof(RegexInfo))
 		{
 			RegexInfo regexInfo = ((RegexInfo)propertyInfo_0[selectedIndex].GetValue(ruleConfigInfo_0, null)) ?? new RegexInfo();
@@ -529,3 +529,4 @@ public class RuleForm : DockContent
 		taskConfigInfo_0.NovelUrlProxy = false;
 	}
 }
+

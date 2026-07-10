@@ -10,7 +10,7 @@ internal static class Program
 	[STAThread]
 	private static void Main()
 	{
-		NetworkCompatibility.Initialize();
+		Net10RuntimeBootstrap.Initialize();
 		Configs.LoadConfigs();
 		Application.EnableVisualStyles();
 		Application.SetCompatibleTextRenderingDefault(defaultValue: false);

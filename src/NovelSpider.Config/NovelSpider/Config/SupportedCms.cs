@@ -1,6 +1,6 @@
 namespace NovelSpider.Config;
 
-public static class CmsCompatibility
+public static class SupportedCms
 {
 	public const string SupportedCmsName = "Jieqi";
 

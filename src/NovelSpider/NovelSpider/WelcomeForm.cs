@@ -127,7 +127,15 @@ public class WelcomeForm : DockContent
 		{
 			"更新日志",
 			"",
-			"V10.1.2 Net10 Test    2026-07-10",
+			"V10.2.0 Net10 Test    2026-07-10",
+			"- 版本迭代为 10.2.0.0 / 10.2.0-net10-test。",
+			"- 技术兼容命名原生化，启动初始化改为 Net10RuntimeBootstrap。",
+			"- CMS 与数据库配置检测改为 SupportedCms / DatabaseConnectionProfile。",
+			"- Page 与手工采集热路径旧 ArrayList 改为泛型 List<T>。",
+			"- async provider 调度改为 LocalProviderAsyncDispatcher，移除同步 GetResult 桥接。",
+			"- Jieqi 分词改为 JiebaTextSegmenter 原生命名。",
+			"- 移除 ScreenCaptureMode 反射兜底，当前 SDK 未暴露强类型 API，截图保护延后。",
+			"",			"V10.1.2 Net10 Test    2026-07-10",
 			"- 版本迭代为 10.1.2.0 / 10.1.2-net10-test。",
 			"- 修复发布包 Resources\\CHANGELOG.md 未强制刷新导致运行包更新日志停留旧版的问题。",
 			"- 发布脚本现在发布后强制复制源码更新日志到输出目录。",
@@ -314,4 +322,6 @@ public class WelcomeForm : DockContent
 		});
 	}
 }
+
+
 

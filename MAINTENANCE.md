@@ -4,7 +4,7 @@
 
 - 当前主线：`net10.0-windows`
 - 当前平台：Windows-only `win-x64` / `x64`
-- 当前版本：`10.1.2-net10-test / 10.1.2.0`
+- 当前版本：`10.2.0-net10-test / 10.2.0.0`
 - 当前工作目录：`E:\采集器\Modernized_Net10_Working`
 - 当前发布目录：`E:\采集器\ModernizedOutput_Net10_Test`
 - 固定 SDK：`.NET SDK 10.0.301`
@@ -23,10 +23,10 @@
 | 章节延时、规则解析、正文下载 | `src\NovelSpider.Target\NovelSpider\Target\Page.cs` |
 | Jieqi 章节写库、TXT 生成 | `src\NovelSpider.Local.Jieqi\NovelSpider\Local\Jieqi\LocalProvider.cs` |
 | MySQL 连接、事务、参数化 | `src\NovelSpider.Local.Jieqi\NovelSpider\Local\Jieqi\MySqlHelper.cs` |
-| MySQL/MariaDB/Percona 兼容 | `src\NovelSpider.Local.Jieqi\NovelSpider\Local\Jieqi\DatabaseCompatibilityProfile.cs` |
+| MySQL/MariaDB/Percona 连接配置 | `src\NovelSpider.Local.Jieqi\NovelSpider\Local\Jieqi\DatabaseConnectionProfile.cs` |
 | 原子文本写入 | `src\NovelSpider.Local.Jieqi\NovelSpider\Local\Jieqi\ChapterFileWriter.cs` |
 | 封面图片边界 | `src\NovelSpider.Local.Jieqi\NovelSpider\Local\Jieqi\CoverImageService.cs` |
-| CMS 兼容/旧配置迁移 | `src\NovelSpider.Config\NovelSpider\Config\CmsCompatibility.cs` |
+| CMS Active CMS 配置 | `src\NovelSpider.Config\NovelSpider\Config\SupportedCms.cs` |
 | SQLite 采集日志 | `src\NovelSpider.Common\NovelSpider\Common\SpiderException.cs` |
 | 更新日志 | `src\NovelSpider\Resources\CHANGELOG.md` |
 | 版本号 | 各项目 `Properties\AssemblyInfo.cs` 和 `Configs.DisplayVersion` |
@@ -89,3 +89,14 @@ GitHub Actions:
 
 - publish-all.ps1 must force-copy src\\NovelSpider\\Resources\\CHANGELOG.md into output Resources\\CHANGELOG.md after publish.
 - Release validation must inspect the published changelog top entry, not only the source changelog.
+
+
+## V10.2.0 Native Notes
+
+- 技术兼容层命名改为 Net10 原生命名；业务兼容仍保留 GBK/GB2312、XML 规则和 Jieqi 多版本字段策略。
+- 当前 SDK 未暴露 WinForms ScreenCaptureMode 强类型 API，禁止使用反射兜底；该能力延后。
+- Active async provider 调度统一在 `LocalProviderAsyncDispatcher`，不得新增 `GetAwaiter().GetResult()` 桥接。
+- Jieqi 分词统一通过 `JiebaTextSegmenter`，不得恢复 `PanGu` 命名空间外壳。
+- 原生化验收允许低频图像/UMD 老格式生成器继续保留 ArrayList/Hashtable。
+
+

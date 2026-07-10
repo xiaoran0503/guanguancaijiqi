@@ -1,5 +1,5 @@
 using System;
-using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
@@ -20,6 +20,32 @@ namespace NovelSpider;
 
 public class CollectManual : DockContent
 {
+	private static T WaitForBackgroundAsync<T>(System.Threading.Tasks.Task<T> task)
+	{
+		try
+		{
+			task.Wait();
+			return task.Result;
+		}
+		catch (AggregateException ex) when (ex.InnerExceptions.Count == 1)
+		{
+			System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex.InnerException!).Throw();
+			throw;
+		}
+	}
+
+	private static void WaitForBackgroundAsync(System.Threading.Tasks.Task task)
+	{
+		try
+		{
+			task.Wait();
+		}
+		catch (AggregateException ex) when (ex.InnerExceptions.Count == 1)
+		{
+			System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex.InnerException!).Throw();
+			throw;
+		}
+	}
 	private TextBox articlenameBox;
 
 	private BackgroundWorker backgroundWorker_0;
@@ -777,18 +803,18 @@ public class CollectManual : DockContent
 			break;
 		case 36:
 		{
-			ArrayList arrayList = new ArrayList();
+			List<NovelInfo> arrayList = new List<NovelInfo>();
 			for (int i = 0; i < listView_2.Items.Count; i++)
 			{
 				if (!listView_2.Items[i].Checked)
 				{
-					arrayList.Add(listView_2.Items[i].Tag);
+					arrayList.Add((NovelInfo)listView_2.Items[i].Tag);
 				}
 			}
 			listView_2.Items.Clear();
 			for (int j = 0; j < arrayList.Count; j++)
 			{
-				NovelInfo novelInfo = (NovelInfo)arrayList[j];
+				NovelInfo novelInfo = arrayList[j];
 				novelInfo.ItemIndex = j;
 				string[] items = new string[4]
 				{
@@ -869,7 +895,7 @@ public class CollectManual : DockContent
 			}
 			backgroundWorker.ReportProgress(32, chapterInfo_1[i]);
 		}
-		LocalProviderAsyncBridge.UpdateLastChapter(NovelSpider.Local.LocalProvider.GetInstance(), chapterInfo);
+		WaitForBackgroundAsync(LocalProviderAsyncDispatcher.UpdateLastChapterAsync(NovelSpider.Local.LocalProvider.GetInstance(), chapterInfo));
 		NovelSpider.Local.LocalProvider.GetInstance().CreateIndex(chapterInfo, Configs.BaseConfig.IndexHtml, Configs.BaseConfig.FullHtml, Configs.BaseConfig.CreateOPF, Configs.BaseConfig.CreateZIP, Configs.BaseConfig.CreateTXT, Configs.BaseConfig.CreateUMD, Configs.BaseConfig.CreateJAR, Configs.BaseConfig.CreateCHM, bool_8: false, bool_9: false, 0);
 	}
 
@@ -1047,7 +1073,7 @@ public class CollectManual : DockContent
 					SpiderException.Show("空章节或字数过少", chapterInfo, taskConfigInfo_0.Log, str5);
 					break;
 				}
-				LocalProviderAsyncBridge.InsertChapter(NovelSpider.Local.LocalProvider.GetInstance(), chapterInfo, taskConfigInfo_0);
+				WaitForBackgroundAsync(LocalProviderAsyncDispatcher.InsertChapterAsync(NovelSpider.Local.LocalProvider.GetInstance(), chapterInfo, taskConfigInfo_0));
 				if (Configs.BaseConfig.ChapterHtml)
 				{
 					NovelSpider.Local.LocalProvider.GetInstance().CreateChapter(chapterInfo);
@@ -1115,7 +1141,7 @@ public class CollectManual : DockContent
 			if (array[i].PutID == 0)
 			{
 				array[i] = new Page(ruleConfigInfo_0, taskConfigInfo_0).GetNovelInfo(array[i]);
-				array[i] = LocalProviderAsyncBridge.InsertNovel(NovelSpider.Local.LocalProvider.GetInstance(), array[i]);
+				array[i] = WaitForBackgroundAsync(LocalProviderAsyncDispatcher.InsertNovelAsync(NovelSpider.Local.LocalProvider.GetInstance(), array[i]));
 			}
 			backgroundWorker.ReportProgress(12, array[i]);
 		}
@@ -1153,7 +1179,7 @@ public class CollectManual : DockContent
 				SpiderException.Show("发现图片章节", chapterInfo, taskConfigInfo_0.Log, strTask2);
 				break;
 			}
-			LocalProviderAsyncBridge.InsertChapterByOrder(NovelSpider.Local.LocalProvider.GetInstance(), chapterInfo, taskConfigInfo_0, array[0] + i);
+			WaitForBackgroundAsync(LocalProviderAsyncDispatcher.InsertChapterByOrderAsync(NovelSpider.Local.LocalProvider.GetInstance(), chapterInfo, taskConfigInfo_0, array[0] + i));
 			if (Configs.BaseConfig.ChapterHtml)
 			{
 				NovelSpider.Local.LocalProvider.GetInstance().CreateChapter(chapterInfo);
@@ -1172,7 +1198,7 @@ public class CollectManual : DockContent
 		ChapterInfo chapterInfo5 = chapterInfo4;
 		NovelSpider.Local.LocalProvider.GetInstance().CreateChapter(chapterInfo, chapterInfo3);
 		NovelSpider.Local.LocalProvider.GetInstance().CreateChapter(chapterInfo, chapterInfo5);
-		LocalProviderAsyncBridge.UpdateLastChapter(NovelSpider.Local.LocalProvider.GetInstance(), chapterInfo);
+		WaitForBackgroundAsync(LocalProviderAsyncDispatcher.UpdateLastChapterAsync(NovelSpider.Local.LocalProvider.GetInstance(), chapterInfo));
 		NovelSpider.Local.LocalProvider.GetInstance().CreateIndex(chapterInfo, Configs.BaseConfig.IndexHtml, Configs.BaseConfig.FullHtml, Configs.BaseConfig.CreateOPF, Configs.BaseConfig.CreateZIP, Configs.BaseConfig.CreateTXT, Configs.BaseConfig.CreateUMD, Configs.BaseConfig.CreateJAR, Configs.BaseConfig.CreateCHM, bool_8: false, bool_9: false, 0);
 	}
 
@@ -1275,7 +1301,7 @@ public class CollectManual : DockContent
 		{
 			if (articlenameBox.Text != "" && posterBox.Text != "" && chapterNameBox.Text != "" && chapterTXTBox.Text != "")
 			{
-				new ArrayList();
+				
 				for (int i = 0; i < listView_1.Items.Count; i++)
 				{
 					if (!listView_1.Items[i].Checked)
@@ -1340,7 +1366,7 @@ public class CollectManual : DockContent
 		}
 		else if (articlenameBox.Text != "" && posterBox.Text != "" && chapterNameBox.Text != "" && chapterTXTBox.Text != "")
 		{
-			new ArrayList();
+			
 			for (int i = 0; i < listView_1.Items.Count; i++)
 			{
 				if (!listView_1.Items[i].Checked)
@@ -1548,7 +1574,7 @@ public class CollectManual : DockContent
 		}
 		panel_2.Enabled = false;
 		toolStripStatusLabel_0.Text = "正在从日志中删除.请勿进行其他操作..";
-		ArrayList arrayList = new ArrayList();
+		List<string> arrayList = new List<string>();
 		for (int i = 0; i < listView_2.Items.Count; i++)
 		{
 			if (listView_2.Items[i].Checked)
@@ -1558,7 +1584,7 @@ public class CollectManual : DockContent
 				arrayList.Add(value);
 			}
 		}
-		backgroundWorker_11.RunWorkerAsync((string[])arrayList.ToArray(typeof(string)));
+		backgroundWorker_11.RunWorkerAsync(arrayList.ToArray());
 	}
 
 	protected override void Dispose(bool disposing)
@@ -2687,7 +2713,7 @@ public class CollectManual : DockContent
 		bool_0 = true;
 		panel_2.Enabled = false;
 		toolStripStatusLabel_0.Text = "正在采集章节.请勿进行其他操作..";
-		ArrayList arrayList = new ArrayList();
+		List<ChapterInfo> arrayList = new List<ChapterInfo>();
 		for (int l = 0; l < target_list_view.Items.Count; l++)
 		{
 			if (target_list_view.Items[l].Checked)
@@ -2697,7 +2723,7 @@ public class CollectManual : DockContent
 			}
 		}
 		novelInfo_0 = (NovelInfo)target_list_view.Tag;
-		ChapterInfo[] argument = (ChapterInfo[])arrayList.ToArray(typeof(ChapterInfo));
+		ChapterInfo[] argument = arrayList.ToArray();
 		arrayList.Clear();
 		backgroundWorker_6.RunWorkerAsync(argument);
 	}
@@ -2812,7 +2838,7 @@ public class CollectManual : DockContent
 		panel_2.Enabled = false;
 		toolStripStatusLabel_0.Text = "正在替换章节.请勿进行其他操作..";
 		novelInfo_0 = (NovelInfo)target_list_view.Tag;
-		ArrayList arrayList = new ArrayList();
+		List<ChapterInfo> arrayList = new List<ChapterInfo>();
 		for (int i = 0; i < target_list_view.Items.Count; i++)
 		{
 			if (target_list_view.Items[i].Checked)
@@ -2821,7 +2847,7 @@ public class CollectManual : DockContent
 				arrayList.Add(value);
 			}
 		}
-		chapterInfo_0 = (ChapterInfo[])arrayList.ToArray(typeof(ChapterInfo));
+		chapterInfo_0 = arrayList.ToArray();
 		arrayList.Clear();
 		for (int j = 0; j < listView_1.Items.Count; j++)
 		{
@@ -2831,7 +2857,7 @@ public class CollectManual : DockContent
 				arrayList.Add(value2);
 			}
 		}
-		chapterInfo_1 = (ChapterInfo[])arrayList.ToArray(typeof(ChapterInfo));
+		chapterInfo_1 = arrayList.ToArray();
 		backgroundWorker_2.RunWorkerAsync();
 	}
 
@@ -2844,7 +2870,7 @@ public class CollectManual : DockContent
 		bool_0 = true;
 		panel_2.Enabled = false;
 		toolStripStatusLabel_0.Text = "正在检查章节.请勿进行其他操作..";
-		ArrayList arrayList = new ArrayList();
+		List<ChapterInfo> arrayList = new List<ChapterInfo>();
 		for (int i = 0; i < listView_1.Items.Count; i++)
 		{
 			if (listView_1.Items[i].Checked)
@@ -2854,7 +2880,7 @@ public class CollectManual : DockContent
 			}
 		}
 		novelInfo_0 = (NovelInfo)target_list_view.Tag;
-		backgroundWorker_1.RunWorkerAsync((ChapterInfo[])arrayList.ToArray(typeof(ChapterInfo)));
+		backgroundWorker_1.RunWorkerAsync(arrayList.ToArray());
 	}
 
 	private void toolStripMenuItem_14_Click(object sender, EventArgs e)
@@ -2898,7 +2924,7 @@ public class CollectManual : DockContent
 		bool_0 = true;
 		panel_2.Enabled = false;
 		toolStripStatusLabel_0.Text = "正在删除章节.请勿进行其他操作..";
-		ArrayList arrayList = new ArrayList();
+		List<ChapterInfo> arrayList = new List<ChapterInfo>();
 		for (int i = 0; i < listView_1.Items.Count; i++)
 		{
 			if (listView_1.Items[i].Checked)
@@ -2910,7 +2936,7 @@ public class CollectManual : DockContent
 		}
 		novelInfo_0 = (NovelInfo)target_list_view.Tag;
 		NovelInfo novelInfo = (NovelInfo)target_list_view.Tag;
-		backgroundWorker_0.RunWorkerAsync((ChapterInfo[])arrayList.ToArray(typeof(ChapterInfo)));
+		backgroundWorker_0.RunWorkerAsync(arrayList.ToArray());
 	}
 
 	private void toolStripMenuItem_18_Click(object sender, EventArgs e)
@@ -2960,7 +2986,7 @@ public class CollectManual : DockContent
 			bool_0 = true;
 		}
 		panel_2.Enabled = false;
-		ArrayList arrayList = new ArrayList();
+		List<string> arrayList = new List<string>();
 		string text = "";
 		for (int i = 0; i < listView_2.Items.Count; i++)
 		{
@@ -2975,7 +3001,7 @@ public class CollectManual : DockContent
 			}
 		}
 		toolStripStatusLabel_0.Text = "正在删除《" + text + "》";
-		backgroundWorker_11.RunWorkerAsync((string[])arrayList.ToArray(typeof(string)));
+		backgroundWorker_11.RunWorkerAsync(arrayList.ToArray());
 	}
 
 	private void toolStripMenuItem_20_Click(object sender, EventArgs e)
@@ -3019,7 +3045,7 @@ public class CollectManual : DockContent
 				text = text + chapterInfo.VolumeName + "\n" + chapterInfo.ChapterName + "\n";
 			}
 		}
-		WinFormsNet10Features.SetClipboardText(text + novelInfo.LastChapter.VolumeName + "\n" + novelInfo.LastChapter.ChapterName + "\n");
+		WinFormsRuntime.SetClipboardText(text + novelInfo.LastChapter.VolumeName + "\n" + novelInfo.LastChapter.ChapterName + "\n");
 		MessageBox.Show("复制成功，可直接Ctrl+V复制到QQ中。");
 	}
 
@@ -3042,7 +3068,7 @@ public class CollectManual : DockContent
 		panel_2.Enabled = false;
 		toolStripStatusLabel_0.Text = "正在插入章节.请勿进行其他操作..";
 		novelInfo_0 = (NovelInfo)target_list_view.Tag;
-		ArrayList arrayList = new ArrayList();
+		List<ChapterInfo> arrayList = new List<ChapterInfo>();
 		for (int i = 0; i < target_list_view.Items.Count; i++)
 		{
 			if (target_list_view.Items[i].Checked)
@@ -3051,7 +3077,7 @@ public class CollectManual : DockContent
 				arrayList.Add(value);
 			}
 		}
-		chapterInfo_0 = (ChapterInfo[])arrayList.ToArray(typeof(ChapterInfo));
+		chapterInfo_0 = arrayList.ToArray();
 		arrayList.Clear();
 		for (int j = 0; j < listView_1.Items.Count; j++)
 		{
@@ -3205,7 +3231,7 @@ public class CollectManual : DockContent
 		bool_0 = true;
 		panel_2.Enabled = false;
 		toolStripStatusLabel_0.Text = "正在删除章节.请勿进行其他操作..";
-		ArrayList arrayList = new ArrayList();
+		List<ChapterInfo> arrayList = new List<ChapterInfo>();
 		for (int i = 0; i < listView_1.Items.Count; i++)
 		{
 			if (listView_1.Items[i].Checked)
@@ -3217,7 +3243,7 @@ public class CollectManual : DockContent
 		}
 		novelInfo_0 = (NovelInfo)target_list_view.Tag;
 		NovelInfo novelInfo = (NovelInfo)target_list_view.Tag;
-		backgroundWorker_12.RunWorkerAsync((ChapterInfo[])arrayList.ToArray(typeof(ChapterInfo)));
+		backgroundWorker_12.RunWorkerAsync(arrayList.ToArray());
 	}
 
 	private void toolStripMenuItem_31_Click(object sender, EventArgs e)
@@ -3229,7 +3255,7 @@ public class CollectManual : DockContent
 		bool_0 = true;
 		panel_2.Enabled = false;
 		toolStripStatusLabel_0.Text = "正在删除分卷.请勿进行其他操作..";
-		ArrayList arrayList = new ArrayList();
+		List<ChapterInfo> arrayList = new List<ChapterInfo>();
 		for (int i = 0; i < listView1.Items.Count; i++)
 		{
 			if (listView1.Items[i].Checked)
@@ -3239,7 +3265,7 @@ public class CollectManual : DockContent
 			}
 		}
 		novelInfo_0 = (NovelInfo)target_list_view.Tag;
-		backgroundWorker_0.RunWorkerAsync((ChapterInfo[])arrayList.ToArray(typeof(ChapterInfo)));
+		backgroundWorker_0.RunWorkerAsync(arrayList.ToArray());
 	}
 
 	private void toolStripMenuItem_32_Click(object sender, EventArgs e)
@@ -3298,7 +3324,7 @@ public class CollectManual : DockContent
 				return;
 			}
 			ReviseChapter.Visible = true;
-			new ArrayList();
+			
 			for (int i = 0; i < listView_1.Items.Count; i++)
 			{
 				if (listView_1.Items[i].Checked)
@@ -3341,7 +3367,7 @@ public class CollectManual : DockContent
 			return;
 		}
 		ReviseChapter.Visible = true;
-		new ArrayList();
+		
 		for (int i = 0; i < listView_1.Items.Count; i++)
 		{
 			if (listView_1.Items[i].Checked)
@@ -3390,7 +3416,7 @@ public class CollectManual : DockContent
 		bool_0 = true;
 		panel_2.Enabled = false;
 		toolStripStatusLabel_0.Text = "正在采集章节.请勿进行其他操作..";
-		ArrayList arrayList = new ArrayList();
+		List<ChapterInfo> arrayList = new List<ChapterInfo>();
 		for (int j = 0; j < target_list_view.Items.Count; j++)
 		{
 			if (target_list_view.Items[j].Checked)
@@ -3400,7 +3426,7 @@ public class CollectManual : DockContent
 			}
 		}
 		novelInfo_0 = (NovelInfo)target_list_view.Tag;
-		ChapterInfo[] argument = (ChapterInfo[])arrayList.ToArray(typeof(ChapterInfo));
+		ChapterInfo[] argument = arrayList.ToArray();
 		arrayList.Clear();
 		backgroundWorker_6.RunWorkerAsync(argument);
 	}
@@ -3505,7 +3531,7 @@ public class CollectManual : DockContent
 		bool_0 = true;
 		panel_2.Enabled = false;
 		toolStripStatusLabel_0.Text = "正在采集章节.请勿进行其他操作..";
-		ArrayList arrayList = new ArrayList();
+		List<ChapterInfo> arrayList = new List<ChapterInfo>();
 		for (int i = 0; i < target_list_view.Items.Count; i++)
 		{
 			if (target_list_view.Items[i].Checked)
@@ -3515,7 +3541,7 @@ public class CollectManual : DockContent
 			}
 		}
 		novelInfo_0 = (NovelInfo)target_list_view.Tag;
-		ChapterInfo[] argument = (ChapterInfo[])arrayList.ToArray(typeof(ChapterInfo));
+		ChapterInfo[] argument = arrayList.ToArray();
 		arrayList.Clear();
 		backgroundWorker_6.RunWorkerAsync(argument);
 	}
@@ -3536,3 +3562,8 @@ public class CollectManual : DockContent
 		}
 	}
 }
+
+
+
+
+

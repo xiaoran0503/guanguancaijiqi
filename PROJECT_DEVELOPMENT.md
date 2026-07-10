@@ -63,13 +63,13 @@ V8.0、V8.2、V8.4、V8.5、V8.6、V8.7、V8.8、V8.10.3、V8.13.3、V8.17.1 已
 | SQLite 驱动 | System.Data.SQLite.Core `1.0.119` |
 | 压缩库 | SharpZipLib `1.4.2` |
 | 拼音库 | CHSPinYinConv `1.0.0` |
-| 分词兼容 | jieba.NET `0.42.2`，通过 `PanGuCompat` 兼容旧 `PanGu` 调用 |
+| 分词实现 | jieba.NET `0.42.2`，通过 `JiebaTextSegmenter` 提供 Net10 原生命名调用 |
 | Windows 系统信息 | System.Management `10.0.9` |
 
 Net10 迁移测试分支补充：
 
 - 当前 active solution 目标框架为 `.NET 10 / net10.0-windows`，SDK 固定为 `10.0.301`。
-- 当前 Net10 测试版本为 `10.1.2-net10-test / 10.1.2.0`，发布平台固定为 Windows-only `win-x64` / `x64`。
+- 当前 Net10 测试版本为 `10.2.0-net10-test / 10.2.0.0`，发布平台固定为 Windows-only `win-x64` / `x64`。
 - GitHub Actions 已加入 `net10-v10` 分支：推送 `net10-v10` / `main` 自动构建并上传 Windows x64 artifact，推送 `v10.*-net10` tag 自动创建 GitHub Release。
 - active solution 依赖采用 NuGet 稳定最新版策略；截至 2026-07-09，`MySqlConnector 2.6.1`、`Newtonsoft.Json 13.0.4`、`System.Data.SQLite.Core 1.0.119`、DockPanelSuite `3.1.1`、SharpZipLib `1.4.2`、CHSPinYinConv `1.0.0`、jieba.NET `0.42.2`、`System.Management 10.0.9` 和 `Microsoft.Extensions.* 10.0.9` 均无 stable 更新。
 - 不采用 beta/preview 包，例如 `Newtonsoft.Json 13.0.5-beta1`、`Microsoft.Data.SqlClient 7.1.0-preview1.*` 或 `.NET 11 preview` 包。
@@ -193,13 +193,13 @@ V8.0 现代化过程中，尽量避免直接依赖旧 DLL。
 | 旧组件 | 当前处理 |
 | --- | --- |
 | `ChnCharInfo.dll` | 使用 NuGet 包 `CHSPinYinConv` |
-| `PanGu.dll` | 使用 `jieba.NET`，并通过 `PanGuCompat.cs` 保持旧命名空间兼容 |
+| `PanGu.dll` | 已移除旧命名空间外壳，使用 `jieba.NET` 与 `JiebaTextSegmenter.cs` |
 | `Sunrise.Spell.dll` | 不再作为核心依赖，后续如需要拼写纠错应另选现代化方案 |
 
 兼容层位置：
 
 ```text
-src\NovelSpider.Local.Jieqi\NovelSpider\Local\Jieqi\PanGuCompat.cs
+src\NovelSpider.Local.Jieqi\NovelSpider\Local\Jieqi\JiebaTextSegmenter.cs
 ```
 
 拼音相关位置：
@@ -359,7 +359,7 @@ V8.13.2 热修事项：
 V8.13.1 热修事项：
 
 - 修复规则测试和采集规则使用 `gbk` / `gb2312` 编码时，.NET 8 未注册代码页导致 `'gbk' is not a supported encoding name` 的问题。
-- `NetworkCompatibility.Initialize()` 现在同时注册 `CodePagesEncodingProvider.Instance`，并继续设置系统默认 TLS 与正则缓存。
+- `Net10RuntimeBootstrap.Initialize()` 现在同时注册 `CodePagesEncodingProvider.Instance`，并继续设置系统默认 TLS 与正则缓存。
 - `NovelSpider.Program` 和 `NovelAdmin.Program` 在 `Configs.LoadConfigs()` 前执行网络/编码兼容初始化。
 - `FormatText.GetCharset()` 增加编码注册兜底；当 CMS 编码配置为 `gbk` 时明确返回 `Encoding.GetEncoding("gbk")`。
 - `Page` 和公共 `HttpClient` 增加类内初始化兜底，避免规则测试或独立调用绕过启动初始化。
@@ -400,7 +400,7 @@ V8.10.3 热修事项：
 V8.10.2 热修事项：
 
 - 修复 MySQL 8/9 默认 `caching_sha2_password` 认证在未补齐连接串时连接失败的问题。
-- `DatabaseCompatibilityProfile.Detect()`、配置页“测试数据库”和保存配置路径都会先规范化连接串，缺省补齐 `Charset=utf8mb4;SslMode=Preferred;AllowPublicKeyRetrieval=True`。
+- `DatabaseConnectionProfile.Detect()`、配置页“测试数据库”和保存配置路径都会先规范化连接串，缺省补齐 `Charset=utf8mb4;SslMode=Preferred;AllowPublicKeyRetrieval=True`。
 - 配置页 `NumericUpDown` 读取旧配置数值时会自动限制到控件允许范围，避免旧配置中的大数值导致设置页崩溃。
 
 V8.10.1 热修事项：
@@ -508,6 +508,7 @@ V8.0 已完成事项：
 - 检查 SQL 拼接逻辑，逐步改为参数化查询。
 - 梳理采集规则导入导出和异常日志，提升排错能力。
 - 为关键文本处理、拼音和分词逻辑补充最小单元测试。
+
 
 
 

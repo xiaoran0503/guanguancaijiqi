@@ -1,3 +1,13 @@
+V10.2.0 Net10 Test    2026-07-10
+
+- 版本迭代为 `10.2.0.0 / 10.2.0-net10-test`。
+- 技术兼容命名原生化：`NetworkCompatibility` 改为 `Net10RuntimeBootstrap`，`CmsCompatibility` 改为 `SupportedCms`，数据库配置检测改为 `DatabaseConnectionProfile`。
+- 移除 V10.1.2 的 WinForms `ScreenCaptureMode` 反射兜底；当前 SDK 未暴露强类型 API，截图保护延后。
+- `Page` 与手工采集热路径的旧 `ArrayList` 改为泛型 `List<T>`，减少运行时转换和装箱风险。
+- `LocalProviderAsyncBridge` 改为 `LocalProviderAsyncDispatcher`，移除同步 `GetAwaiter().GetResult()` 桥接写法。
+- Jieqi 分词移除旧 `PanGu` 命名空间外壳，改为 `JiebaTextSegmenter` 原生命名。
+- RuleForm 规则说明表和 MySql 参数缓存改为泛型集合 / ConcurrentDictionary。
+- WinForms 剪贴板辅助改为 `WinFormsRuntime.SetClipboardText`，继续使用 Unicode text API。
 V10.1.2 Net10 Test    2026-07-10
 
 - 版本迭代为 `10.1.2.0 / 10.1.2-net10-test`。
@@ -191,3 +201,5 @@ V8.0    2026-07-09
 - 每次功能调整、兼容性修复或依赖升级，都在本页面新增对应版本记录。
 - 版本号从 8.0 开始递增，例如 8.1、8.2 或 8.0.1。
 - 如发现界面和原版仍有差异，优先按原版布局继续修正。
+
+

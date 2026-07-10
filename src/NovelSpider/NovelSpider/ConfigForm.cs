@@ -655,7 +655,6 @@ public class ConfigForm : DockContent
 		imgHeight = 0;
 		text = string.Empty;
 		InitializeComponent();
-		WinFormsNet10Features.ProtectSensitiveForm(this);
 	}
 
 	private WebBrowser EnsureImageBrowser()
@@ -782,23 +781,23 @@ public class ConfigForm : DockContent
 	{
 		Configs.BaseConfig.ConnectionString = 数据库配置地址.Text.Trim();
 		string cmsName = 小说系统名.Text.Trim();
-		Configs.BaseConfig.CmsName = CmsCompatibility.NormalizeCmsName(cmsName);
+		Configs.BaseConfig.CmsName = SupportedCms.NormalizeCmsName(cmsName);
 		小说系统名.Text = Configs.BaseConfig.CmsName;
 		try
 		{
-			Configs.BaseConfig.ConnectionString = DatabaseCompatibilityProfile.NormalizeConnectionString(Configs.BaseConfig.ConnectionString, Configs.BaseConfig.DatabaseServerType, Configs.BaseConfig.DatabaseServerMajorVersion);
+			Configs.BaseConfig.ConnectionString = DatabaseConnectionProfile.NormalizeConnectionString(Configs.BaseConfig.ConnectionString, Configs.BaseConfig.DatabaseServerType, Configs.BaseConfig.DatabaseServerMajorVersion);
 			数据库配置地址.Text = Configs.BaseConfig.ConnectionString;
-			DatabaseCompatibilityProfile databaseCompatibilityProfile = DatabaseCompatibilityProfile.Detect(Configs.BaseConfig.ConnectionString);
-			Configs.BaseConfig.DatabaseServerType = databaseCompatibilityProfile.ServerType;
-			Configs.BaseConfig.DatabaseServerVersion = databaseCompatibilityProfile.ServerVersion;
-			Configs.BaseConfig.DatabaseServerMajorVersion = databaseCompatibilityProfile.MajorVersion;
-			Configs.BaseConfig.DatabaseServerComment = databaseCompatibilityProfile.VersionComment;
-			if (databaseCompatibilityProfile.ConnectionStringChanged)
+			DatabaseConnectionProfile databaseConnectionProfile = DatabaseConnectionProfile.Detect(Configs.BaseConfig.ConnectionString);
+			Configs.BaseConfig.DatabaseServerType = databaseConnectionProfile.ServerType;
+			Configs.BaseConfig.DatabaseServerVersion = databaseConnectionProfile.ServerVersion;
+			Configs.BaseConfig.DatabaseServerMajorVersion = databaseConnectionProfile.MajorVersion;
+			Configs.BaseConfig.DatabaseServerComment = databaseConnectionProfile.VersionComment;
+			if (databaseConnectionProfile.ConnectionStringChanged)
 			{
-				Configs.BaseConfig.ConnectionString = databaseCompatibilityProfile.RecommendedConnectionString;
-				数据库配置地址.Text = databaseCompatibilityProfile.RecommendedConnectionString;
+				Configs.BaseConfig.ConnectionString = databaseConnectionProfile.RecommendedConnectionString;
+				数据库配置地址.Text = databaseConnectionProfile.RecommendedConnectionString;
 			}
-			MessageBox.Show(databaseCompatibilityProfile.ToDisplayText(), "MySQL/MariaDB/Percona 连接测试");
+			MessageBox.Show(databaseConnectionProfile.ToDisplayText(), "MySQL/MariaDB/Percona 连接测试");
 		}
 		catch (Exception ex)
 		{
@@ -923,7 +922,7 @@ public class ConfigForm : DockContent
 		网站硬盘根目录.Text = Configs.BaseConfig.WebSitePath;
 		数据库配置地址.Text = Configs.BaseConfig.ConnectionString;
 		小说系统版本号.Text = Configs.BaseConfig.CmsVersion;
-		小说系统名.Text = CmsCompatibility.NormalizeCmsName(Configs.BaseConfig.CmsName);
+		小说系统名.Text = SupportedCms.NormalizeCmsName(Configs.BaseConfig.CmsName);
 		日志保存周期BOX.Text = Configs.BaseConfig.sqliteTime;
 		空章节替换内容Box.Text = Configs.BaseConfig.NullChapter;
 		是否启用空章节替换.Checked = Configs.BaseConfig.OpenNullChapter;
@@ -943,7 +942,7 @@ public class ConfigForm : DockContent
 		cookies.Text = Configs.BaseConfig.WebSiteCookies;
 		SetComboBoxIndex(日志格式BOX, Configs.BaseConfig.LogType);
 		中译英.Checked = Configs.BaseConfig.Translate;
-		小说系统名.Text = CmsCompatibility.NormalizeCmsName(Configs.CmsName);
+		小说系统名.Text = SupportedCms.NormalizeCmsName(Configs.CmsName);
 		是否生成目录.Checked = Configs.BaseConfig.IndexHtml;
 		是否生成内容.Checked = Configs.BaseConfig.ChapterHtml;
 		是否否生成OPF.Checked = Configs.BaseConfig.CreateOPF;
@@ -3853,10 +3852,10 @@ public class ConfigForm : DockContent
 		Configs.BaseConfig.Debug = Debug模式.Checked;
 		Configs.BaseConfig.WebSiteName = 网站名称TEXT.Text;
 		Configs.BaseConfig.WebSitePath = 网站硬盘根目录.Text;
-		Configs.BaseConfig.ConnectionString = DatabaseCompatibilityProfile.NormalizeConnectionString(数据库配置地址.Text, Configs.BaseConfig.DatabaseServerType, Configs.BaseConfig.DatabaseServerMajorVersion);
+		Configs.BaseConfig.ConnectionString = DatabaseConnectionProfile.NormalizeConnectionString(数据库配置地址.Text, Configs.BaseConfig.DatabaseServerType, Configs.BaseConfig.DatabaseServerMajorVersion);
 		数据库配置地址.Text = Configs.BaseConfig.ConnectionString;
 		Configs.BaseConfig.CmsVersion = 小说系统版本号.Text;
-		Configs.BaseConfig.CmsName = CmsCompatibility.NormalizeCmsName(小说系统名.Text);
+		Configs.BaseConfig.CmsName = SupportedCms.NormalizeCmsName(小说系统名.Text);
 		Configs.BaseConfig.DonotUserDefaultisboy = 是否使用默认男女频.Checked;
 		Configs.BaseConfig.DefaultisboyID = Convert.ToInt32(默认男女频text.Text.Split('|')[0]);
 		Configs.BaseConfig.Defaultisboy = 默认男女频text.Text.Split('|')[1];

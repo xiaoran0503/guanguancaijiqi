@@ -5,7 +5,7 @@ using MySqlConnector;
 
 namespace NovelSpider.Local.Jieqi;
 
-public class DatabaseCompatibilityProfile
+public class DatabaseConnectionProfile
 {
 	public const string MySql = "MySQL";
 
@@ -35,11 +35,11 @@ public class DatabaseCompatibilityProfile
 
 	public string RecommendationMessage { get; private set; }
 
-	private DatabaseCompatibilityProfile()
+	private DatabaseConnectionProfile()
 	{
 	}
 
-	public static DatabaseCompatibilityProfile Detect(string connectionString)
+	public static DatabaseConnectionProfile Detect(string connectionString)
 	{
 		string safeConnectionString = NormalizeConnectionString(connectionString, MySql, 0);
 		using MySqlConnection mySqlConnection = new MySqlConnection(safeConnectionString);
@@ -83,12 +83,12 @@ public class DatabaseCompatibilityProfile
 		return stringBuilder.ToString();
 	}
 
-	private static DatabaseCompatibilityProfile Create(string connectionString, string serverVersion, string versionComment, string characterSetServer, string collationServer, string sqlMode)
+	private static DatabaseConnectionProfile Create(string connectionString, string serverVersion, string versionComment, string characterSetServer, string collationServer, string sqlMode)
 	{
 		string serverType = DetectServerType(serverVersion, versionComment);
 		int majorVersion = ParseMajorVersion(serverVersion);
 		string recommendedConnectionString = ApplyRecommendedConnectionString(connectionString, serverType, majorVersion, out bool changed, out string recommendationMessage);
-		return new DatabaseCompatibilityProfile
+		return new DatabaseConnectionProfile
 		{
 			ServerType = serverType,
 			ServerVersion = serverVersion ?? "",

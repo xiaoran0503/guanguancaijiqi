@@ -57,7 +57,7 @@ public class Configs
 		{
 			TaskConfig = (TaskConfigInfo)ConfigFileManager.LoadConfig("TaskConfig.xml", TaskConfig);
 		}
-		BaseConfig.CmsName = CmsCompatibility.NormalizeCmsName(BaseConfig.CmsName);
+		BaseConfig.CmsName = SupportedCms.NormalizeCmsName(BaseConfig.CmsName);
 		CmsName = BaseConfig.CmsName;
 	}
 
@@ -72,7 +72,7 @@ public class Configs
 		HaveFunction = "ZhanQunPinyinDir中译英";
 		UserID = Guid.NewGuid();
 		AssemblyVersion = Assembly.GetExecutingAssembly().GetName().Version;
-		DisplayVersion = "10.1.2-net10-test";
+		DisplayVersion = "10.2.0-net10-test";
 		TaskNovelInfo = new Hashtable();
 		IsDemo = false;
 		Build = new DateTime(2026, 7, 9);
