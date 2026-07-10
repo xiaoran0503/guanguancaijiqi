@@ -47,7 +47,8 @@ public class MdiForm : Form
 
 	private ToolStripMenuItem toolStripMenuItem_11;
 
-	private ToolStripMenuItem toolStripMenuItem_29;
+
+	private ToolStripMenuItem toolStripMenuItem_30;
 
 	private ToolStripMenuItem toolStripMenuItem_12;
 
@@ -216,7 +217,7 @@ public class MdiForm : Form
 		this.toolStripMenuItem_27 = new System.Windows.Forms.ToolStripMenuItem();
 		this.toolStripMenuItem_5 = new System.Windows.Forms.ToolStripMenuItem();
 		this.toolStripMenuItem_13 = new System.Windows.Forms.ToolStripMenuItem();
-		this.toolStripMenuItem_29 = new System.Windows.Forms.ToolStripMenuItem();
+		this.toolStripMenuItem_30 = new System.Windows.Forms.ToolStripMenuItem();
 		this.toolStripMenuItem_12 = new System.Windows.Forms.ToolStripMenuItem();
 		this.toolStripMenuItem_17 = new System.Windows.Forms.ToolStripMenuItem();
 		this.toolStripMenuItem17 = new System.Windows.Forms.ToolStripMenuItem();
@@ -341,7 +342,7 @@ public class MdiForm : Form
 		this.toolStripMenuItem_16.Size = new System.Drawing.Size(136, 22);
 		this.toolStripMenuItem_16.Text = "过滤替换";
 		this.toolStripMenuItem_16.Click += new System.EventHandler(toolStripMenuItem_16_Click);
-		this.toolStripMenuItem_10.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[2] { this.toolStripMenuItem_11, this.toolStripMenuItem_29 });
+		this.toolStripMenuItem_10.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[2] { this.toolStripMenuItem_11, this.toolStripMenuItem_30 });
 		this.toolStripMenuItem_10.Name = "toolStripMenuItem_10";
 		this.toolStripMenuItem_10.Size = new System.Drawing.Size(60, 21);
 		this.toolStripMenuItem_10.Text = "规则(&R)";
@@ -349,10 +350,10 @@ public class MdiForm : Form
 		this.toolStripMenuItem_11.Size = new System.Drawing.Size(148, 22);
 		this.toolStripMenuItem_11.Text = "采集规则管理";
 		this.toolStripMenuItem_11.Click += new System.EventHandler(toolStripMenuItem_11_Click);
-		this.toolStripMenuItem_29.Name = "toolStripMenuItem_29";
-		this.toolStripMenuItem_29.Size = new System.Drawing.Size(172, 22);
-		this.toolStripMenuItem_29.Text = "自动生成采集规则";
-		this.toolStripMenuItem_29.Click += new System.EventHandler(toolStripMenuItem_29_Click);
+		this.toolStripMenuItem_30.Name = "toolStripMenuItem_30";
+		this.toolStripMenuItem_30.Size = new System.Drawing.Size(172, 22);
+		this.toolStripMenuItem_30.Text = "自动生成采集规则";
+		this.toolStripMenuItem_30.Click += new System.EventHandler(toolStripMenuItem_30_Click);
 		this.toolStripMenuItem_6.Name = "toolStripMenuItem_6";
 		this.toolStripMenuItem_6.Size = new System.Drawing.Size(64, 21);
 		this.toolStripMenuItem_6.Text = "窗口(&W)";
@@ -685,6 +686,13 @@ public class MdiForm : Form
 	}
 
 	
+	
+	private void toolStripMenuItem_30_Click(object sender, EventArgs e)
+	{
+		RuleAutoGenerateForm ruleAutoGenerateForm = new RuleAutoGenerateForm();
+		ShowDockContent(ruleAutoGenerateForm);
+	}
+
 	private void toolStripMenuItem_3_Click(object sender, EventArgs e)
 	{
 		CollectManual collectManual = new CollectManual();
@@ -736,6 +744,9 @@ public class MdiForm : Form
 		}
 	}
 }
+
+
+
 
 
 

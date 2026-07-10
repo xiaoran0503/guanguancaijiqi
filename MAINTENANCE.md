@@ -4,7 +4,7 @@
 
 - 当前主线：`net10.0-windows`
 - 当前平台：Windows-only `win-x64` / `x64`
-- 当前版本：`10.3.0-net10-test / 10.3.0.0`
+- 当前版本：`10.3.1-net10-test / 10.3.1.0`
 - 当前工作目录：`E:\采集器\Modernized_Net10_Working`
 - 当前发布目录：`E:\采集器\ModernizedOutput_Net10_Test`
 - 固定 SDK：`.NET SDK 10.0.301`
@@ -108,4 +108,5 @@ GitHub Actions:
 - 新写入 TXT 固定 UTF-8 无 BOM；CmsEncoding 仅用于网页解码和旧 TXT 读取。
 - 数据库连接串保存和运行时统一强制 Charset=utf8mb4。
 - 自动规则生成默认本地分析，AI Key 仅由用户在窗体中手动输入，不写入日志。
+
 

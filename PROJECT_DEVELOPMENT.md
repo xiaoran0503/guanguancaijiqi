@@ -69,7 +69,7 @@ V8.0、V8.2、V8.4、V8.5、V8.6、V8.7、V8.8、V8.10.3、V8.13.3、V8.17.1 已
 Net10 迁移测试分支补充：
 
 - 当前 active solution 目标框架为 `.NET 10 / net10.0-windows`，SDK 固定为 `10.0.301`。
-- 当前 Net10 测试版本为 `10.3.0-net10-test / 10.3.0.0`，发布平台固定为 Windows-only `win-x64` / `x64`。
+- 当前 Net10 测试版本为 `10.3.1-net10-test / 10.3.1.0`，发布平台固定为 Windows-only `win-x64` / `x64`。
 - GitHub Actions 已加入 `net10-v10` 分支：推送 `net10-v10` / `main` 自动构建并上传 Windows x64 artifact，推送 `v10.*-net10` tag 自动创建 GitHub Release。
 - active solution 依赖采用 NuGet 稳定最新版策略；截至 2026-07-09，`MySqlConnector 2.6.1`、`Newtonsoft.Json 13.0.4`、`System.Data.SQLite.Core 1.0.119`、DockPanelSuite `3.1.1`、SharpZipLib `1.4.2`、CHSPinYinConv `1.0.0`、jieba.NET `0.42.2`、`System.Management 10.0.9` 和 `Microsoft.Extensions.* 10.0.9` 均无 stable 更新。
 - 不采用 beta/preview 包，例如 `Newtonsoft.Json 13.0.5-beta1`、`Microsoft.Data.SqlClient 7.1.0-preview1.*` 或 `.NET 11 preview` 包。
@@ -506,6 +506,7 @@ V8.0 已完成事项：
 - 检查 SQL 拼接逻辑，逐步改为参数化查询。
 - 梳理采集规则导入导出和异常日志，提升排错能力。
 - 为关键文本处理、拼音和分词逻辑补充最小单元测试。
+
 
 
 

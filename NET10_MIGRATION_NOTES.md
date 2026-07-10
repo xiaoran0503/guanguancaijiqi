@@ -10,7 +10,7 @@
 - Runtime identifier: `win-x64`
 - SDK pinned by `global.json`: `10.0.301`
 - Runtime tested against: `.NET 10.0.9`
-- Test version: `10.3.0-net10-test / 10.3.0.0`
+- Test version: `10.3.1-net10-test / 10.3.1.0`
 
 ## Migration Boundaries
 
@@ -64,5 +64,6 @@ SQL Server dependency boundary:
 This machine has Windows `10.0.19045`. The .NET 10 supported OS metadata does not list normal Windows 10 22H2 as a clear supported desktop OS target. It is acceptable for local migration testing, but final release validation should be repeated on an officially supported Windows 11, Windows Server, or LTSC environment.
 
 Reference: `https://builds.dotnet.microsoft.com/dotnet/release-metadata/10.0/supported-os.json`
+
 
 
