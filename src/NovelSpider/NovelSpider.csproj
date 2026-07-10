@@ -1,0 +1,94 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>NovelSpider</AssemblyName>
+    <RootNamespace>NovelSpider</RootNamespace>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NovelSpider.Config\NovelSpider.Config.csproj" />
+    <ProjectReference Include="..\NovelSpider.Common\NovelSpider.Common.csproj" />
+    <ProjectReference Include="..\NovelSpider.Entity\NovelSpider.Entity.csproj" />
+    <ProjectReference Include="..\NovelSpider.Target\NovelSpider.Target.csproj" />
+    <ProjectReference Include="..\NovelSpider.Local\NovelSpider.Local.csproj" />
+    <ProjectReference Include="..\NovelSpider.Local.Jieqi\NovelSpider.Local.Jieqi.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="DockPanelSuite.ThemeVS2015" Version="3.1.1" />
+    <PackageReference Include="MySqlConnector" Version="2.6.1" />
+    <PackageReference Include="DockPanelSuite" Version="3.1.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\CHANGELOG.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="NovelSpider.自动采集模式.resources">
+      <LogicalName>NovelSpider.自动采集模式.resources</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NovelSpider.CollectManual.resources">
+      <LogicalName>NovelSpider.CollectManual.resources</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NovelSpider.CollectRepair.resources">
+      <LogicalName>NovelSpider.CollectRepair.resources</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NovelSpider.CollectReplace.resources">
+      <LogicalName>NovelSpider.CollectReplace.resources</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NovelSpider.CollectTasks.resources">
+      <LogicalName>NovelSpider.CollectTasks.resources</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NovelSpider.ConfigForm.resources">
+      <LogicalName>NovelSpider.ConfigForm.resources</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NovelSpider.HelpBatchCreate.resources">
+      <LogicalName>NovelSpider.HelpBatchCreate.resources</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NovelSpider.HelpConversion.resources">
+      <LogicalName>NovelSpider.HelpConversion.resources</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NovelSpider.HelpDeleteNovel.resources">
+      <LogicalName>NovelSpider.HelpDeleteNovel.resources</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NovelSpider.HelpLog.resources">
+      <LogicalName>NovelSpider.HelpLog.resources</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NovelSpider.HelpTaskNovelInfo.resources">
+      <LogicalName>NovelSpider.HelpTaskNovelInfo.resources</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NovelSpider.HelpUpdateNovel.resources">
+      <LogicalName>NovelSpider.HelpUpdateNovel.resources</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NovelSpider.HelpUpdateNovelBySelf.resources">
+      <LogicalName>NovelSpider.HelpUpdateNovelBySelf.resources</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NovelSpider.MdiForm.resources">
+      <LogicalName>NovelSpider.MdiForm.resources</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NovelSpider.MessageForm.resources">
+      <LogicalName>NovelSpider.MessageForm.resources</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NovelSpider.MysqlForm.resources">
+      <LogicalName>NovelSpider.MysqlForm.resources</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NovelSpider.NovelSpiderUpdate.resources">
+      <LogicalName>NovelSpider.NovelSpiderUpdate.resources</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NovelSpider.RuleForm.resources">
+      <LogicalName>NovelSpider.RuleForm.resources</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NovelSpider.RuleTestForm.resources">
+      <LogicalName>NovelSpider.RuleTestForm.resources</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NovelSpider.TaskForm.resources">
+      <LogicalName>NovelSpider.TaskForm.resources</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NovelSpider.WelcomeForm.resources">
+      <LogicalName>NovelSpider.WelcomeForm.resources</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,19 @@
+* text=auto
+
+*.cs text
+*.csproj text
+*.sln text
+*.props text
+*.ps1 text
+*.md text
+*.xml text
+*.config text
+*.json text
+
+*.resources binary
+*.dll binary
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.gif binary
+*.ico binary

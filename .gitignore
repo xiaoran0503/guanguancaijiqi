@@ -1,0 +1,54 @@
+# Build outputs
+bin/
+obj/
+[Bb]in/
+[Oo]bj/
+publish/
+Publish/
+artifacts/
+
+# Visual Studio / Rider / local IDE state
+.vs/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+# Runtime local config and generated data
+BaseConfig.xml
+TaskConfig.xml
+Key.*
+*.db3
+*.sqlite
+*.sqlite3
+Log/
+Logs/
+**/Log/
+**/Logs/
+**/Performance/
+
+# Temporary and generated files
+resources_temp/
+TestResults/
+.cache/
+*.tmp
+*.temp
+*.bak
+*.orig
+*.log
+
+# Publish/output folders when copied under the repo
+ModernizedOutput/
+ModernizedOutput_*/
+Modernized_*/
+
+# NuGet local artifacts
+*.nupkg
+packages/
+
+# OS metadata
+Thumbs.db
+Desktop.ini
+.DS_Store

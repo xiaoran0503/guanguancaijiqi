@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>NovelAdmin</AssemblyName>
+    <RootNamespace>NovelAdmin</RootNamespace>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NovelSpider.Entity\NovelSpider.Entity.csproj" />
+    <ProjectReference Include="..\NovelSpider.Config\NovelSpider.Config.csproj" />
+    <ProjectReference Include="..\NovelSpider.Local\NovelSpider.Local.csproj" />
+    <ProjectReference Include="..\NovelSpider.Common\NovelSpider.Common.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="DockPanelSuite" Version="3.1.1" />
+  </ItemGroup>
+</Project>
