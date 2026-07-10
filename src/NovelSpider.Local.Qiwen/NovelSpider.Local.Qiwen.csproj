@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <OutputType>Library</OutputType>
+    <AssemblyName>NovelSpider.Local.Qiwen</AssemblyName>
+    <RootNamespace>NovelSpider.Local.Qiwen</RootNamespace>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NovelSpider.Local\NovelSpider.Local.csproj" />
+    <ProjectReference Include="..\NovelSpider.Entity\NovelSpider.Entity.csproj" />
+    <ProjectReference Include="..\NovelSpider.Common\NovelSpider.Common.csproj" />
+    <ProjectReference Include="..\NovelSpider.Config\NovelSpider.Config.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.1" />
+  </ItemGroup>
+</Project>

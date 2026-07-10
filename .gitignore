@@ -1,0 +1,31 @@
+bin/
+obj/
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Runtime and local data
+Log/
+Logs/
+Performance/
+*.log
+*.db3
+*.sqlite
+*.sqlite3
+
+# Publish/output folders are archived outside this source repository.
+ModernizedOutput*/
+publish/
+artifacts/
+
+# Temporary resource extraction backups. The active embedded resources live under src/NovelSpider.
+resources_temp/
+
+# OS/editor noise
+Thumbs.db
+Desktop.ini
+*.tmp
+*.bak
