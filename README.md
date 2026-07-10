@@ -64,6 +64,18 @@ dotnet list .\NovelSpider.sln package --vulnerable --include-transitive
 .\scripts\check-version.ps1
 ```
 
+GitHub Actions 会在 `main`、`net8-v8.17.1`、`v*` tag 推送和 Pull Request 时自动执行同等构建流程。CI 使用相对路径脚本：
+
+```powershell
+.\scripts\publish-ci.ps1
+```
+
+自动发布结果：
+
+- 每次成功运行都会上传 `NovelSpider-Net8-V8.17.1.zip` 构建产物
+- 推送 `v*` tag 时会额外创建 GitHub Release 并附加 zip 包
+- CI 不使用本机 `E:\采集器\ModernizedOutput`，避免污染本地发布目录
+
 期望结果：
 
 - Release 构建 `0` 错误、`0` 警告

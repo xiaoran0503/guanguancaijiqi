@@ -1,0 +1,78 @@
+name: Net8 Build and Publish
+
+on:
+  push:
+    branches:
+      - main
+      - net8-v8.17.1
+    tags:
+      - "v*"
+  pull_request:
+    branches:
+      - main
+      - net8-v8.17.1
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  CONFIGURATION: Release
+  PUBLISH_DIR: artifacts/publish/NovelSpider-Net8
+  PACKAGE_DIR: artifacts/package
+  PACKAGE_NAME: NovelSpider-Net8-V8.17.1
+
+jobs:
+  build-publish:
+    name: Build and publish Net8 package
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore .\NovelSpider.sln
+
+      - name: Build
+        run: dotnet build .\NovelSpider.sln -c $env:CONFIGURATION -v:minimal --no-restore
+
+      - name: Check vulnerable packages
+        run: dotnet list .\NovelSpider.sln package --vulnerable --include-transitive
+
+      - name: Publish applications
+        shell: pwsh
+        run: .\scripts\publish-ci.ps1 -Configuration $env:CONFIGURATION -Output $env:PUBLISH_DIR
+
+      - name: Package publish output
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:PACKAGE_DIR | Out-Null
+          $zip = Join-Path $env:PACKAGE_DIR "$env:PACKAGE_NAME.zip"
+          if (Test-Path -LiteralPath $zip) {
+            Remove-Item -LiteralPath $zip -Force
+          }
+          Compress-Archive -Path "$env:PUBLISH_DIR\*" -DestinationPath $zip -Force
+          Get-Item -LiteralPath $zip | Select-Object FullName, Length, LastWriteTime
+
+      - name: Upload publish artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NovelSpider-Net8-V8.17.1
+          path: artifacts/package/NovelSpider-Net8-V8.17.1.zip
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Create GitHub release for tag
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/package/NovelSpider-Net8-V8.17.1.zip
+          generate_release_notes: true
