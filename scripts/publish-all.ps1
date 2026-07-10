@@ -43,7 +43,11 @@ foreach ($dir in $runtimeDataDirs) {
   $target = Join-Path $output $dir
   $backup = Join-Path $backupRoot $dir
   $seed = Join-Path $seedDataRoot $dir
-  $fallback = Join-Path $fallbackDataRoot $dir
+  $fallback = if (Test-Path -LiteralPath $fallbackDataRoot) {
+    Join-Path $fallbackDataRoot $dir
+  } else {
+    $null
+  }
   if (Test-Path -LiteralPath $backup) {
     if (Test-Path -LiteralPath $target) {
       Remove-Item -LiteralPath $target -Recurse -Force
@@ -54,7 +58,7 @@ foreach ($dir in $runtimeDataDirs) {
       Remove-Item -LiteralPath $target -Recurse -Force
     }
     Copy-Item -LiteralPath $seed -Destination $target -Recurse
-  } elseif (-not (Test-Path -LiteralPath $target) -and (Test-Path -LiteralPath $fallback)) {
+  } elseif (-not (Test-Path -LiteralPath $target) -and $fallback -and (Test-Path -LiteralPath $fallback)) {
     Copy-Item -LiteralPath $fallback -Destination $target -Recurse
   } elseif (-not (Test-Path -LiteralPath $target)) {
     New-Item -ItemType Directory -Path $target | Out-Null

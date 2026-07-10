@@ -127,6 +127,11 @@ public class WelcomeForm : DockContent
 		{
 			"更新日志",
 			"",
+			"V10.0.3 Net10 Test    2026-07-10",
+			"- 修复 GitHub Actions Windows Runner 没有本机 E:\\采集器 盘符时，发布脚本计算本机 fallback 目录导致失败的问题。",
+			"- 发布脚本现在只在本机 fallback 根目录存在时才使用该路径；CI 默认使用仓库 runtime\\Rules / runtime\\Tasks 种子数据。",
+			"- 版本迭代为 10.0.3.0 / 10.0.3-net10-test。",
+			"",
 			"V10.0.2 Net10 Test    2026-07-10",
 			"- 新增 GitHub Actions 自动构建与自动发布流程：推送 net10-v10 / main 自动构建并上传 Windows x64 artifact，推送 v10.*-net10 tag 自动创建 GitHub Release。",
 			"- 构建、漏洞检查、发布、版本检查脚本改为仓库相对路径，支持本机和 GitHub Runner 共用。",

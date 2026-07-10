@@ -10,7 +10,7 @@
 - Runtime identifier: `win-x64`
 - SDK pinned by `global.json`: `10.0.301`
 - Runtime tested against: `.NET 10.0.9`
-- Test version: `10.0.2-net10-test / 10.0.2.0`
+- Test version: `10.0.3-net10-test / 10.0.3.0`
 
 ## Migration Boundaries
 
