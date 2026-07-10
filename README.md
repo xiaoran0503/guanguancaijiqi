@@ -15,7 +15,7 @@
 | 维护 CMS | Jieqi |
 | 已下线 CMS | Qiwen 已从 UI、主程序引用和发布包中隐藏/移除，源码仅作为归档 |
 | 性能 CSV | 默认关闭；设置 `NOVELSPIDER_PERFORMANCE=1` 后临时启用 |
-| 分支定位 | `net8-v8.17.1` 为 Net8/V8 最终维护基线分支 |
+| 分支定位 | `net8-v8` 为 Net8/V8 最终维护基线分支 |
 
 ## 目录说明
 
@@ -64,7 +64,7 @@ dotnet list .\NovelSpider.sln package --vulnerable --include-transitive
 .\scripts\check-version.ps1
 ```
 
-GitHub Actions 会在 `main`、`net8-v8.17.1`、`v*` tag 推送和 Pull Request 时自动执行同等构建流程。CI 使用相对路径脚本：
+GitHub Actions 只在 `net8-v8` 分支、面向 `net8-v8` 的 Pull Request、以及 `v*` tag 推送时自动执行同等构建流程。CI 使用相对路径脚本：
 
 ```powershell
 .\scripts\publish-ci.ps1
@@ -137,8 +137,8 @@ https://github.com/xiaoran0503/guanguancaijiqi.git
 
 | 分支 / tag | 用途 |
 | --- | --- |
-| `main` | 当前已同步的 Net8 基线主线 |
-| `net8-v8.17.1` | 独立 Net8/V8 最终维护基线分支 |
+| `net8-v8` | 独立 Net8/V8 最终维护基线分支，后续 Net8 维护只推送此分支 |
+| `main` | 历史初始化分支，不再作为本会话 Net8 维护上传目标 |
 | `v8.17.1-net8-final` | Net8 最终代码基线 tag |
 
 本地外部里程碑 bundle：

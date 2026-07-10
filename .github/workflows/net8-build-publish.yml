@@ -3,14 +3,12 @@ name: Net8 Build and Publish
 on:
   push:
     branches:
-      - main
-      - net8-v8.17.1
+      - net8-v8
     tags:
       - "v*"
   pull_request:
     branches:
-      - main
-      - net8-v8.17.1
+      - net8-v8
   workflow_dispatch:
 
 permissions:
