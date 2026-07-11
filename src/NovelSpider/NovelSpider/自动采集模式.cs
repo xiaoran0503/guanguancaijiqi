@@ -309,6 +309,29 @@ public class 自动采集模式 : DockContent
 	private NumericUpDown numericUpDown_4;
 
 	private NumericUpDown numericUpDown_5;
+	private GroupBox requestScheduleGroup;
+
+	private NumericUpDown requestListWaitMinBox;
+
+	private NumericUpDown requestListWaitMaxBox;
+
+	private NumericUpDown requestNovelWaitMinBox;
+
+	private NumericUpDown requestNovelWaitMaxBox;
+
+	private NumericUpDown requestIndexWaitMinBox;
+
+	private NumericUpDown requestIndexWaitMaxBox;
+
+	private NumericUpDown requestChapterWaitMinBox;
+
+	private NumericUpDown requestChapterWaitMaxBox;
+
+	private NumericUpDown sameHostConcurrencyBox;
+
+	private ComboBox userAgentModeBox;
+
+	private CheckBox requestBackoffBox;
 
 	private NumericUpDown 不采小于字符设置_6;
 
@@ -471,6 +494,7 @@ public class 自动采集模式 : DockContent
 		string_1 = "";
 		string_2 = "";
 		InitializeComponent();
+		InitializeRequestSchedulingControls();
 	}
 
 	public 自动采集模式(bool bool_1)
@@ -482,6 +506,7 @@ public class 自动采集模式 : DockContent
 		string_1 = "";
 		string_2 = "";
 		InitializeComponent();
+		InitializeRequestSchedulingControls();
 		bool_0 = bool_1;
 	}
 
@@ -922,7 +947,7 @@ public class 自动采集模式 : DockContent
 			{
 				return;
 			}
-			Thread.Sleep(tInfo.NovelUrlWait);
+			ApplyFriendlyDelay(tInfo, RequestKind.Novel);
 			try
 			{
 				ICollection keys = Configs.TaskNovelInfo.Keys;
@@ -1224,7 +1249,7 @@ public class 自动采集模式 : DockContent
 					{
 						AutoWorker.ReportProgress(1, chapterList[num6].ChapterName);
 						AutoWorker.ReportProgress(4, num6 + 1);
-						Thread.Sleep(tInfo.ChapterUrlWait);
+						ApplyFriendlyDelay(tInfo, RequestKind.Chapter);
 					}
 					switch (tInfo.EqualsChapter)
 					{
@@ -1337,7 +1362,7 @@ public class 自动采集模式 : DockContent
 				{
 					return;
 				}
-				Thread.Sleep(tInfo.IndexUrlWait);
+				ApplyFriendlyDelay(tInfo, RequestKind.Index);
 				bool flag8 = false;
 				int num10 = num + 1;
 				int num11 = 0;
@@ -1661,7 +1686,7 @@ public class 自动采集模式 : DockContent
 					{
 						Thread.Sleep(5000);
 					}
-					Thread.Sleep(tInfo.ChapterUrlWait);
+					ApplyFriendlyDelay(tInfo, RequestKind.Chapter);
 					goto IL_1cf4;
 					IL_1c93:
 					if (Configs.BaseConfig.ChapterHtml)
@@ -1803,7 +1828,7 @@ public class 自动采集模式 : DockContent
 			{
 				return;
 			}
-			Thread.Sleep(tInfo.NovelUrlWait);
+			ApplyFriendlyDelay(tInfo, RequestKind.Novel);
 			try
 			{
 				ICollection keys = Configs.TaskNovelInfo.Keys;
@@ -2195,7 +2220,7 @@ public class 自动采集模式 : DockContent
 					{
 						return;
 					}
-					Thread.Sleep(tInfo.IndexUrlWait);
+					ApplyFriendlyDelay(tInfo, RequestKind.Index);
 					bool flag5 = false;
 					int num9 = num2 + 1;
 					int num10 = 0;
@@ -2564,7 +2589,7 @@ public class 自动采集模式 : DockContent
 						{
 							Thread.Sleep(5000);
 						}
-						Thread.Sleep(tInfo.ChapterUrlWait);
+						ApplyFriendlyDelay(tInfo, RequestKind.Chapter);
 						goto IL_25e7;
 					}
 					if (flag5 && (Configs.BaseConfig.IndexHtml || Configs.BaseConfig.CreateOPF))
@@ -4577,6 +4602,106 @@ public class 自动采集模式 : DockContent
 		}
 	}
 
+	private void InitializeRequestSchedulingControls()
+	{
+		requestScheduleGroup = new GroupBox
+		{
+			Text = "请求调度 / 站点友好访问",
+			Location = new Point(634, 116),
+			Size = new Size(162, 219),
+			Anchor = AnchorStyles.Top | AnchorStyles.Right
+		};
+		Label header = new Label { Text = "类型        最小   最大", Location = new Point(8, 20), Size = new Size(145, 12) };
+		requestScheduleGroup.Controls.Add(header);
+		requestListWaitMinBox = CreateScheduleNumber(58, 39);
+		requestListWaitMaxBox = CreateScheduleNumber(108, 39);
+		requestNovelWaitMinBox = CreateScheduleNumber(58, 66);
+		requestNovelWaitMaxBox = CreateScheduleNumber(108, 66);
+		requestIndexWaitMinBox = CreateScheduleNumber(58, 93);
+		requestIndexWaitMaxBox = CreateScheduleNumber(108, 93);
+		requestChapterWaitMinBox = CreateScheduleNumber(58, 120);
+		requestChapterWaitMaxBox = CreateScheduleNumber(108, 120);
+		AddScheduleRow("列表", 39, requestListWaitMinBox, requestListWaitMaxBox);
+		AddScheduleRow("信息", 66, requestNovelWaitMinBox, requestNovelWaitMaxBox);
+		AddScheduleRow("目录", 93, requestIndexWaitMinBox, requestIndexWaitMaxBox);
+		AddScheduleRow("正文", 120, requestChapterWaitMinBox, requestChapterWaitMaxBox);
+		requestBackoffBox = new CheckBox { Text = "失败退避", Location = new Point(8, 147), Size = new Size(76, 18), Checked = true };
+		requestScheduleGroup.Controls.Add(requestBackoffBox);
+		requestScheduleGroup.Controls.Add(new Label { Text = "并发", Location = new Point(88, 150), Size = new Size(29, 12) });
+		sameHostConcurrencyBox = CreateScheduleNumber(121, 146);
+		sameHostConcurrencyBox.Minimum = 1;
+		sameHostConcurrencyBox.Maximum = 16;
+		sameHostConcurrencyBox.Value = 1;
+		requestScheduleGroup.Controls.Add(sameHostConcurrencyBox);
+		requestScheduleGroup.Controls.Add(new Label { Text = "UA", Location = new Point(8, 178), Size = new Size(20, 12) });
+		userAgentModeBox = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(32, 174), Size = new Size(122, 20) };
+		userAgentModeBox.Items.AddRange(new object[] { "固定全局 UA", "随机 PC 浏览器 UA", "随机手机浏览器 UA", "随机爬虫 UA" });
+		userAgentModeBox.SelectedIndex = 0;
+		requestScheduleGroup.Controls.Add(userAgentModeBox);
+		采集进度_4.Controls.Add(requestScheduleGroup);
+	}
+
+	private NumericUpDown CreateScheduleNumber(int x, int y)
+	{
+		return new NumericUpDown
+		{
+			Location = new Point(x, y),
+			Size = new Size(45, 21),
+			Maximum = 600000,
+			Minimum = 0
+		};
+	}
+
+	private void AddScheduleRow(string label, int y, NumericUpDown minBox, NumericUpDown maxBox)
+	{
+		requestScheduleGroup.Controls.Add(new Label { Text = label, Location = new Point(8, y + 4), Size = new Size(32, 12) });
+		requestScheduleGroup.Controls.Add(minBox);
+		requestScheduleGroup.Controls.Add(maxBox);
+	}
+
+	private static void NormalizeDelayBoxes(NumericUpDown minBox, NumericUpDown maxBox)
+	{
+		if (minBox.Value > maxBox.Value)
+		{
+			decimal value = minBox.Value;
+			minBox.Value = maxBox.Value;
+			maxBox.Value = value;
+		}
+	}
+
+	private static string UiToUserAgentMode(ComboBox box)
+	{
+		return box.SelectedIndex switch
+		{
+			1 => "DesktopBrowserRandom",
+			2 => "MobileBrowserRandom",
+			3 => "CrawlerRandom",
+			_ => "Fixed"
+		};
+	}
+
+	private static int UserAgentModeToUi(string mode)
+	{
+		if (string.Equals(mode, "DesktopBrowserRandom", StringComparison.OrdinalIgnoreCase))
+		{
+			return 1;
+		}
+		if (string.Equals(mode, "MobileBrowserRandom", StringComparison.OrdinalIgnoreCase))
+		{
+			return 2;
+		}
+		if (string.Equals(mode, "CrawlerRandom", StringComparison.OrdinalIgnoreCase))
+		{
+			return 3;
+		}
+		return 0;
+	}
+
+	private static void ApplyFriendlyDelay(TaskConfigInfo config, RequestKind kind)
+	{
+		(int minDelay, int maxDelay) = RequestDelayProfile.GetDelay(config, kind);
+		HostRequestThrottle.Wait("*", minDelay, maxDelay, kind.ToString());
+	}
 	private void method_4()
 	{
 		try
@@ -5139,5 +5264,8 @@ public class 自动采集模式 : DockContent
 		}
 	}
 }
+
+
+
 
 

@@ -4,7 +4,7 @@
 
 - 当前主线：`net10.0-windows`
 - 当前平台：Windows-only `win-x64` / `x64`
-- 当前版本：`10.3.5-net10-test / 10.3.5.0`
+- 当前版本：`10.4.0-net10-test / 10.4.0.0`
 - 当前工作目录：`E:\采集器\Modernized_Net10_Working`
 - 当前发布目录：`E:\采集器\ModernizedOutput_Net10_Test`
 - 固定 SDK：`.NET SDK 10.0.301`
@@ -110,4 +110,8 @@ GitHub Actions:
 - 自动规则生成默认本地分析，AI Key 仅由用户在窗体中手动输入，不写入日志。
 
 
+
+
+
+- V10.4.0: 自动采集任务界面提供请求调度/站点友好访问配置，可直接设置随机延时区间、UA 模式、同域并发和失败退避，不需要手工修改 XML。
 

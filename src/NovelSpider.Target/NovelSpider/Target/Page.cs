@@ -85,23 +85,37 @@ public partial class Page
 		ruleConfigInfo_0 = ruleConfigInfo_1;
 		taskConfigInfo_0 = taskConfigInfo_1;
 	}
-	private static string GetStringWorkWithEmptyRetry(HttpClient httpClient, int maxAttempts = 2, string subject = "")
+	private string GetStringWorkWithEmptyRetry(HttpClient httpClient, int maxAttempts = 2, string subject = "", RequestKind requestKind = RequestKind.Chapter)
 	{
 		string text = string.Empty;
+		string host = GetRequestHost(httpClient, subject);
+		httpClient.UserAgent = RequestUserAgentProvider.Resolve(taskConfigInfo_0, host);
 		for (int attempt = 1; attempt <= maxAttempts; attempt++)
 		{
+			HostRequestThrottle.WaitForBackoff(host, taskConfigInfo_0, requestKind.ToString());
+			(int minDelay, int maxDelay) = RequestDelayProfile.GetDelay(taskConfigInfo_0, requestKind);
+			HostRequestThrottle.Wait(host, minDelay, maxDelay, requestKind.ToString());
+			using IDisposable concurrency = HostRequestThrottle.Enter(host, taskConfigInfo_0?.SameHostConcurrencyLimit ?? 1);
 			using IDisposable measure = PerformanceTelemetry.Measure("http", "get_string_work", subject);
 			text = httpClient.GetStringWork();
-			if (!string.IsNullOrEmpty(text))
+			bool succeeded = !string.IsNullOrEmpty(text);
+			HostRequestThrottle.ReportResult(host, taskConfigInfo_0, succeeded, succeeded ? string.Empty : "empty_response");
+			if (succeeded)
 			{
 				return text;
 			}
 			if (attempt < maxAttempts)
 			{
-				PerformanceTelemetry.Record("http", "empty_response_retry", 0, subject, succeed: false, message: $"attempt={attempt}");
+				PerformanceTelemetry.Record("http", "empty_response_retry", 0, subject, succeed: false, message: $"attempt={attempt};kind={requestKind}");
 			}
 		}
 		return text;
+	}
+
+	private static string GetRequestHost(HttpClient httpClient, string subject)
+	{
+		string value = string.IsNullOrWhiteSpace(subject) ? httpClient.UriString : subject;
+		return Uri.TryCreate(value, UriKind.Absolute, out Uri uri) ? uri.Host : string.Empty;
 	}
 
 	public NovelInfo GetChapterInfo(NovelInfo novelInfo_0, bool isvip)
@@ -132,7 +146,6 @@ public partial class Page
 			}
 		}
 		novelInfo_0.LastChapter.ChapterUrl = new Uri(novelInfo_0.IndexUrl, text);
-		WaitForChapterRequestInterval(novelInfo_0.LastChapter.ChapterUrl.Host);
 		HttpClient httpClient = new HttpClient
 		{
 			Encoding = Encoding.GetEncoding(ruleConfigInfo_0.GetSiteCharset.Pattern),
@@ -145,10 +158,9 @@ public partial class Page
 			ProxyPassword = taskConfigInfo_0.ProxyPassword,
 			UriString = novelInfo_0.LastChapter.ChapterUrl.AbsoluteUri,
 			Referer = novelInfo_0.IndexUrl.AbsoluteUri,
-			UserAgent = Configs.BaseConfig.HttpUserAgent,
 			Cookies = ruleConfigInfo_0.PubCookies.Pattern
 		};
-		string stringWork = GetStringWorkWithEmptyRetry(httpClient, subject: novelInfo_0.LastChapter.ChapterUrl.AbsoluteUri);
+		string stringWork = GetStringWorkWithEmptyRetry(httpClient, subject: novelInfo_0.LastChapter.ChapterUrl.AbsoluteUri, requestKind: RequestKind.Chapter);
 		if (!string.IsNullOrEmpty(ruleConfigInfo_0.PubContent_GetTextKey.Pattern))
 		{
 			try
@@ -195,7 +207,7 @@ public partial class Page
 					UriString = novelInfo_0.LastChapter.TextUrl.AbsoluteUri,
 					Referer = novelInfo_0.LastChapter.ChapterUrl.AbsoluteUri
 				};
-				stringWork = GetStringWorkWithEmptyRetry(httpClient2, 3, novelInfo_0.LastChapter.TextUrl.AbsoluteUri);
+				stringWork = GetStringWorkWithEmptyRetry(httpClient2, 3, novelInfo_0.LastChapter.TextUrl.AbsoluteUri, RequestKind.Chapter);
 			}
 			catch
 			{
@@ -274,7 +286,7 @@ public partial class Page
 					UriString = uri.AbsoluteUri,
 					Referer = uri.AbsoluteUri
 				};
-				string stringWork2 = GetStringWorkWithEmptyRetry(httpClient3, subject: uri.AbsoluteUri);
+				string stringWork2 = GetStringWorkWithEmptyRetry(httpClient3, subject: uri.AbsoluteUri, requestKind: RequestKind.Chapter);
 				novelInfo_0.LastChapter.ChapterText += Match(stringWork2, ruleConfigInfo_0.PubContentText, bool_0: true);
 			}
 		}
@@ -352,7 +364,7 @@ public partial class Page
 			UriString = novelInfo_0.IndexUrl.AbsoluteUri,
 			Referer = novelInfo_0.NovelUrl.AbsoluteUri
 		};
-		string text2 = GetStringWorkWithEmptyRetry(httpClient, subject: novelInfo_0.NovelUrl.AbsoluteUri);
+		string text2 = GetStringWorkWithEmptyRetry(httpClient, subject: novelInfo_0.NovelUrl.AbsoluteUri, requestKind: RequestKind.Index);
 		if (string.IsNullOrEmpty(text2) || RuleRegexCache.Get(ruleConfigInfo_0.PubIndexErr.Pattern, ruleConfigInfo_0.PubIndexErr.Options).IsMatch(text2))
 		{
 			throw new ApplicationException("当前小说页不存在");
@@ -524,7 +536,7 @@ public partial class Page
 			UriString = novelInfo_0.IndexUrl.AbsoluteUri,
 			Referer = novelInfo_0.NovelUrl.AbsoluteUri
 		};
-		string text2 = GetStringWorkWithEmptyRetry(httpClient, subject: novelInfo_0.NovelUrl.AbsoluteUri);
+		string text2 = GetStringWorkWithEmptyRetry(httpClient, subject: novelInfo_0.NovelUrl.AbsoluteUri, requestKind: RequestKind.Index);
 		if (string.IsNullOrEmpty(text2) || RuleRegexCache.Get(ruleConfigInfo_0.PubIndexErr.Pattern, ruleConfigInfo_0.PubIndexErr.Options).IsMatch(text2))
 		{
 			throw new ApplicationException("当前小说页不存在");
@@ -615,7 +627,7 @@ public partial class Page
 					Referer = ruleConfigInfo_0.GetSiteUrl.Pattern
 				};
 				HttpClient httpClient2 = httpClient;
-				string stringWork = GetStringWorkWithEmptyRetry(httpClient2, subject: uri.AbsoluteUri);
+				string stringWork = GetStringWorkWithEmptyRetry(httpClient2, subject: uri.AbsoluteUri, requestKind: RequestKind.List);
 				MatchCollection matchCollection = RuleRegexCache.Get(ruleConfigInfo_0.NovelList_GetNovelKey.Pattern, ruleConfigInfo_0.NovelList_GetNovelKey.Options).Matches(stringWork);
 				for (int k = 0; k < matchCollection.Count; k++)
 				{
@@ -681,7 +693,7 @@ public partial class Page
 			Referer = ruleConfigInfo_0.GetSiteUrl.Pattern
 		};
 		HttpClient httpClient2 = httpClient;
-		string stringWork = GetStringWorkWithEmptyRetry(httpClient2, subject: novelInfo_0.NovelUrl.AbsoluteUri);
+		string stringWork = GetStringWorkWithEmptyRetry(httpClient2, subject: novelInfo_0.NovelUrl.AbsoluteUri, requestKind: RequestKind.Novel);
 		SpiderException.Debug("Page.GetNovelInfo Rule.NovelErr");
 		if (string.IsNullOrEmpty(stringWork) || RuleRegexCache.Get(ruleConfigInfo_0.NovelErr.Pattern, ruleConfigInfo_0.NovelErr.Options).IsMatch(stringWork))
 		{
@@ -859,7 +871,7 @@ public partial class Page
 					UriString = uri.AbsoluteUri,
 					Referer = ruleConfigInfo_0.GetSiteUrl.Pattern
 				};
-				string stringWork = GetStringWorkWithEmptyRetry(httpClient, subject: uri.AbsoluteUri);
+				string stringWork = GetStringWorkWithEmptyRetry(httpClient, subject: uri.AbsoluteUri, requestKind: RequestKind.List);
 				MatchCollection matchCollection = RuleRegexCache.Get(ruleConfigInfo_0.NovelList_GetNovelKey.Pattern, ruleConfigInfo_0.NovelList_GetNovelKey.Options).Matches(stringWork);
 				for (int k = 0; k < matchCollection.Count; k++)
 				{
@@ -887,7 +899,7 @@ public partial class Page
 			Encoding = Encoding.GetEncoding(string_2),
 			UriString = string_0
 		};
-		string stringWork = GetStringWorkWithEmptyRetry(httpClient, subject: string_0);
+		string stringWork = httpClient.GetStringWork();
 		MatchCollection matchCollection = RuleRegexCache.Get(string_1).Matches(stringWork);
 		for (int i = 0; i < matchCollection.Count; i++)
 		{
@@ -995,7 +1007,7 @@ public partial class Page
 			Referer = ruleConfigInfo_0.GetSiteUrl.Pattern,
 			AllowAutoRedirect = true
 		};
-		string stringWork = GetStringWorkWithEmptyRetry(httpClient, subject: ruleConfigInfo_0.NovelSearchUrl.Pattern);
+		string stringWork = GetStringWorkWithEmptyRetry(httpClient, subject: ruleConfigInfo_0.NovelSearchUrl.Pattern, requestKind: RequestKind.List);
 		RegexInfo regexInfo_ = new RegexInfo
 		{
 			RegexName = ruleConfigInfo_0.NovelSearch_GetNovelKey.RegexName,
@@ -1095,3 +1107,8 @@ public partial class Page
 	[GeneratedRegex("trans\":\"(.+?)\",\"orig")]
 	private static partial Regex GoogleTranslateShortResultRegex();
 }
+
+
+
+
+

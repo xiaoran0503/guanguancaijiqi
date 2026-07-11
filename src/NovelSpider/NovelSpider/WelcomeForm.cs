@@ -127,6 +127,11 @@ public class WelcomeForm : DockContent
 		{
 			"更新日志",
 			"",
+			"V10.4.0 Net10 Test    2026-07-11",
+			"- 版本迭代为 10.4.0.0 / 10.4.0-net10-test。",
+			"- 自动采集任务 UI 新增请求调度配置区，支持随机延时区间、UA 模式、同域并发和失败退避。",
+			"- 核心采集请求统一接入站点友好节流，降低请求突刺和误触限流概率。",
+			"",
 			"V10.3.5 Net10 Test    2026-07-11",
 			"- 版本迭代为 10.3.5.0 / 10.3.5-net10-test。",
 			"- 定向修复 www.biquge.club 自动生成规则，补齐 div#list/dl#newlist 目录、og:novel:author 作者和 /read 章节链接识别。",
@@ -351,6 +356,7 @@ public class WelcomeForm : DockContent
 		});
 	}
 }
+
 
 
 

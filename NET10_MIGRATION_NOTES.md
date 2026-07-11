@@ -10,7 +10,7 @@
 - Runtime identifier: `win-x64`
 - SDK pinned by `global.json`: `10.0.301`
 - Runtime tested against: `.NET 10.0.9`
-- Test version: `10.3.5-net10-test / 10.3.5.0`
+- Test version: `10.4.0-net10-test / 10.4.0.0`
 
 ## Migration Boundaries
 
@@ -67,4 +67,8 @@ Reference: `https://builds.dotnet.microsoft.com/dotnet/release-metadata/10.0/sup
 
 
 
+
+
+
+- V10.4.0: 自动采集任务界面提供请求调度/站点友好访问配置，可直接设置随机延时区间、UA 模式、同域并发和失败退避，不需要手工修改 XML。
 

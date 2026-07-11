@@ -108,6 +108,28 @@ public class TaskConfigInfo : IConfigInfo
 
 	private int int_26;
 
+	private int requestListWaitMin;
+
+	private int requestListWaitMax;
+
+	private int requestNovelWaitMin;
+
+	private int requestNovelWaitMax;
+
+	private int requestIndexWaitMin;
+
+	private int requestIndexWaitMax;
+
+	private int requestChapterWaitMin;
+
+	private int requestChapterWaitMax;
+
+	private int sameHostConcurrencyLimit;
+
+	private string userAgentMode;
+
+	private bool requestBackoffEnabled;
+
 	private int int_3;
 
 	private int int_4;
@@ -1245,6 +1267,71 @@ public class TaskConfigInfo : IConfigInfo
 
 	public int IpTimeNum { get; set; }
 
+	public int RequestListWaitMin
+	{
+		get => requestListWaitMin;
+		set => requestListWaitMin = value;
+	}
+
+	public int RequestListWaitMax
+	{
+		get => requestListWaitMax;
+		set => requestListWaitMax = value;
+	}
+
+	public int RequestNovelWaitMin
+	{
+		get => requestNovelWaitMin == 0 && NovelUrlWait > 0 ? NovelUrlWait : requestNovelWaitMin;
+		set => requestNovelWaitMin = value;
+	}
+
+	public int RequestNovelWaitMax
+	{
+		get => requestNovelWaitMax == 0 && NovelUrlWait > 0 ? NovelUrlWait : requestNovelWaitMax;
+		set => requestNovelWaitMax = value;
+	}
+
+	public int RequestIndexWaitMin
+	{
+		get => requestIndexWaitMin == 0 && IndexUrlWait > 0 ? IndexUrlWait : requestIndexWaitMin;
+		set => requestIndexWaitMin = value;
+	}
+
+	public int RequestIndexWaitMax
+	{
+		get => requestIndexWaitMax == 0 && IndexUrlWait > 0 ? IndexUrlWait : requestIndexWaitMax;
+		set => requestIndexWaitMax = value;
+	}
+
+	public int RequestChapterWaitMin
+	{
+		get => requestChapterWaitMin == 0 && ChapterUrlWait > 0 ? ChapterUrlWait : requestChapterWaitMin;
+		set => requestChapterWaitMin = value;
+	}
+
+	public int RequestChapterWaitMax
+	{
+		get => requestChapterWaitMax == 0 && ChapterUrlWait > 0 ? ChapterUrlWait : requestChapterWaitMax;
+		set => requestChapterWaitMax = value;
+	}
+
+	public int SameHostConcurrencyLimit
+	{
+		get => sameHostConcurrencyLimit <= 0 ? 1 : sameHostConcurrencyLimit;
+		set => sameHostConcurrencyLimit = value;
+	}
+
+	public string UserAgentMode
+	{
+		get => string.IsNullOrWhiteSpace(userAgentMode) ? "Fixed" : userAgentMode;
+		set => userAgentMode = value;
+	}
+
+	public bool RequestBackoffEnabled
+	{
+		get => requestBackoffEnabled;
+		set => requestBackoffEnabled = value;
+	}
 	public TaskConfigInfo()
 	{
 		int_0 = 30;
@@ -1253,5 +1340,10 @@ public class TaskConfigInfo : IConfigInfo
 		string_1 = "bs\\[\\d*\\] = new Book\\('\\d*','(.+?)','\\d*'";
 		string_11 = "gb2312";
 		string_12 = "";
+		requestBackoffEnabled = true;
+		sameHostConcurrencyLimit = 1;
+		userAgentMode = "Fixed";
 	}
 }
+
+
