@@ -494,7 +494,6 @@ public class 自动采集模式 : DockContent
 		string_1 = "";
 		string_2 = "";
 		InitializeComponent();
-		InitializeRequestSchedulingControls();
 	}
 
 	public 自动采集模式(bool bool_1)
@@ -506,7 +505,6 @@ public class 自动采集模式 : DockContent
 		string_1 = "";
 		string_2 = "";
 		InitializeComponent();
-		InitializeRequestSchedulingControls();
 		bool_0 = bool_1;
 	}
 
@@ -3603,10 +3601,10 @@ public class 自动采集模式 : DockContent
 		this.groupBox_9.Controls.Add(this.numericUpDown_5);
 		this.groupBox_9.Location = new System.Drawing.Point(634, 6);
 		this.groupBox_9.Name = "groupBox_9";
-		this.groupBox_9.Size = new System.Drawing.Size(162, 104);
+		this.groupBox_9.Size = new System.Drawing.Size(162, 219);
 		this.groupBox_9.TabIndex = 5;
 		this.groupBox_9.TabStop = false;
-		this.groupBox_9.Text = "延时等待";
+		this.groupBox_9.Text = "请求调度";
 		this.label_21.AutoSize = true;
 		this.label_21.Location = new System.Drawing.Point(121, 77);
 		this.label_21.Name = "label_21";
@@ -4399,6 +4397,7 @@ public class 自动采集模式 : DockContent
 		this.groupBox_4.PerformLayout();
 		this.groupBox7.ResumeLayout(false);
 		this.groupBox7.PerformLayout();
+		this.UpgradeVisibleDelayGroup();
 		this.groupBox_9.ResumeLayout(false);
 		this.groupBox_9.PerformLayout();
 		((System.ComponentModel.ISupportInitialize)this.numericUpDown_3).EndInit();
@@ -4604,41 +4603,41 @@ public class 自动采集模式 : DockContent
 
 	private void InitializeRequestSchedulingControls()
 	{
-		requestScheduleGroup = new GroupBox
-		{
-			Text = "请求调度 / 站点友好访问",
-			Location = new Point(634, 116),
-			Size = new Size(162, 219),
-			Anchor = AnchorStyles.Top | AnchorStyles.Right
-		};
+		// Kept for compatibility with old constructor flow; the visible controls now live in groupBox_9.
+	}
+
+	private void UpgradeVisibleDelayGroup()
+	{
 		Label header = new Label { Text = "类型        最小   最大", Location = new Point(8, 20), Size = new Size(145, 12) };
-		requestScheduleGroup.Controls.Add(header);
+		groupBox_9.Controls.Add(header);
 		requestListWaitMinBox = CreateScheduleNumber(58, 39);
 		requestListWaitMaxBox = CreateScheduleNumber(108, 39);
-		requestNovelWaitMinBox = CreateScheduleNumber(58, 66);
+		requestNovelWaitMinBox = numericUpDown_5;
 		requestNovelWaitMaxBox = CreateScheduleNumber(108, 66);
-		requestIndexWaitMinBox = CreateScheduleNumber(58, 93);
+		requestIndexWaitMinBox = numericUpDown_4;
 		requestIndexWaitMaxBox = CreateScheduleNumber(108, 93);
-		requestChapterWaitMinBox = CreateScheduleNumber(58, 120);
+		requestChapterWaitMinBox = numericUpDown_3;
 		requestChapterWaitMaxBox = CreateScheduleNumber(108, 120);
 		AddScheduleRow("列表", 39, requestListWaitMinBox, requestListWaitMaxBox);
-		AddScheduleRow("信息", 66, requestNovelWaitMinBox, requestNovelWaitMaxBox);
-		AddScheduleRow("目录", 93, requestIndexWaitMinBox, requestIndexWaitMaxBox);
-		AddScheduleRow("正文", 120, requestChapterWaitMinBox, requestChapterWaitMaxBox);
+		RelocateExistingDelayRow(label_26, numericUpDown_5, label_23, "信息", 66);
+		RelocateExistingDelayRow(label_25, numericUpDown_4, label_22, "目录", 93);
+		RelocateExistingDelayRow(label_24, numericUpDown_3, label_21, "正文", 120);
+		groupBox_9.Controls.Add(requestNovelWaitMaxBox);
+		groupBox_9.Controls.Add(requestIndexWaitMaxBox);
+		groupBox_9.Controls.Add(requestChapterWaitMaxBox);
 		requestBackoffBox = new CheckBox { Text = "失败退避", Location = new Point(8, 147), Size = new Size(76, 18), Checked = true };
-		requestScheduleGroup.Controls.Add(requestBackoffBox);
-		requestScheduleGroup.Controls.Add(new Label { Text = "并发", Location = new Point(88, 150), Size = new Size(29, 12) });
+		groupBox_9.Controls.Add(requestBackoffBox);
+		groupBox_9.Controls.Add(new Label { Text = "并发", Location = new Point(88, 150), Size = new Size(29, 12) });
 		sameHostConcurrencyBox = CreateScheduleNumber(121, 146);
 		sameHostConcurrencyBox.Minimum = 1;
 		sameHostConcurrencyBox.Maximum = 16;
 		sameHostConcurrencyBox.Value = 1;
-		requestScheduleGroup.Controls.Add(sameHostConcurrencyBox);
-		requestScheduleGroup.Controls.Add(new Label { Text = "UA", Location = new Point(8, 178), Size = new Size(20, 12) });
+		groupBox_9.Controls.Add(sameHostConcurrencyBox);
+		groupBox_9.Controls.Add(new Label { Text = "UA", Location = new Point(8, 178), Size = new Size(20, 12) });
 		userAgentModeBox = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(32, 174), Size = new Size(122, 20) };
 		userAgentModeBox.Items.AddRange(new object[] { "固定全局 UA", "随机 PC 浏览器 UA", "随机手机浏览器 UA", "随机爬虫 UA" });
 		userAgentModeBox.SelectedIndex = 0;
-		requestScheduleGroup.Controls.Add(userAgentModeBox);
-		采集进度_4.Controls.Add(requestScheduleGroup);
+		groupBox_9.Controls.Add(userAgentModeBox);
 	}
 
 	private NumericUpDown CreateScheduleNumber(int x, int y)
@@ -4654,9 +4653,21 @@ public class 自动采集模式 : DockContent
 
 	private void AddScheduleRow(string label, int y, NumericUpDown minBox, NumericUpDown maxBox)
 	{
-		requestScheduleGroup.Controls.Add(new Label { Text = label, Location = new Point(8, y + 4), Size = new Size(32, 12) });
-		requestScheduleGroup.Controls.Add(minBox);
-		requestScheduleGroup.Controls.Add(maxBox);
+		groupBox_9.Controls.Add(new Label { Text = label, Location = new Point(8, y + 4), Size = new Size(32, 12) });
+		groupBox_9.Controls.Add(minBox);
+		groupBox_9.Controls.Add(maxBox);
+	}
+
+	private static void RelocateExistingDelayRow(Label label, NumericUpDown minBox, Label unitLabel, string text, int y)
+	{
+		label.Text = text;
+		label.Location = new Point(8, y + 4);
+		label.Size = new Size(32, 12);
+		minBox.Location = new Point(58, y);
+		minBox.Size = new Size(45, 21);
+		minBox.Maximum = 600000;
+		unitLabel.Text = "";
+		unitLabel.Visible = false;
 	}
 
 	private static void NormalizeDelayBoxes(NumericUpDown minBox, NumericUpDown maxBox)
@@ -5264,6 +5275,7 @@ public class 自动采集模式 : DockContent
 		}
 	}
 }
+
 
 
 
