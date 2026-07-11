@@ -4,7 +4,7 @@
 
 - 当前主线：`net10.0-windows`
 - 当前平台：Windows-only `win-x64` / `x64`
-- 当前版本：`10.4.3-net10-test / 10.4.3.0`
+- 当前版本：`10.4.4-net10-test / 10.4.4.0`
 - 当前工作目录：`E:\采集器\Modernized_Net10_Working`
 - 当前发布目录：`E:\采集器\ModernizedOutput_Net10_Test`
 - 固定 SDK：`.NET SDK 10.0.301`

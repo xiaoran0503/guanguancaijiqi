@@ -127,6 +127,11 @@ public class WelcomeForm : DockContent
 		{
 			"更新日志",
 			"",
+			"V10.4.4 Net10 Test    2026-07-11",
+			"- 版本迭代为 10.4.4.0 / 10.4.4-net10-test。",
+			"- 修复请求调度 UI 保存后不写入任务 XML，重新打开任务不回显、不生效的问题。",
+			"- 随机延时区间、UA 模式、同域并发和失败退避现在保存任务后可稳定生效。",
+			"",
 			"V10.4.3 Net10 Test    2026-07-11",
 			"- 版本迭代为 10.4.3.0 / 10.4.3-net10-test。",
 			"- 修复 Jieqi 新增小说 INSERT SQL 字段名转义错误，解决 lastvolume 附近 SQL syntax error。",

@@ -4680,6 +4680,19 @@ public class 自动采集模式 : DockContent
 		}
 	}
 
+	private static decimal ClampScheduleValue(int value, int minimum = 0, int maximum = 600000)
+	{
+		if (value < minimum)
+		{
+			return minimum;
+		}
+		if (value > maximum)
+		{
+			return maximum;
+		}
+		return value;
+	}
+
 	private static string UiToUserAgentMode(ComboBox box)
 	{
 		return box.SelectedIndex switch
@@ -4833,9 +4846,17 @@ public class 自动采集模式 : DockContent
 			textBox_10.Text = tInfo.ProxyUser;
 			textBox_9.Text = tInfo.ProxyPassword;
 			chkEnableProxy.Checked = tInfo.Proxy;
-			numericUpDown_5.Value = tInfo.NovelUrlWait;
-			numericUpDown_4.Value = tInfo.IndexUrlWait;
-			numericUpDown_3.Value = tInfo.ChapterUrlWait;
+			requestListWaitMinBox.Value = ClampScheduleValue(tInfo.RequestListWaitMin);
+			requestListWaitMaxBox.Value = ClampScheduleValue(tInfo.RequestListWaitMax);
+			requestNovelWaitMinBox.Value = ClampScheduleValue(tInfo.RequestNovelWaitMin);
+			requestNovelWaitMaxBox.Value = ClampScheduleValue(tInfo.RequestNovelWaitMax);
+			requestIndexWaitMinBox.Value = ClampScheduleValue(tInfo.RequestIndexWaitMin);
+			requestIndexWaitMaxBox.Value = ClampScheduleValue(tInfo.RequestIndexWaitMax);
+			requestChapterWaitMinBox.Value = ClampScheduleValue(tInfo.RequestChapterWaitMin);
+			requestChapterWaitMaxBox.Value = ClampScheduleValue(tInfo.RequestChapterWaitMax);
+			sameHostConcurrencyBox.Value = ClampScheduleValue(tInfo.SameHostConcurrencyLimit, 1, 16);
+			requestBackoffBox.Checked = tInfo.RequestBackoffEnabled;
+			userAgentModeBox.SelectedIndex = UserAgentModeToUi(tInfo.UserAgentMode);
 			checkBox_20.Checked = tInfo.NoPBar;
 			索引对比判断修复.Checked = tInfo.ReplaceChapterIndex;
 			索引对比失败只修复.Checked = tInfo.ReplaceChapterTime;
@@ -4953,9 +4974,24 @@ public class 自动采集模式 : DockContent
 			tInfo.ProxyPassword = textBox_9.Text;
 			tInfo.Proxy = chkEnableProxy.Checked;
 			tInfo.NoPBar = checkBox_20.Checked;
-			tInfo.NovelUrlWait = Convert.ToInt32(numericUpDown_5.Value);
-			tInfo.IndexUrlWait = Convert.ToInt32(numericUpDown_4.Value);
-			tInfo.ChapterUrlWait = Convert.ToInt32(numericUpDown_3.Value);
+			NormalizeDelayBoxes(requestListWaitMinBox, requestListWaitMaxBox);
+			NormalizeDelayBoxes(requestNovelWaitMinBox, requestNovelWaitMaxBox);
+			NormalizeDelayBoxes(requestIndexWaitMinBox, requestIndexWaitMaxBox);
+			NormalizeDelayBoxes(requestChapterWaitMinBox, requestChapterWaitMaxBox);
+			tInfo.RequestListWaitMin = Convert.ToInt32(requestListWaitMinBox.Value);
+			tInfo.RequestListWaitMax = Convert.ToInt32(requestListWaitMaxBox.Value);
+			tInfo.RequestNovelWaitMin = Convert.ToInt32(requestNovelWaitMinBox.Value);
+			tInfo.RequestNovelWaitMax = Convert.ToInt32(requestNovelWaitMaxBox.Value);
+			tInfo.RequestIndexWaitMin = Convert.ToInt32(requestIndexWaitMinBox.Value);
+			tInfo.RequestIndexWaitMax = Convert.ToInt32(requestIndexWaitMaxBox.Value);
+			tInfo.RequestChapterWaitMin = Convert.ToInt32(requestChapterWaitMinBox.Value);
+			tInfo.RequestChapterWaitMax = Convert.ToInt32(requestChapterWaitMaxBox.Value);
+			tInfo.NovelUrlWait = tInfo.RequestNovelWaitMin;
+			tInfo.IndexUrlWait = tInfo.RequestIndexWaitMin;
+			tInfo.ChapterUrlWait = tInfo.RequestChapterWaitMin;
+			tInfo.SameHostConcurrencyLimit = Convert.ToInt32(sameHostConcurrencyBox.Value);
+			tInfo.RequestBackoffEnabled = requestBackoffBox.Checked;
+			tInfo.UserAgentMode = UiToUserAgentMode(userAgentModeBox);
 			tInfo.ReplaceChapterIndex = 索引对比判断修复.Checked;
 			tInfo.ReplaceChapterTime = 索引对比失败只修复.Checked;
 			tInfo.ReplaceChapterTimeMin = Convert.ToInt32(ReplaceChapterTimeMin.Value);
