@@ -100,9 +100,7 @@ public class WelcomeForm : DockContent
 
 	private void WelcomeForm_Load(object sender, EventArgs e)
 	{
-		Label label = label_0;
-		string text = string.Concat(label.Text, " V", Configs.DisplayVersion, " Build ", Configs.Build.ToShortDateString());
-		label.Text = text;
+		label_0.Text = $"{label_0.Text} V{Configs.DisplayVersion} Build {Configs.Build.ToShortDateString()}";
 		richTextBox1.Text = "正在加载更新日志...";
 		BeginInvoke(new MethodInvoker(LoadChangeLogText));
 	}
@@ -126,6 +124,11 @@ public class WelcomeForm : DockContent
 		return string.Join(Environment.NewLine, new string[]
 		{
 			"更新日志",
+			"",
+			"V10.5.0 Net10 Test    2026-07-11",
+			"- 版本迭代为 10.5.0.0 / 10.5.0-net10-test。",
+			"- 启动 WinForms 现代化第一阶段，集中请求调度 UI 的加载、保存和规范化逻辑。",
+			"- 清理任务保存/读取附近的反编译式错误弹窗临时变量，保持界面行为不变。",
 			"",
 			"V10.4.4 Net10 Test    2026-07-11",
 			"- 版本迭代为 10.4.4.0 / 10.4.4-net10-test。",

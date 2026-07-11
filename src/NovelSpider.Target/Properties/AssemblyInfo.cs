@@ -16,8 +16,8 @@ using System.Runtime.Versioning;
 [assembly: Guid("b72b3767-c8e1-4d10-b1b0-c0aac2d39d7e")]
 [assembly: ComVisible(false)]
 [assembly: AssemblyDescription("")]
-[assembly: AssemblyFileVersion("10.4.4.0")]
-[assembly: AssemblyVersion("10.4.4.0")]
+[assembly: AssemblyFileVersion("10.5.0.0")]
+[assembly: AssemblyVersion("10.5.0.0")]
 
 
 

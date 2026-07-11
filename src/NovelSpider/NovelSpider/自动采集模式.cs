@@ -655,26 +655,14 @@ public class 自动采集模式 : DockContent
 				}
 				else
 				{
-					MessageForm messageForm = new MessageForm
-					{
-						Text = "错误提示"
-					};
-					MessageForm messageForm2 = messageForm;
-					messageForm2.MessageText.Text = e.Error.Message;
-					messageForm2.ShowDialog();
+					ShowErrorMessage(e.Error.Message);
 					开始.Enabled = true;
 					停止.Enabled = false;
 				}
 			}
 			else
 			{
-				MessageForm messageForm3 = new MessageForm
-				{
-					Text = "错误提示"
-				};
-				MessageForm messageForm4 = messageForm3;
-				messageForm4.MessageText.Text = e.Error.Message;
-				messageForm4.ShowDialog();
+				ShowErrorMessage(e.Error.Message);
 				开始.Enabled = true;
 				停止.Enabled = false;
 			}
@@ -4674,10 +4662,52 @@ public class 自动采集模式 : DockContent
 	{
 		if (minBox.Value > maxBox.Value)
 		{
-			decimal value = minBox.Value;
+			var value = minBox.Value;
 			minBox.Value = maxBox.Value;
 			maxBox.Value = value;
 		}
+	}
+
+	private void LoadRequestSchedulingToUi(TaskConfigInfo task)
+	{
+		requestListWaitMinBox.Value = ClampScheduleValue(task.RequestListWaitMin);
+		requestListWaitMaxBox.Value = ClampScheduleValue(task.RequestListWaitMax);
+		requestNovelWaitMinBox.Value = ClampScheduleValue(task.RequestNovelWaitMin);
+		requestNovelWaitMaxBox.Value = ClampScheduleValue(task.RequestNovelWaitMax);
+		requestIndexWaitMinBox.Value = ClampScheduleValue(task.RequestIndexWaitMin);
+		requestIndexWaitMaxBox.Value = ClampScheduleValue(task.RequestIndexWaitMax);
+		requestChapterWaitMinBox.Value = ClampScheduleValue(task.RequestChapterWaitMin);
+		requestChapterWaitMaxBox.Value = ClampScheduleValue(task.RequestChapterWaitMax);
+		sameHostConcurrencyBox.Value = ClampScheduleValue(task.SameHostConcurrencyLimit, 1, 16);
+		requestBackoffBox.Checked = task.RequestBackoffEnabled;
+		userAgentModeBox.SelectedIndex = UserAgentModeToUi(task.UserAgentMode);
+	}
+
+	private void SaveRequestSchedulingFromUi(TaskConfigInfo task)
+	{
+		NormalizeRequestScheduleUi();
+		task.RequestListWaitMin = Convert.ToInt32(requestListWaitMinBox.Value);
+		task.RequestListWaitMax = Convert.ToInt32(requestListWaitMaxBox.Value);
+		task.RequestNovelWaitMin = Convert.ToInt32(requestNovelWaitMinBox.Value);
+		task.RequestNovelWaitMax = Convert.ToInt32(requestNovelWaitMaxBox.Value);
+		task.RequestIndexWaitMin = Convert.ToInt32(requestIndexWaitMinBox.Value);
+		task.RequestIndexWaitMax = Convert.ToInt32(requestIndexWaitMaxBox.Value);
+		task.RequestChapterWaitMin = Convert.ToInt32(requestChapterWaitMinBox.Value);
+		task.RequestChapterWaitMax = Convert.ToInt32(requestChapterWaitMaxBox.Value);
+		task.NovelUrlWait = task.RequestNovelWaitMin;
+		task.IndexUrlWait = task.RequestIndexWaitMin;
+		task.ChapterUrlWait = task.RequestChapterWaitMin;
+		task.SameHostConcurrencyLimit = Convert.ToInt32(sameHostConcurrencyBox.Value);
+		task.RequestBackoffEnabled = requestBackoffBox.Checked;
+		task.UserAgentMode = UiToUserAgentMode(userAgentModeBox);
+	}
+
+	private void NormalizeRequestScheduleUi()
+	{
+		NormalizeDelayBoxes(requestListWaitMinBox, requestListWaitMaxBox);
+		NormalizeDelayBoxes(requestNovelWaitMinBox, requestNovelWaitMaxBox);
+		NormalizeDelayBoxes(requestIndexWaitMinBox, requestIndexWaitMaxBox);
+		NormalizeDelayBoxes(requestChapterWaitMinBox, requestChapterWaitMaxBox);
 	}
 
 	private static decimal ClampScheduleValue(int value, int minimum = 0, int maximum = 600000)
@@ -4726,6 +4756,17 @@ public class 自动采集模式 : DockContent
 		(int minDelay, int maxDelay) = RequestDelayProfile.GetDelay(config, kind);
 		HostRequestThrottle.Wait("*", minDelay, maxDelay, kind.ToString());
 	}
+
+	private static void ShowErrorMessage(string message)
+	{
+		using var messageForm = new MessageForm
+		{
+			Text = "错误提示"
+		};
+		messageForm.MessageText.Text = message;
+		messageForm.ShowDialog();
+	}
+
 	private void method_4()
 	{
 		try
@@ -4846,17 +4887,7 @@ public class 自动采集模式 : DockContent
 			textBox_10.Text = tInfo.ProxyUser;
 			textBox_9.Text = tInfo.ProxyPassword;
 			chkEnableProxy.Checked = tInfo.Proxy;
-			requestListWaitMinBox.Value = ClampScheduleValue(tInfo.RequestListWaitMin);
-			requestListWaitMaxBox.Value = ClampScheduleValue(tInfo.RequestListWaitMax);
-			requestNovelWaitMinBox.Value = ClampScheduleValue(tInfo.RequestNovelWaitMin);
-			requestNovelWaitMaxBox.Value = ClampScheduleValue(tInfo.RequestNovelWaitMax);
-			requestIndexWaitMinBox.Value = ClampScheduleValue(tInfo.RequestIndexWaitMin);
-			requestIndexWaitMaxBox.Value = ClampScheduleValue(tInfo.RequestIndexWaitMax);
-			requestChapterWaitMinBox.Value = ClampScheduleValue(tInfo.RequestChapterWaitMin);
-			requestChapterWaitMaxBox.Value = ClampScheduleValue(tInfo.RequestChapterWaitMax);
-			sameHostConcurrencyBox.Value = ClampScheduleValue(tInfo.SameHostConcurrencyLimit, 1, 16);
-			requestBackoffBox.Checked = tInfo.RequestBackoffEnabled;
-			userAgentModeBox.SelectedIndex = UserAgentModeToUi(tInfo.UserAgentMode);
+			LoadRequestSchedulingToUi(tInfo);
 			checkBox_20.Checked = tInfo.NoPBar;
 			索引对比判断修复.Checked = tInfo.ReplaceChapterIndex;
 			索引对比失败只修复.Checked = tInfo.ReplaceChapterTime;
@@ -4865,13 +4896,7 @@ public class 自动采集模式 : DockContent
 		}
 		catch (Exception ex)
 		{
-			MessageForm messageForm = new MessageForm
-			{
-				Text = "错误提示"
-			};
-			MessageForm messageForm2 = messageForm;
-			messageForm2.MessageText.Text = ex.Message;
-			messageForm2.ShowDialog();
+			ShowErrorMessage(ex.Message);
 		}
 	}
 
@@ -4974,24 +4999,7 @@ public class 自动采集模式 : DockContent
 			tInfo.ProxyPassword = textBox_9.Text;
 			tInfo.Proxy = chkEnableProxy.Checked;
 			tInfo.NoPBar = checkBox_20.Checked;
-			NormalizeDelayBoxes(requestListWaitMinBox, requestListWaitMaxBox);
-			NormalizeDelayBoxes(requestNovelWaitMinBox, requestNovelWaitMaxBox);
-			NormalizeDelayBoxes(requestIndexWaitMinBox, requestIndexWaitMaxBox);
-			NormalizeDelayBoxes(requestChapterWaitMinBox, requestChapterWaitMaxBox);
-			tInfo.RequestListWaitMin = Convert.ToInt32(requestListWaitMinBox.Value);
-			tInfo.RequestListWaitMax = Convert.ToInt32(requestListWaitMaxBox.Value);
-			tInfo.RequestNovelWaitMin = Convert.ToInt32(requestNovelWaitMinBox.Value);
-			tInfo.RequestNovelWaitMax = Convert.ToInt32(requestNovelWaitMaxBox.Value);
-			tInfo.RequestIndexWaitMin = Convert.ToInt32(requestIndexWaitMinBox.Value);
-			tInfo.RequestIndexWaitMax = Convert.ToInt32(requestIndexWaitMaxBox.Value);
-			tInfo.RequestChapterWaitMin = Convert.ToInt32(requestChapterWaitMinBox.Value);
-			tInfo.RequestChapterWaitMax = Convert.ToInt32(requestChapterWaitMaxBox.Value);
-			tInfo.NovelUrlWait = tInfo.RequestNovelWaitMin;
-			tInfo.IndexUrlWait = tInfo.RequestIndexWaitMin;
-			tInfo.ChapterUrlWait = tInfo.RequestChapterWaitMin;
-			tInfo.SameHostConcurrencyLimit = Convert.ToInt32(sameHostConcurrencyBox.Value);
-			tInfo.RequestBackoffEnabled = requestBackoffBox.Checked;
-			tInfo.UserAgentMode = UiToUserAgentMode(userAgentModeBox);
+			SaveRequestSchedulingFromUi(tInfo);
 			tInfo.ReplaceChapterIndex = 索引对比判断修复.Checked;
 			tInfo.ReplaceChapterTime = 索引对比失败只修复.Checked;
 			tInfo.ReplaceChapterTimeMin = Convert.ToInt32(ReplaceChapterTimeMin.Value);
@@ -4999,13 +5007,7 @@ public class 自动采集模式 : DockContent
 		}
 		catch (Exception ex)
 		{
-			MessageForm messageForm = new MessageForm
-			{
-				Text = "错误提示"
-			};
-			MessageForm messageForm2 = messageForm;
-			messageForm2.MessageText.Text = ex.Message;
-			messageForm2.ShowDialog();
+			ShowErrorMessage(ex.Message);
 		}
 	}
 
