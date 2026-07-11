@@ -127,6 +127,10 @@ public class WelcomeForm : DockContent
 		{
 			"更新日志",
 			"",
+			"V10.3.5 Net10 Test    2026-07-11",
+			"- 版本迭代为 10.3.5.0 / 10.3.5-net10-test。",
+			"- 定向修复 www.biquge.club 自动生成规则，补齐 div#list/dl#newlist 目录、og:novel:author 作者和 /read 章节链接识别。",
+			"",
 			"V10.3.4 Net10 Test    2026-07-10",
 			"- 版本迭代为 10.3.4.0 / 10.3.4-net10-test。",
 			"- 自动生成规则补齐封面规则推断，qbxs 封面已验证可获取。",
@@ -347,6 +351,9 @@ public class WelcomeForm : DockContent
 		});
 	}
 }
+
+
+
 
 
 

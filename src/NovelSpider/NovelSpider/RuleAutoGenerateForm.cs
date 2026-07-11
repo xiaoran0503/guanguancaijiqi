@@ -123,6 +123,15 @@ public class RuleAutoGenerateForm : DockContent
 			string siteHtml = string.IsNullOrWhiteSpace(siteUrl) ? string.Empty : await FetchTextAsync(siteUrl);
 			string novelHtml = await FetchTextAsync(string.IsNullOrWhiteSpace(novelUrl) ? siteUrl : novelUrl);
 			string indexHtml = string.IsNullOrWhiteSpace(indexUrl) ? novelHtml : await FetchTextAsync(indexUrl);
+			Uri indexUri = CreateUri(indexUrl) ?? CreateUri(novelUrl) ?? CreateUri(siteUrl);
+			if (string.IsNullOrWhiteSpace(chapterUrl))
+			{
+				string firstChapterHref = FindBestChapterHref(indexHtml, string.Empty, indexUri);
+				if (!string.IsNullOrWhiteSpace(firstChapterHref) && indexUri != null)
+				{
+					chapterUrl = new Uri(indexUri, firstChapterHref).AbsoluteUri;
+				}
+			}
 			string chapterHtml = string.IsNullOrWhiteSpace(chapterUrl) ? "" : await FetchTextAsync(chapterUrl);
 			generatedRule = BuildLocalRule(siteUrl, novelUrl, indexUrl, chapterUrl, siteHtml, novelHtml, indexHtml, chapterHtml);
 			if (!string.IsNullOrWhiteSpace(aiKeyBox.Text) && !string.IsNullOrWhiteSpace(aiModelBox.Text))
@@ -167,7 +176,7 @@ public class RuleAutoGenerateForm : DockContent
 		rule.PubContentErr = RegexInfo("PubContentErr", "(?!)");
 		rule.PubContentUrl = RegexInfo("PubContentUrl", chapterLinks.ContentUrlPattern);
 		rule.NovelName = RegexInfo("NovelName", BuildTitlePattern(novelHtml));
-		rule.NovelAuthor = RegexInfo("NovelAuthor", "作者[：:]\\s*(?<str>[^<\\s]+)");
+		rule.NovelAuthor = RegexInfo("NovelAuthor", BuildAuthorPattern(novelHtml));
 		rule.NovelIntro = RegexInfo("NovelIntro", "(?is)<meta[^>]+name=[\"']description[\"'][^>]+content=[\"'](?<str>.*?)[\"']");
 		rule.NovelCover = RegexInfo("NovelCover", BuildCoverPattern(novelHtml));
 		rule.PubVolumeContent = RegexInfo("PubVolumeContent", BuildDirectoryContentPattern(indexHtml));
@@ -217,14 +226,14 @@ public class RuleAutoGenerateForm : DockContent
 			return string.Empty;
 		}
 		string prefix = pathPattern.Groups["prefix"].Value;
-		string hrefPattern = Regex.Escape(prefix) + @"(?<str>\d+)/";
+		string hrefPattern = Regex.Escape(prefix) + @"(?<str>\d+)/?";
 		int count = Regex.Matches(siteHtml ?? string.Empty, "href=[\"']" + hrefPattern + "[\"']", RegexOptions.IgnoreCase).Count;
 		if (count == 0 && Uri.TryCreate(href, UriKind.Absolute, out Uri absoluteHref))
 		{
 			string absolutePrefix = absoluteHref.GetLeftPart(UriPartial.Authority) + prefix;
-			hrefPattern = Regex.Escape(absolutePrefix) + @"(?<str>\d+)/";
+			hrefPattern = Regex.Escape(absolutePrefix) + @"(?<str>\d+)/?";
 		}
-				string textLinkPattern = "(?is)<a[^>]+href=[\"']" + hrefPattern + "[\"'][^>]*>(?<name>[^<]{1,120})</a>";
+				string textLinkPattern = "(?is)<a[^>]+href=[\"']" + hrefPattern + "[\"'][^>]*>(?!\\s*<img)(?<name>[^<]{1,120})</a>";
 		MatchCollection textLinks = Regex.Matches(siteHtml ?? string.Empty, textLinkPattern, RegexOptions.IgnoreCase);
 		int usefulTextLinks = 0;
 		foreach (Match link in textLinks)
@@ -251,8 +260,8 @@ public class RuleAutoGenerateForm : DockContent
 		string hrefPattern = BuildChapterHrefPattern(indexHtml, chapterUrl, indexUri);
 		return new ChapterLinkPatterns
 		{
-			ChapterNamePattern = "(?is)<(?:li|dd)?[^>]*>\\s*<a[^>]+href=[\"']" + hrefPattern + "[\"'][^>]*>(?<str>[^<]{1,120})</a>",
-			ChapterKeyPattern = "(?is)<(?:li|dd)?[^>]*>\\s*<a[^>]+href=[\"'](?<str>" + hrefPattern + ")[\"'][^>]*>[^<]{1,120}</a>",
+			ChapterNamePattern = "(?is)<(?:li|dd)[^>]*>\\s*<a[^>]+href=[\"']" + hrefPattern + "[\"'][^>]*>(?<str>[^<]{1,120})</a>",
+			ChapterKeyPattern = "(?is)<(?:li|dd)[^>]*>\\s*<a[^>]+href=[\"'](?<str>" + hrefPattern + ")[\"'][^>]*>[^<]{1,120}</a>",
 			ContentUrlPattern = "{ChapterKey}"
 		};
 	}
@@ -333,11 +342,24 @@ public class RuleAutoGenerateForm : DockContent
 
 	private static string BuildDirectoryContentPattern(string html)
 	{
-		if (Regex.IsMatch(html ?? string.Empty, "全部章节", RegexOptions.IgnoreCase))
+		string content = html ?? string.Empty;
+		if (Regex.IsMatch(content, "id=[\"']list[\"']", RegexOptions.IgnoreCase))
+		{
+			return "(?is)<div[^>]+id=[\"']list[\"'][^>]*>(?<str>.*?)<div[^>]+class=[\"']listtj[\"']";
+		}
+		if (Regex.IsMatch(content, "id=[\"']newlist[\"']", RegexOptions.IgnoreCase))
+		{
+			return "(?is)<dl[^>]+id=[\"']newlist[\"'][^>]*>(?<str>.*?)</dl>";
+		}
+		if (Regex.IsMatch(content, "class=[\"'][^\"']*(chapterlist|chapter-list|booklist|catalog|dir)[^\"']*[\"']", RegexOptions.IgnoreCase))
+		{
+			return "(?is)<(div|dl|ul)[^>]+class=[\"'][^\"']*(chapterlist|chapter-list|booklist|catalog|dir)[^\"']*[\"'][^>]*>(?<str>.*?)</\\1>";
+		}
+		if (Regex.IsMatch(content, "全部章节", RegexOptions.IgnoreCase))
 		{
 			return "(?is)<h3>\\s*<a>\\s*全部章节\\s*</a>\\s*</h3>\\s*<ul[^>]*>(?<str>.*?)</ul>";
 		}
-		if (Regex.IsMatch(html ?? string.Empty, "class=[\"'][^\"']*ml_content[^\"']*[\"']", RegexOptions.IgnoreCase))
+		if (Regex.IsMatch(content, "class=[\"'][^\"']*ml_content[^\"']*[\"']", RegexOptions.IgnoreCase))
 		{
 			return "(?is)<div[^>]+class=[\"'][^\"']*ml_content[^\"']*[\"'][^>]*>(?<str>.*?)<div[^>]+class=[\"']clear[\"'][^>]*>";
 		}
@@ -419,6 +441,19 @@ public class RuleAutoGenerateForm : DockContent
 			: "(?is)<title[^>]*>(?<str>.*?)</title>";
 	}
 
+	private static string BuildAuthorPattern(string html)
+	{
+		string content = html ?? string.Empty;
+		if (Regex.IsMatch(content, "property=[\"']og:novel:author[\"']", RegexOptions.IgnoreCase))
+		{
+			return "(?is)<meta[^>]+property=[\"']og:novel:author[\"'][^>]+content=[\"'](?<str>[^\"']+)[\"']";
+		}
+		if (Regex.IsMatch(content, "<h1[^>]*>.*?<small", RegexOptions.IgnoreCase))
+		{
+			return "(?is)<h1[^>]*>.*?<small>\\s*/?\\s*<a[^>]*>(?<str>[^<]+)</a>";
+		}
+		return "作者[：:]\\s*(?<str>[^<\\s]+)";
+	}
 	private static string BuildCoverPattern(string html)
 	{
 		if (Regex.IsMatch(html ?? string.Empty, """property=["']og:image["']""", RegexOptions.IgnoreCase))
@@ -492,4 +527,5 @@ public class RuleAutoGenerateForm : DockContent
 		return text.Length <= 6000 ? text : text.Substring(0, 6000);
 	}
 }
+
 

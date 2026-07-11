@@ -4,7 +4,7 @@ This branch contains the independent .NET 10 / Windows x64 migration line for No
 
 ## Current Baseline
 
-- Version: `10.3.4-net10-test / 10.3.4.0`
+- Version: `10.3.5-net10-test / 10.3.5.0`
 - `v10.3.1-net10`: Fixes the auto rule generator menu binding so it opens the rule generator instead of the retired update-novel form.
 - `v10.3.2-net10`: Improves auto rule generation for real chapter directory pages such as `www.qbxs.net`, including reusable chapter URL patterns and clearer single-book rule notes.
 - Branch: `net10-v10`
@@ -84,5 +84,6 @@ Every future milestone should update the version, update `src\NovelSpider\Resour
 - Cached DNS entries are dropped when all cached addresses fail, then the same request resolves once again before surfacing the network error.
 - Large WinForms lists append in 200-item UI batches so windows stay responsive during initial population.
 - Set `NOVELSPIDER_PERFORMANCE=1` to record DNS, HTTP, UI batch, regex, TXT, and MySQL timing data under `Log\Performance`.
+
 
 
