@@ -3435,7 +3435,7 @@ public class 自动采集模式 : DockContent
 		this.textBox_12.TabIndex = 9;
 		this.采集进度_4.Controls.Add(this.groupBox_4);
 		this.采集进度_4.Controls.Add(this.groupBox7);
-		this.采集进度_4.Controls.Add(this.groupBox_9);
+		this.groupBox_4.Controls.Add(this.groupBox_9);
 		this.采集进度_4.Location = new System.Drawing.Point(4, 22);
 		this.采集进度_4.Name = "采集进度_4";
 		this.采集进度_4.Size = new System.Drawing.Size(802, 347);
@@ -3589,7 +3589,7 @@ public class 自动采集模式 : DockContent
 		this.label_12.Size = new System.Drawing.Size(77, 12);
 		this.label_12.TabIndex = 8;
 		this.label_12.Text = "采集总进度：";
-		this.groupBox_9.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+		this.groupBox_9.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right | System.Windows.Forms.AnchorStyles.Bottom;
 		this.groupBox_9.Controls.Add(this.label_21);
 		this.groupBox_9.Controls.Add(this.label_22);
 		this.groupBox_9.Controls.Add(this.label_23);
@@ -3599,9 +3599,9 @@ public class 自动采集模式 : DockContent
 		this.groupBox_9.Controls.Add(this.numericUpDown_4);
 		this.groupBox_9.Controls.Add(this.label_26);
 		this.groupBox_9.Controls.Add(this.numericUpDown_5);
-		this.groupBox_9.Location = new System.Drawing.Point(634, 6);
+		this.groupBox_9.Location = new System.Drawing.Point(548, 22);
 		this.groupBox_9.Name = "groupBox_9";
-		this.groupBox_9.Size = new System.Drawing.Size(162, 219);
+		this.groupBox_9.Size = new System.Drawing.Size(232, 192);
 		this.groupBox_9.TabIndex = 5;
 		this.groupBox_9.TabStop = false;
 		this.groupBox_9.Text = "请求调度";
@@ -4608,33 +4608,33 @@ public class 自动采集模式 : DockContent
 
 	private void UpgradeVisibleDelayGroup()
 	{
-		Label header = new Label { Text = "类型        最小   最大", Location = new Point(8, 20), Size = new Size(145, 12) };
+		Label header = new Label { Text = "类型      最小      最大", Location = new Point(10, 20), Size = new Size(210, 12) };
 		groupBox_9.Controls.Add(header);
-		requestListWaitMinBox = CreateScheduleNumber(58, 39);
-		requestListWaitMaxBox = CreateScheduleNumber(108, 39);
+		requestListWaitMinBox = CreateScheduleNumber(72, 40);
+		requestListWaitMaxBox = CreateScheduleNumber(145, 40);
 		requestNovelWaitMinBox = numericUpDown_5;
-		requestNovelWaitMaxBox = CreateScheduleNumber(108, 66);
+		requestNovelWaitMaxBox = CreateScheduleNumber(145, 65);
 		requestIndexWaitMinBox = numericUpDown_4;
-		requestIndexWaitMaxBox = CreateScheduleNumber(108, 93);
+		requestIndexWaitMaxBox = CreateScheduleNumber(145, 90);
 		requestChapterWaitMinBox = numericUpDown_3;
-		requestChapterWaitMaxBox = CreateScheduleNumber(108, 120);
-		AddScheduleRow("列表", 39, requestListWaitMinBox, requestListWaitMaxBox);
-		RelocateExistingDelayRow(label_26, numericUpDown_5, label_23, "信息", 66);
-		RelocateExistingDelayRow(label_25, numericUpDown_4, label_22, "目录", 93);
-		RelocateExistingDelayRow(label_24, numericUpDown_3, label_21, "正文", 120);
+		requestChapterWaitMaxBox = CreateScheduleNumber(145, 115);
+		AddScheduleRow("列表", 40, requestListWaitMinBox, requestListWaitMaxBox);
+		RelocateExistingDelayRow(label_26, numericUpDown_5, label_23, "信息", 65);
+		RelocateExistingDelayRow(label_25, numericUpDown_4, label_22, "目录", 90);
+		RelocateExistingDelayRow(label_24, numericUpDown_3, label_21, "正文", 115);
 		groupBox_9.Controls.Add(requestNovelWaitMaxBox);
 		groupBox_9.Controls.Add(requestIndexWaitMaxBox);
 		groupBox_9.Controls.Add(requestChapterWaitMaxBox);
-		requestBackoffBox = new CheckBox { Text = "失败退避", Location = new Point(8, 147), Size = new Size(76, 18), Checked = true };
+		requestBackoffBox = new CheckBox { Text = "失败退避", Location = new Point(10, 143), Size = new Size(78, 18), Checked = true };
 		groupBox_9.Controls.Add(requestBackoffBox);
-		groupBox_9.Controls.Add(new Label { Text = "并发", Location = new Point(88, 150), Size = new Size(29, 12) });
-		sameHostConcurrencyBox = CreateScheduleNumber(121, 146);
+		groupBox_9.Controls.Add(new Label { Text = "并发", Location = new Point(98, 146), Size = new Size(34, 12) });
+		sameHostConcurrencyBox = CreateScheduleNumber(132, 141);
 		sameHostConcurrencyBox.Minimum = 1;
 		sameHostConcurrencyBox.Maximum = 16;
 		sameHostConcurrencyBox.Value = 1;
 		groupBox_9.Controls.Add(sameHostConcurrencyBox);
-		groupBox_9.Controls.Add(new Label { Text = "UA", Location = new Point(8, 178), Size = new Size(20, 12) });
-		userAgentModeBox = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(32, 174), Size = new Size(122, 20) };
+		groupBox_9.Controls.Add(new Label { Text = "UA", Location = new Point(10, 169), Size = new Size(20, 12) });
+		userAgentModeBox = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(34, 165), Size = new Size(185, 20) };
 		userAgentModeBox.Items.AddRange(new object[] { "固定全局 UA", "随机 PC 浏览器 UA", "随机手机浏览器 UA", "随机爬虫 UA" });
 		userAgentModeBox.SelectedIndex = 0;
 		groupBox_9.Controls.Add(userAgentModeBox);
@@ -4645,7 +4645,7 @@ public class 自动采集模式 : DockContent
 		return new NumericUpDown
 		{
 			Location = new Point(x, y),
-			Size = new Size(45, 21),
+			Size = new Size(60, 21),
 			Maximum = 600000,
 			Minimum = 0
 		};
@@ -4653,7 +4653,7 @@ public class 自动采集模式 : DockContent
 
 	private void AddScheduleRow(string label, int y, NumericUpDown minBox, NumericUpDown maxBox)
 	{
-		groupBox_9.Controls.Add(new Label { Text = label, Location = new Point(8, y + 4), Size = new Size(32, 12) });
+		groupBox_9.Controls.Add(new Label { Text = label, Location = new Point(10, y + 4), Size = new Size(48, 12) });
 		groupBox_9.Controls.Add(minBox);
 		groupBox_9.Controls.Add(maxBox);
 	}
@@ -4661,10 +4661,10 @@ public class 自动采集模式 : DockContent
 	private static void RelocateExistingDelayRow(Label label, NumericUpDown minBox, Label unitLabel, string text, int y)
 	{
 		label.Text = text;
-		label.Location = new Point(8, y + 4);
-		label.Size = new Size(32, 12);
-		minBox.Location = new Point(58, y);
-		minBox.Size = new Size(45, 21);
+		label.Location = new Point(10, y + 4);
+		label.Size = new Size(48, 12);
+		minBox.Location = new Point(72, y);
+		minBox.Size = new Size(60, 21);
 		minBox.Maximum = 600000;
 		unitLabel.Text = "";
 		unitLabel.Visible = false;
@@ -5275,6 +5275,8 @@ public class 自动采集模式 : DockContent
 		}
 	}
 }
+
+
 
 
 
