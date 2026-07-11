@@ -10,7 +10,7 @@
 - Runtime identifier: `win-x64`
 - SDK pinned by `global.json`: `10.0.301`
 - Runtime tested against: `.NET 10.0.9`
-- Test version: `10.5.0-net10-test / 10.5.0.0`
+- Test version: `10.5.1-net10-test / 10.5.1.0`
 
 ## Migration Boundaries
 
@@ -70,6 +70,7 @@ Reference: `https://builds.dotnet.microsoft.com/dotnet/release-metadata/10.0/sup
 
 
 
+- V10.5.1: WinForms 现代化第二阶段整理自动生成采集规则窗体，集中输入读取、忙碌状态、保存文件名规范化，并复用本地页面抓取 HttpClient。
 - V10.5.0: WinForms 现代化第一阶段集中自动采集任务请求调度 UI 的加载、保存和规范化逻辑，清理任务保存/读取附近反编译式错误弹窗代码，保持界面行为不变。
 - V10.4.0: 自动采集任务界面提供请求调度/站点友好访问配置，可直接设置随机延时区间、UA 模式、同域并发和失败退避，不需要手工修改 XML。
 

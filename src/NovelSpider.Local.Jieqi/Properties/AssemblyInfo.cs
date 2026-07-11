@@ -16,8 +16,8 @@ using System.Runtime.Versioning;
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyProduct("NovelSpider.Jieqi")]
 [assembly: AssemblyTitle("NovelSpider.Jieqi")]
-[assembly: AssemblyFileVersion("10.5.0.0")]
-[assembly: AssemblyVersion("10.5.0.0")]
+[assembly: AssemblyFileVersion("10.5.1.0")]
+[assembly: AssemblyVersion("10.5.1.0")]
 
 
 

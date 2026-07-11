@@ -14,19 +14,25 @@ namespace NovelSpider;
 
 public class RuleAutoGenerateForm : DockContent
 {
-	private readonly TextBox siteUrlBox = new TextBox();
-	private readonly TextBox novelUrlBox = new TextBox();
-	private readonly TextBox indexUrlBox = new TextBox();
-	private readonly TextBox chapterUrlBox = new TextBox();
-	private readonly TextBox hintBox = new TextBox();
-	private readonly TextBox aiBaseUrlBox = new TextBox();
-	private readonly TextBox aiKeyBox = new TextBox();
-	private readonly TextBox aiModelBox = new TextBox();
-	private readonly TextBox previewBox = new TextBox();
-	private readonly TextBox saveNameBox = new TextBox();
-	private readonly Button generateButton = new Button();
-	private readonly Button saveButton = new Button();
+	private static readonly System.Net.Http.HttpClient RuleFetchClient = CreateRuleFetchClient();
+	private readonly TextBox siteUrlBox = new();
+	private readonly TextBox novelUrlBox = new();
+	private readonly TextBox indexUrlBox = new();
+	private readonly TextBox chapterUrlBox = new();
+	private readonly TextBox hintBox = new();
+	private readonly TextBox aiBaseUrlBox = new();
+	private readonly TextBox aiKeyBox = new();
+	private readonly TextBox aiModelBox = new();
+	private readonly TextBox previewBox = new();
+	private readonly TextBox saveNameBox = new();
+	private readonly Button generateButton = new();
+	private readonly Button saveButton = new();
 	private RuleConfigInfo generatedRule;
+
+	private readonly record struct RuleGenerationInput(string SiteUrl, string NovelUrl, string IndexUrl, string ChapterUrl, bool UseAi)
+	{
+		public bool HasAnyUrl => !string.IsNullOrWhiteSpace(SiteUrl) || !string.IsNullOrWhiteSpace(NovelUrl) || !string.IsNullOrWhiteSpace(ChapterUrl);
+	}
 
 	public RuleAutoGenerateForm()
 	{
@@ -38,7 +44,7 @@ public class RuleAutoGenerateForm : DockContent
 
 	private void InitializeControls()
 	{
-		TableLayoutPanel root = new TableLayoutPanel
+		var root = new TableLayoutPanel
 		{
 			Dock = DockStyle.Fill,
 			ColumnCount = 2,
@@ -67,7 +73,7 @@ public class RuleAutoGenerateForm : DockContent
 		aiModelBox.Text = "";
 		saveNameBox.Text = "auto-generated-rule.xml";
 
-		FlowLayoutPanel buttons = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.LeftToRight };
+		var buttons = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.LeftToRight };
 		generateButton.Text = "生成草稿";
 		generateButton.Width = 100;
 		generateButton.Click += async (_, _) => await GenerateAsync();
@@ -108,40 +114,26 @@ public class RuleAutoGenerateForm : DockContent
 
 	private async Task GenerateAsync()
 	{
-		generateButton.Enabled = false;
+		SetGenerationBusy(true);
 		try
 		{
-			string siteUrl = NormalizeUrl(siteUrlBox.Text);
-			string novelUrl = NormalizeUrl(novelUrlBox.Text);
-			string indexUrl = NormalizeUrl(string.IsNullOrWhiteSpace(indexUrlBox.Text) ? novelUrlBox.Text : indexUrlBox.Text);
-			string chapterUrl = NormalizeUrl(chapterUrlBox.Text);
-			if (string.IsNullOrWhiteSpace(siteUrl) && string.IsNullOrWhiteSpace(novelUrl) && string.IsNullOrWhiteSpace(chapterUrl))
+			var input = ReadGenerationInput();
+			if (!input.HasAnyUrl)
 			{
 				MessageBox.Show("请至少填写一个可访问的网址。", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
 				return;
 			}
-			string siteHtml = string.IsNullOrWhiteSpace(siteUrl) ? string.Empty : await FetchTextAsync(siteUrl);
-			string novelHtml = await FetchTextAsync(string.IsNullOrWhiteSpace(novelUrl) ? siteUrl : novelUrl);
-			string indexHtml = string.IsNullOrWhiteSpace(indexUrl) ? novelHtml : await FetchTextAsync(indexUrl);
-			Uri indexUri = CreateUri(indexUrl) ?? CreateUri(novelUrl) ?? CreateUri(siteUrl);
-			if (string.IsNullOrWhiteSpace(chapterUrl))
-			{
-				string firstChapterHref = FindBestChapterHref(indexHtml, string.Empty, indexUri);
-				if (!string.IsNullOrWhiteSpace(firstChapterHref) && indexUri != null)
-				{
-					chapterUrl = new Uri(indexUri, firstChapterHref).AbsoluteUri;
-				}
-			}
-			string chapterHtml = string.IsNullOrWhiteSpace(chapterUrl) ? "" : await FetchTextAsync(chapterUrl);
-			generatedRule = BuildLocalRule(siteUrl, novelUrl, indexUrl, chapterUrl, siteHtml, novelHtml, indexHtml, chapterHtml);
-			if (!string.IsNullOrWhiteSpace(aiKeyBox.Text) && !string.IsNullOrWhiteSpace(aiModelBox.Text))
-			{
-				previewBox.Text = await BuildAiSuggestionAsync(generatedRule, novelHtml, indexHtml, chapterHtml);
-			}
-			else
-			{
-				previewBox.Text = SerializeRule(generatedRule) + Environment.NewLine + Environment.NewLine + BuildPreviewNotes(generatedRule, chapterHtml);
-			}
+
+			string siteHtml = string.IsNullOrWhiteSpace(input.SiteUrl) ? string.Empty : await FetchTextAsync(input.SiteUrl);
+			string novelHtml = await FetchTextAsync(string.IsNullOrWhiteSpace(input.NovelUrl) ? input.SiteUrl : input.NovelUrl);
+			string indexHtml = string.IsNullOrWhiteSpace(input.IndexUrl) ? novelHtml : await FetchTextAsync(input.IndexUrl);
+			string chapterUrl = ResolveChapterUrl(input, indexHtml);
+			string chapterHtml = string.IsNullOrWhiteSpace(chapterUrl) ? string.Empty : await FetchTextAsync(chapterUrl);
+
+			generatedRule = BuildLocalRule(input.SiteUrl, input.NovelUrl, input.IndexUrl, chapterUrl, siteHtml, novelHtml, indexHtml, chapterHtml);
+			previewBox.Text = input.UseAi
+				? await BuildAiSuggestionAsync(generatedRule, novelHtml, indexHtml, chapterHtml)
+				: BuildLocalPreview(generatedRule, chapterHtml);
 			saveButton.Enabled = generatedRule != null;
 		}
 		catch (Exception ex)
@@ -150,8 +142,45 @@ public class RuleAutoGenerateForm : DockContent
 		}
 		finally
 		{
-			generateButton.Enabled = true;
+			SetGenerationBusy(false);
 		}
+	}
+
+	private RuleGenerationInput ReadGenerationInput()
+	{
+		string novelUrl = NormalizeUrl(novelUrlBox.Text);
+		string indexUrlSource = string.IsNullOrWhiteSpace(indexUrlBox.Text) ? novelUrlBox.Text : indexUrlBox.Text;
+		return new RuleGenerationInput(
+			NormalizeUrl(siteUrlBox.Text),
+			novelUrl,
+			NormalizeUrl(indexUrlSource),
+			NormalizeUrl(chapterUrlBox.Text),
+			!string.IsNullOrWhiteSpace(aiKeyBox.Text) && !string.IsNullOrWhiteSpace(aiModelBox.Text));
+	}
+
+	private static string ResolveChapterUrl(RuleGenerationInput input, string indexHtml)
+	{
+		if (!string.IsNullOrWhiteSpace(input.ChapterUrl))
+		{
+			return input.ChapterUrl;
+		}
+
+		Uri indexUri = CreateUri(input.IndexUrl) ?? CreateUri(input.NovelUrl) ?? CreateUri(input.SiteUrl);
+		string firstChapterHref = FindBestChapterHref(indexHtml, string.Empty, indexUri);
+		return !string.IsNullOrWhiteSpace(firstChapterHref) && indexUri != null
+			? new Uri(indexUri, firstChapterHref).AbsoluteUri
+			: string.Empty;
+	}
+
+	private void SetGenerationBusy(bool busy)
+	{
+		generateButton.Enabled = !busy;
+		saveButton.Enabled = !busy && generatedRule != null;
+	}
+
+	private static string BuildLocalPreview(RuleConfigInfo rule, string chapterHtml)
+	{
+		return SerializeRule(rule) + Environment.NewLine + Environment.NewLine + BuildPreviewNotes(rule, chapterHtml);
 	}
 
 	private static RuleConfigInfo BuildLocalRule(string siteUrl, string novelUrl, string indexUrl, string chapterUrl, string siteHtml, string novelHtml, string indexHtml, string chapterHtml)
@@ -399,7 +428,7 @@ public class RuleAutoGenerateForm : DockContent
 
 	private static string BuildPreviewNotes(RuleConfigInfo rule, string chapterHtml)
 	{
-		StringBuilder notes = new StringBuilder();
+		var notes = new StringBuilder();
 		notes.AppendLine("正文质量评分：" + CollectionQualityAnalyzer.ScoreChapterText(chapterHtml));
 		if (string.IsNullOrWhiteSpace(rule.NovelListUrl.Pattern))
 		{
@@ -413,20 +442,22 @@ public class RuleAutoGenerateForm : DockContent
 		{
 			return;
 		}
-		string fileName = string.IsNullOrWhiteSpace(saveNameBox.Text) ? "auto-generated-rule.xml" : saveNameBox.Text.Trim();
-		foreach (char invalid in Path.GetInvalidFileNameChars())
-		{
-			fileName = fileName.Replace(invalid, '_');
-		}
-		if (!fileName.EndsWith(".xml", StringComparison.OrdinalIgnoreCase))
-		{
-			fileName += ".xml";
-		}
+		string fileName = NormalizeRuleFileName(saveNameBox.Text);
 		string rulesDir = Path.Combine(AppContext.BaseDirectory, "Rules");
 		Directory.CreateDirectory(rulesDir);
 		string path = Path.Combine(rulesDir, fileName);
 		ConfigFileManager.SaveConfig(path, generatedRule);
 		MessageBox.Show("已保存：" + path, Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+	}
+
+	private static string NormalizeRuleFileName(string value)
+	{
+		string fileName = string.IsNullOrWhiteSpace(value) ? "auto-generated-rule.xml" : value.Trim();
+		foreach (char invalid in Path.GetInvalidFileNameChars())
+		{
+			fileName = fileName.Replace(invalid, '_');
+		}
+		return fileName.EndsWith(".xml", StringComparison.OrdinalIgnoreCase) ? fileName : fileName + ".xml";
 	}
 
 	private static RegexInfo RegexInfo(string name, string pattern)
@@ -488,15 +519,20 @@ public class RuleAutoGenerateForm : DockContent
 		return "(?is)<body[^>]*>(?<str>.*?)</body>";
 	}
 
+	private static System.Net.Http.HttpClient CreateRuleFetchClient()
+	{
+		var client = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+		client.DefaultRequestHeaders.UserAgent.ParseAdd("NovelSpider-Net10-RuleGenerator/10.5");
+		return client;
+	}
+
 	private static async Task<string> FetchTextAsync(string url)
 	{
 		if (string.IsNullOrWhiteSpace(url))
 		{
 			return string.Empty;
 		}
-		using System.Net.Http.HttpClient client = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(30) };
-		client.DefaultRequestHeaders.UserAgent.ParseAdd("NovelSpider-Net10-RuleGenerator/10.3");
-		return await client.GetStringAsync(url);
+		return await RuleFetchClient.GetStringAsync(url);
 	}
 
 	private static string NormalizeUrl(string value)
@@ -511,7 +547,7 @@ public class RuleAutoGenerateForm : DockContent
 
 	private static string SerializeRule(RuleConfigInfo rule)
 	{
-		using StringWriter writer = new StringWriter();
+		using var writer = new StringWriter();
 		new System.Xml.Serialization.XmlSerializer(typeof(RuleConfigInfo)).Serialize(writer, rule);
 		return writer.ToString();
 	}
