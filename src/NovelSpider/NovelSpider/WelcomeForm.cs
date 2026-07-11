@@ -127,6 +127,10 @@ public class WelcomeForm : DockContent
 		{
 			"更新日志",
 			"",
+			"V10.4.3 Net10 Test    2026-07-11",
+			"- 版本迭代为 10.4.3.0 / 10.4.3-net10-test。",
+			"- 修复 Jieqi 新增小说 INSERT SQL 字段名转义错误，解决 lastvolume 附近 SQL syntax error。",
+			"",
 			"V10.4.2 Net10 Test    2026-07-11",
 			"- 版本迭代为 10.4.2.0 / 10.4.2-net10-test。",
 			"- 请求调度面板移入采集进度页操作详情右侧空白区域，避免控件裁切。",
@@ -364,6 +368,7 @@ public class WelcomeForm : DockContent
 		});
 	}
 }
+
 
 
 
