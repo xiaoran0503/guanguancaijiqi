@@ -98,7 +98,10 @@ public class HelpUpdateNovel : DockContent
 				return false;
 			}
 			int slice = Math.Min(remaining, 200);
-			Thread.Sleep(slice);
+			using (ManualResetEventSlim waitHandle = new ManualResetEventSlim(false))
+			{
+				waitHandle.Wait(slice);
+			}
 			remaining -= slice;
 		}
 		return !backgroundWorker_0.CancellationPending;

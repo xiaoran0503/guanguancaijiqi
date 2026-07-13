@@ -602,9 +602,15 @@ public partial class Page
 
 	public string[] GetIds(string[] arrayListUrl)
 	{
+		return GetIdsAsync(arrayListUrl).GetAwaiter().GetResult();
+	}
+
+	public async Task<string[]> GetIdsAsync(string[] arrayListUrl, CancellationToken cancellationToken = default)
+	{
 		List<string> arrayList = new List<string>();
 		foreach (string text in arrayListUrl)
 		{
+			cancellationToken.ThrowIfCancellationRequested();
 			string text2 = text;
 			Match match = RangeTemplateRegex().Match(text);
 			int num = 0;
@@ -617,6 +623,7 @@ public partial class Page
 			}
 			for (int j = num; j <= num2; j++)
 			{
+				cancellationToken.ThrowIfCancellationRequested();
 				Uri uri;
 				try
 				{
@@ -644,8 +651,7 @@ public partial class Page
 					UriString = uri.AbsoluteUri,
 					Referer = ruleConfigInfo_0.GetSiteUrl.Pattern
 				};
-				HttpClient httpClient2 = httpClient;
-				string stringWork = GetStringWorkWithEmptyRetry(httpClient2, subject: uri.AbsoluteUri, requestKind: RequestKind.List);
+				string stringWork = await GetStringWorkWithEmptyRetryAsync(httpClient, subject: uri.AbsoluteUri, requestKind: RequestKind.List, cancellationToken: cancellationToken).ConfigureAwait(false);
 				MatchCollection matchCollection = RuleRegexCache.Get(ruleConfigInfo_0.NovelList_GetNovelKey.Pattern, ruleConfigInfo_0.NovelList_GetNovelKey.Options).Matches(stringWork);
 				for (int k = 0; k < matchCollection.Count; k++)
 				{
@@ -906,7 +912,72 @@ public partial class Page
 		return arrayList.ToArray();
 	}
 
+	public async Task<NovelInfo[]> GetNovelListAsync(string[] string_0, CancellationToken cancellationToken = default)
+	{
+		List<NovelInfo> arrayList = new List<NovelInfo>();
+		foreach (string text in string_0)
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			string text2 = text;
+			Match match = RangeTemplateRegex().Match(text);
+			int num = 0;
+			int num2 = 0;
+			if (match.Success)
+			{
+				text2 = text.Replace(match.Groups[0].Value, "(*)");
+				num = Convert.ToInt32(match.Groups[1].Value);
+				num2 = Convert.ToInt32(match.Groups[2].Value);
+			}
+			for (int j = num; j <= num2; j++)
+			{
+				cancellationToken.ThrowIfCancellationRequested();
+				Uri uri;
+				try
+				{
+					uri = new Uri(text2.Replace("(*)", j.ToString()));
+				}
+				catch
+				{
+					SpiderException.Show(text + " 地址有问题", bool_0: true);
+					continue;
+				}
+				HttpClient httpClient = new HttpClient
+				{
+					Encoding = Encoding.GetEncoding(ruleConfigInfo_0.GetSiteCharset.Pattern),
+					Proxy = taskConfigInfo_0.Proxy,
+					ProxyHost = taskConfigInfo_0.ProxyHost,
+					ProxyPort = Convert.ToInt32(taskConfigInfo_0.ProxyPort),
+					ProxyDomain = taskConfigInfo_0.ProxyDomain,
+					ProxyUser = taskConfigInfo_0.ProxyUser,
+					ProxyPassword = taskConfigInfo_0.ProxyPassword,
+					UriString = uri.AbsoluteUri,
+					Referer = ruleConfigInfo_0.GetSiteUrl.Pattern
+				};
+				string stringWork = await GetStringWorkWithEmptyRetryAsync(httpClient, subject: uri.AbsoluteUri, requestKind: RequestKind.List, cancellationToken: cancellationToken).ConfigureAwait(false);
+				MatchCollection matchCollection = RuleRegexCache.Get(ruleConfigInfo_0.NovelList_GetNovelKey.Pattern, ruleConfigInfo_0.NovelList_GetNovelKey.Options).Matches(stringWork);
+				for (int k = 0; k < matchCollection.Count; k++)
+				{
+					NovelInfo novelInfo = new NovelInfo
+					{
+						GetID = matchCollection[k].Groups[1].Value
+					};
+					if (matchCollection[k].Groups.Count > 2)
+					{
+						novelInfo.Name = await TranslateAsync(matchCollection[k].Groups[2].Value, cancellationToken).ConfigureAwait(false);
+					}
+					arrayList.Add(novelInfo);
+				}
+			}
+		}
+		return arrayList.ToArray();
+	}
+
 	public static string[] GetNovelList(string string_0, string string_1, string string_2)
+	{
+		return GetNovelListAsync(string_0, string_1, string_2).GetAwaiter().GetResult();
+	}
+
+	public static async Task<string[]> GetNovelListAsync(string string_0, string string_1, string string_2, CancellationToken cancellationToken = default)
 	{
 		List<string> arrayList = new List<string>();
 		HttpClient httpClient = new HttpClient
@@ -914,7 +985,7 @@ public partial class Page
 			Encoding = Encoding.GetEncoding(string_2),
 			UriString = string_0
 		};
-		string stringWork = httpClient.GetStringWork();
+		string stringWork = await httpClient.GetStringWorkAsync(cancellationToken).ConfigureAwait(false);
 		MatchCollection matchCollection = RuleRegexCache.Get(string_1).Matches(stringWork);
 		for (int i = 0; i < matchCollection.Count; i++)
 		{
@@ -1075,6 +1146,11 @@ public partial class Page
 
 	public string Translate(string string_0)
 	{
+		return TranslateAsync(string_0).GetAwaiter().GetResult();
+	}
+
+	public async Task<string> TranslateAsync(string string_0, CancellationToken cancellationToken = default)
+	{
 		if (Configs.HaveFunction.IndexOf("中译英") >= 0 && Configs.BaseConfig.Translate && ChineseCharactersRegex().IsMatch(string_0))
 		{
 			if (string_0.Length > 20)
@@ -1085,7 +1161,7 @@ public partial class Page
 					PostData = "js=y&prev=_t&hl=zh-CN&ie=UTF-8&layout=1&eotf=1&text=" + HttpUtility.UrlEncode(FormatText.Typesetting(string_0), FormatText.GetCharset(Configs.BaseConfig.CmsEncoding, "gbk")).ToUpper() + "&file=&sl=zh-CN&tl=en",
 					Encoding = FormatText.GetCharset(Configs.BaseConfig.CmsEncoding, "gbk")
 				};
-				Match match = GoogleTranslateLongResultRegex().Match(httpClient.GetStringWork());
+				Match match = GoogleTranslateLongResultRegex().Match(await httpClient.GetStringWorkAsync(cancellationToken).ConfigureAwait(false));
 				if (match.Success)
 				{
 					return match.Groups[1].Value.Replace("'", "&apos;").Replace("&nbsp;", " ").Replace("&lt;br&gt;", "<br>")
@@ -1098,7 +1174,7 @@ public partial class Page
 				UriString = "http://translate.google.cn/translate_a/t?client=t&text=" + HttpUtility.UrlEncode(string_0, FormatText.GetCharset(Configs.BaseConfig.CmsEncoding, "gbk")).ToUpper() + "&sl=zh-CN&tl=en&otf=1&pc=0",
 				Encoding = FormatText.GetCharset(Configs.BaseConfig.CmsEncoding, "gbk")
 			};
-			Match match2 = GoogleTranslateShortResultRegex().Match(httpClient2.GetStringWork());
+			Match match2 = GoogleTranslateShortResultRegex().Match(await httpClient2.GetStringWorkAsync(cancellationToken).ConfigureAwait(false));
 			if (match2.Success)
 			{
 				return match2.Groups[1].Value.Replace("'", "&apos;").Trim();

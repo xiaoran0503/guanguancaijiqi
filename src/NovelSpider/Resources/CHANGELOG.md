@@ -1,3 +1,59 @@
+V10.18.1 Net10 Test    2026-07-13
+- 版本迭代为 `10.18.1.0 / 10.18.1-net10-test`。
+- 修复启动自动采集后 UI 被采集主循环占用的问题：开始按钮不再直接 await 主采集任务，采集主体改由 `RunAutoCollectOnBackgroundAsync` 在后台执行。
+- 修复停止按钮不可用：停止按钮现在直接取消 `autoCollectCancellation`，并同步取消旧 `AutoWorker` 兼容状态。
+- 自动采集进度与完成回调统一通过 `ReportAutoProgress` / `CompleteAutoCollect` 切回 UI 线程，避免后台采集直接更新 WinForms 控件。
+- 关闭窗体时同时检查 `autoCollectRunning` 与旧 `AutoWorker.IsBusy`，防止采集仍在运行时直接关闭。
+
+V10.18.0 Net10 Test    2026-07-13
+- 版本迭代为 `10.18.0.0 / 10.18.0-net10-test`。
+- `Page.Translate` 新增 `TranslateAsync`，翻译网络请求改为 `GetStringWorkAsync`；同步 `Translate` 仅作为旧路径兼容外壳保留。
+- `Page` 新增 async `NovelInfo[] GetNovelListAsync`，列表解析中的小说名翻译可直接 await，减少同步网络阻塞。
+- `CollectRepair` 的小说/目录阶段等待改为可取消分段等待，不再直接调用同步 `HostRequestThrottle.Wait`。
+- 自动采集代理列表加载从 `LoginWorker.DoWork` 切到 `LoadProxyListAsync`，手动刷新和窗体加载均不再触发旧 `RunWorkerAsync`。
+- 代码扫描中剩余 `GetStringWork/GetImageWork/HostRequestThrottle.Wait` 为显式同步兼容 API 或低频格式/兼容模块入口，活动采集/UI 路径优先使用 async。
+
+V10.17.0 Net10 Test    2026-07-13
+- 版本迭代为 `10.17.0.0 / 10.17.0-net10-test`。
+- `Page` 新增 `GetIdsAsync`，最新列表 ID 抓取直接 await 现有 `GetStringWorkWithEmptyRetryAsync`，保留 DNS 缓存、同域并发、随机延时和失败退避。
+- `Page` 静态其他站列表抓取新增 `GetNovelListAsync`，内部改用 `HttpClient.GetStringWorkAsync`；旧同步方法保留兼容外壳。
+- 自动采集主循环的 `GetListUrl` 与 `OtherListUrl` 入口改为调用 async 列表抓取，减少列表阶段的同步阻塞。
+- `CollectReplace` 等旧后台路径仍可通过同步兼容外壳调用，后续单独迁移。
+
+V10.16.0 Net10 Test    2026-07-13
+- 版本迭代为 `10.16.0.0 / 10.16.0-net10-test`。
+- `CollectManual` 继续拆同步桥接：添加小说与替换章节入口改为 async helper，旧 `backgroundWorker_2_DoWork / backgroundWorker_8_DoWork` 归档，不再保留 `WaitForBackgroundAsync(.Wait/.Result)`。
+- 手工替换章节正文抓取改用 `GetChapterInfoAsync`，最后章节刷新通过 `LocalProviderAsyncDispatcher.UpdateLastChapterAsync` 直接 await。
+- 手工添加小说入库通过 `LocalProviderAsyncDispatcher.InsertNovelAsync` 直接 await，保持原进度回显和完成状态恢复。
+- 自动采集辅助网络继续现代化：网络测速按钮改为 async `GetStringWorkAsync`，代理测速列表改为 async 请求并保持列表状态回写。
+- 保留低频自动获取代理 IP 的 `LoginWorker` 同步分支，下一轮可单独替换并验证第三方代理页解析。
+
+V10.15.0 Net10 Test    2026-07-13
+- 版本迭代为 `10.15.0.0 / 10.15.0-net10-test`。
+- 自动采集模式继续现代化：移除旧 `AutoWorker.DoWork` 事件绑定，`RunAutoCollectAsync / AutoWorkerCoreAsync` 成为唯一主采集执行入口，避免旧 BackgroundWorker 主循环被误触发。
+- 自动采集内部等待从 `Thread.Sleep / WaitOrCancel` 改为 `Task.Delay + CancellationToken`，章节限速和异常短等待均可被停止操作取消。
+- 站点友好延时在自动采集链路改为 `HostRequestThrottle.WaitAsync`，保留随机延时/UA/退避语义，同时减少后台线程阻塞。
+- 默认更新 URL 拉取改为 `GetStringWorkAsync` 并接入取消令牌；命令行 `Run()` 保留兼容同步外壳，新增 `RunAsync` 供后续继续拆除同步入口。
+- 下一轮继续拆手工采集剩余 `WaitForBackgroundAsync(LocalProviderAsyncDispatcher...)` 热点，以及测速/代理测试辅助 BackgroundWorker 的同步网络调用。
+
+V10.14.0 Net10 Test    2026-07-13
+- 版本迭代为 `10.14.0.0 / 10.14.0-net10-test`。
+- `自动采集模式` 主循环主体拆为 `AutoWorkerCoreAsync`，`CollectNovel` / `CollectNovel_old` 改为 async 方法。
+- 自动采集章节正文抓取改为 `await FetchChapterInfoForAutoAsync(...)`，新章节入库改为 `await InsertChapterForAutoAsync(...)`，减少采集线程中的同步桥接。
+- 保留 `AutoWorker_DoWork` 兼容包装，下一步可继续清理旧 `BackgroundWorker` 事件绑定和剩余同步维护分支。
+
+V10.13.0 Net10 Test    2026-07-13
+- 版本迭代为 `10.13.0.0 / 10.13.0-net10-test`。
+- `CollectManual` 旧 `backgroundWorker_6_DoWork` / `backgroundWorker_9_DoWork` 归档，Designer 不再绑定这两个旧 DoWork；追加章节、后续章节、选中章节和顺序插章入口统一走 async helper。
+- `自动采集模式` 的按钮启动、定时启动和命令行 `Run()` 入口改为 `RunAutoCollectAsync` 包装，逐步脱离 `AutoWorker.RunWorkerAsync` 生命周期。
+- 自动采集停止逻辑同步取消新 `CancellationTokenSource` 与旧 worker；取消判断统一到 `IsAutoCancellationPending()`，为下一步主循环内部章节抓取和入库全面 await 做准备。
+
+V10.12.0 Net10 Test    2026-07-13
+- 版本迭代为 `10.12.0.0 / 10.12.0-net10-test`。
+- `CollectManual` 手工追加章节链路改为真正 async：章节正文使用 `Page.GetChapterInfoAsync`，章节入库使用 `LocalProviderAsyncDispatcher.InsertChapterAsync`，停止按钮可通过 `CancellationToken` 取消等待。
+- `CollectManual` 顺序插章链路改为真正 async：正文抓取、顺序插章和最后章节刷新分别 await `GetChapterInfoAsync`、`InsertChapterByOrderAsync`、`UpdateLastChapterAsync`。
+- `自动采集模式` 新增正文抓取、章节入库、最后章节刷新 async helper，为后续拆分 `AutoWorker` 大循环和移除同步桥接做准备。
+
 V10.11.0 Net10 Test    2026-07-13
 - 版本迭代为 `10.11.0.0 / 10.11.0-net10-test`。
 - 网络层继续现代化：`HttpClient` 将 16k 特殊旧 socket 站点分支隔离为 legacy 方法，async 入口可通过后台执行路径复用旧站兼容逻辑，现代站点仍走 `HttpTransportPool` / `SocketsHttpHandler`。

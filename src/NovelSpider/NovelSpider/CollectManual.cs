@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -20,32 +20,6 @@ namespace NovelSpider;
 
 public class CollectManual : DockContent
 {
-	private static T WaitForBackgroundAsync<T>(System.Threading.Tasks.Task<T> task)
-	{
-		try
-		{
-			task.Wait();
-			return task.Result;
-		}
-		catch (AggregateException ex) when (ex.InnerExceptions.Count == 1)
-		{
-			System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex.InnerException!).Throw();
-			throw;
-		}
-	}
-
-	private static void WaitForBackgroundAsync(System.Threading.Tasks.Task task)
-	{
-		try
-		{
-			task.Wait();
-		}
-		catch (AggregateException ex) when (ex.InnerExceptions.Count == 1)
-		{
-			System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex.InnerException!).Throw();
-			throw;
-		}
-	}
 	private TextBox articlenameBox;
 
 	private BackgroundWorker backgroundWorker_0;
@@ -75,6 +49,8 @@ public class CollectManual : DockContent
 	private BackgroundWorker backgroundWorker_9;
 
 	private BackgroundWorker backgroundWorker1;
+
+	private CancellationTokenSource manualAsyncCancellation;
 
 	private bool bool_0;
 
@@ -857,46 +833,64 @@ public class CollectManual : DockContent
 		panel_2.Enabled = true;
 	}
 
-	private void backgroundWorker_2_DoWork(object sender, DoWorkEventArgs e)
+	private async System.Threading.Tasks.Task RunReplaceChaptersAsync(CancellationToken cancellationToken)
 	{
-		BackgroundWorker backgroundWorker = sender as BackgroundWorker;
 		NovelInfo chapterInfo = novelInfo_0;
 		for (int i = 0; i < chapterInfo_0.Length; i++)
 		{
-			if (backgroundWorker.CancellationPending)
-			{
-				break;
-			}
+			cancellationToken.ThrowIfCancellationRequested();
 			chapterInfo.LastChapter = chapterInfo_0[i];
-			backgroundWorker.ReportProgress(21, chapterInfo.LastChapter);
-			chapterInfo = page_0.GetChapterInfo(chapterInfo, isvip: false);
-			backgroundWorker.ReportProgress(22, chapterInfo.LastChapter);
+			ReportManualProgress(21, chapterInfo.LastChapter);
+			chapterInfo = await page_0.GetChapterInfoAsync(chapterInfo, isvip: false, cancellationToken).ConfigureAwait(false);
+			ReportManualProgress(22, chapterInfo.LastChapter);
 			if (chapterInfo.LastChapter.ChapterText == null || chapterInfo.LastChapter.ChapterText.Trim() == "")
 			{
-				string strTask = comboBox_2.Text + " | " + comboBox_3.Text;
-				SpiderException.Show("发现空章节", chapterInfo, taskConfigInfo_0.Log, strTask);
+				SpiderException.Show("发现空章节", chapterInfo, taskConfigInfo_0.Log, GetManualTaskName());
 				break;
 			}
 			if (Regex.Match(chapterInfo.LastChapter.ChapterText, "<img", RegexOptions.IgnoreCase).Success && taskConfigInfo_0.OnlyText)
 			{
-				string strTask2 = comboBox_2.Text + " | " + comboBox_3.Text;
-				SpiderException.Show("发现图片章节", chapterInfo, taskConfigInfo_0.Log, strTask2);
+				SpiderException.Show("发现图片章节", chapterInfo, taskConfigInfo_0.Log, GetManualTaskName());
 				break;
 			}
 			chapterInfo.LastChapter.PutID = chapterInfo_1[i].PutID;
 			chapterInfo.LastChapter.LastTime = DateTime.Now;
 			chapterInfo_1[i].ChapterName = chapterInfo.LastChapter.ChapterName;
 			chapterInfo_1[i].ChapterText = chapterInfo.LastChapter.ChapterText;
-			backgroundWorker.ReportProgress(31, chapterInfo_1[i]);
+			ReportManualProgress(31, chapterInfo_1[i]);
 			NovelSpider.Local.LocalProvider.GetInstance().UpdateChapter(chapterInfo, replaceConfigInfo_0);
 			if (Configs.BaseConfig.ChapterHtml)
 			{
 				NovelSpider.Local.LocalProvider.GetInstance().CreateChapter(chapterInfo);
 			}
-			backgroundWorker.ReportProgress(32, chapterInfo_1[i]);
+			ReportManualProgress(32, chapterInfo_1[i]);
 		}
-		WaitForBackgroundAsync(LocalProviderAsyncDispatcher.UpdateLastChapterAsync(NovelSpider.Local.LocalProvider.GetInstance(), chapterInfo));
+		await LocalProviderAsyncDispatcher.UpdateLastChapterAsync(NovelSpider.Local.LocalProvider.GetInstance(), chapterInfo, cancellationToken).ConfigureAwait(false);
 		NovelSpider.Local.LocalProvider.GetInstance().CreateIndex(chapterInfo, Configs.BaseConfig.IndexHtml, Configs.BaseConfig.FullHtml, Configs.BaseConfig.CreateOPF, Configs.BaseConfig.CreateZIP, Configs.BaseConfig.CreateTXT, Configs.BaseConfig.CreateUMD, Configs.BaseConfig.CreateJAR, Configs.BaseConfig.CreateCHM, bool_8: false, bool_9: false, 0);
+	}
+
+	private async System.Threading.Tasks.Task RunInsertNovelsAsync(NovelInfo[] novels, CancellationToken cancellationToken)
+	{
+		for (int i = 0; i < novels.Length; i++)
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			ReportManualProgress(11, novels[i]);
+			if (novels[i].PutID == 0)
+			{
+				novels[i] = NovelSpider.Local.LocalProvider.GetInstance().GetNovelInfo(novels[i], taskConfigInfo_0.NameAndAuthor);
+			}
+			if (novels[i].PutID == 0)
+			{
+				novels[i] = new Page(ruleConfigInfo_0, taskConfigInfo_0).GetNovelInfo(novels[i]);
+				novels[i] = await LocalProviderAsyncDispatcher.InsertNovelAsync(NovelSpider.Local.LocalProvider.GetInstance(), novels[i], cancellationToken).ConfigureAwait(false);
+			}
+			ReportManualProgress(12, novels[i]);
+		}
+	}
+
+	private void backgroundWorker_2_DoWork(object sender, DoWorkEventArgs e)
+	{
+		ArchiveLegacyManualDoWork(nameof(backgroundWorker_2_DoWork));
 	}
 
 	private void backgroundWorker_3_DoWork(object sender, DoWorkEventArgs e)
@@ -1024,75 +1018,103 @@ public class CollectManual : DockContent
 		}
 	}
 
+	private void ReportManualProgress(int progressPercentage, object userState)
+	{
+		if (IsDisposed)
+		{
+			return;
+		}
+		void Report() => backgroundWorker_12_ProgressChanged(this, new ProgressChangedEventArgs(progressPercentage, userState));
+		if (InvokeRequired)
+		{
+			BeginInvoke((MethodInvoker)Report);
+		}
+		else
+		{
+			Report();
+		}
+	}
+
+	private void CompleteManualAsync(Exception error = null, bool cancelled = false)
+	{
+		if (error != null)
+		{
+			toolStripStatusLabel_0.Text = "发生错误";
+			MessageBox.Show(error.Message);
+		}
+		else if (cancelled)
+		{
+			toolStripStatusLabel_0.Text = "取消操作";
+		}
+		else
+		{
+			toolStripStatusLabel_0.Text = "操作完成";
+		}
+		panel_0.Visible = false;
+		panel_1.Visible = false;
+		button_0.Enabled = true;
+		button_3.Enabled = true;
+		bool_0 = false;
+		panel_2.Enabled = true;
+		manualAsyncCancellation?.Dispose();
+		manualAsyncCancellation = null;
+	}
+
+	private async System.Threading.Tasks.Task RunAppendChaptersAsync(ChapterInfo[] chapters, CancellationToken cancellationToken)
+	{
+		NovelInfo chapterInfo = novelInfo_0;
+		for (int i = 0; i < chapters.Length; i++)
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			chapterInfo.LastChapter = null;
+			chapterInfo.LastChapter = chapters[i];
+			ReportManualProgress(21, chapterInfo.LastChapter);
+			chapterInfo = await page_0.GetChapterInfoAsync(chapterInfo, isvip: false, cancellationToken).ConfigureAwait(false);
+			ReportManualProgress(22, chapterInfo.LastChapter);
+			if (chapterInfo.LastChapter.ChapterText == null || chapterInfo.LastChapter.ChapterText.Trim() == "")
+			{
+				SpiderException.Show("发现空章节", chapterInfo, taskConfigInfo_0.Log, GetManualTaskName());
+				break;
+			}
+			if (Regex.IsMatch(chapterInfo.LastChapter.ChapterText, "<img", RegexOptions.IgnoreCase) && taskConfigInfo_0.OnlyText)
+			{
+				SpiderException.Show("发现图片章节", chapterInfo, taskConfigInfo_0.Log, GetManualTaskName());
+				break;
+			}
+			if (chapterInfo.LastChapter.ChapterText.Length <= taskConfigInfo_0.MinChapterTextLength)
+			{
+				SpiderException.Show("空章节或字数过少", chapterInfo, taskConfigInfo_0.Log, GetManualTaskName());
+				break;
+			}
+			await LocalProviderAsyncDispatcher.InsertChapterAsync(NovelSpider.Local.LocalProvider.GetInstance(), chapterInfo, taskConfigInfo_0, cancellationToken).ConfigureAwait(false);
+			if (Configs.BaseConfig.ChapterHtml)
+			{
+				NovelSpider.Local.LocalProvider.GetInstance().CreateChapter(chapterInfo);
+			}
+		}
+		NovelSpider.Local.LocalProvider.GetInstance().CreateIndex(chapterInfo, Configs.BaseConfig.IndexHtml, Configs.BaseConfig.FullHtml, Configs.BaseConfig.CreateOPF, Configs.BaseConfig.CreateZIP, Configs.BaseConfig.CreateTXT, Configs.BaseConfig.CreateUMD, Configs.BaseConfig.CreateJAR, Configs.BaseConfig.CreateCHM, bool_8: false, bool_9: false, 0);
+		ChapterInfo[] chapterList = NovelSpider.Local.LocalProvider.GetInstance().GetChapterList(chapterInfo.PutID);
+		ReportManualProgress(30, chapterList);
+		if (chapterList.Length != 0)
+		{
+			chapterInfo.LastChapter = chapterList[chapterList.Length - 1];
+		}
+		ReportManualProgress(12, chapterInfo);
+		ReportManualProgress(13, chapterInfo);
+	}
+
+	private string GetManualTaskName()
+	{
+		if (InvokeRequired)
+		{
+			return (string)Invoke((Func<string>)(() => comboBox_2.Text + " | " + comboBox_3.Text));
+		}
+		return comboBox_2.Text + " | " + comboBox_3.Text;
+	}
+
 	private void backgroundWorker_6_DoWork(object sender, DoWorkEventArgs e)
 	{
-		BackgroundWorker backgroundWorker = sender as BackgroundWorker;
-		NovelInfo chapterInfo = novelInfo_0;
-		ChapterInfo[] array = (ChapterInfo[])e.Argument;
-		int i = 0;
-		try
-		{
-			for (; i < array.Length; i++)
-			{
-				if (backgroundWorker.CancellationPending)
-				{
-					break;
-				}
-				chapterInfo.LastChapter = null;
-				chapterInfo.LastChapter = array[i];
-				backgroundWorker.ReportProgress(21, chapterInfo.LastChapter);
-				chapterInfo = page_0.GetChapterInfo(chapterInfo, isvip: false);
-				backgroundWorker.ReportProgress(22, chapterInfo.LastChapter);
-				if (chapterInfo.LastChapter.ChapterText == null || chapterInfo.LastChapter.ChapterText.Trim() == "")
-				{
-					string str3 = string.Empty;
-					Invoke((MethodInvoker)delegate
-					{
-						str3 = comboBox_2.Text + " | " + comboBox_3.Text;
-					});
-					SpiderException.Show("发现空章节", chapterInfo, taskConfigInfo_0.Log, str3);
-					break;
-				}
-				if (Regex.IsMatch(chapterInfo.LastChapter.ChapterText, "<img", RegexOptions.IgnoreCase) && taskConfigInfo_0.OnlyText)
-				{
-					string str4 = string.Empty;
-					Invoke((MethodInvoker)delegate
-					{
-						str4 = comboBox_2.Text + " | " + comboBox_3.Text;
-					});
-					SpiderException.Show("发现图片章节", chapterInfo, taskConfigInfo_0.Log, str4);
-					break;
-				}
-				if (chapterInfo.LastChapter.ChapterText.Length <= taskConfigInfo_0.MinChapterTextLength)
-				{
-					string str5 = string.Empty;
-					Invoke((MethodInvoker)delegate
-					{
-						str5 = comboBox_2.Text + " | " + comboBox_3.Text;
-					});
-					SpiderException.Show("空章节或字数过少", chapterInfo, taskConfigInfo_0.Log, str5);
-					break;
-				}
-				WaitForBackgroundAsync(LocalProviderAsyncDispatcher.InsertChapterAsync(NovelSpider.Local.LocalProvider.GetInstance(), chapterInfo, taskConfigInfo_0));
-				if (Configs.BaseConfig.ChapterHtml)
-				{
-					NovelSpider.Local.LocalProvider.GetInstance().CreateChapter(chapterInfo);
-				}
-			}
-			NovelSpider.Local.LocalProvider.GetInstance().CreateIndex(chapterInfo, Configs.BaseConfig.IndexHtml, Configs.BaseConfig.FullHtml, Configs.BaseConfig.CreateOPF, Configs.BaseConfig.CreateZIP, Configs.BaseConfig.CreateTXT, Configs.BaseConfig.CreateUMD, Configs.BaseConfig.CreateJAR, Configs.BaseConfig.CreateCHM, bool_8: false, bool_9: false, 0);
-			ChapterInfo[] chapterList = NovelSpider.Local.LocalProvider.GetInstance().GetChapterList(chapterInfo.PutID);
-			backgroundWorker.ReportProgress(30, chapterList);
-			if (chapterList.Length != 0)
-			{
-				chapterInfo.LastChapter = chapterList[chapterList.Length - 1];
-			}
-			backgroundWorker.ReportProgress(12, chapterInfo);
-			backgroundWorker.ReportProgress(13, chapterInfo);
-		}
-		catch (Exception ex)
-		{
-			MessageBox.Show(ex.Message);
-		}
+		ArchiveLegacyManualDoWork(nameof(backgroundWorker_6_DoWork));
 	}
 
 	private void backgroundWorker_7_DoWork(object sender, DoWorkEventArgs e)
@@ -1129,77 +1151,57 @@ public class CollectManual : DockContent
 
 	private void backgroundWorker_8_DoWork(object sender, DoWorkEventArgs e)
 	{
-		BackgroundWorker backgroundWorker = (BackgroundWorker)sender;
-		NovelInfo[] array = (NovelInfo[])e.Argument;
-		for (int i = 0; i < array.Length; i++)
-		{
-			backgroundWorker.ReportProgress(11, array[i]);
-			if (array[i].PutID == 0)
-			{
-				array[i] = NovelSpider.Local.LocalProvider.GetInstance().GetNovelInfo(array[i], taskConfigInfo_0.NameAndAuthor);
-			}
-			if (array[i].PutID == 0)
-			{
-				array[i] = new Page(ruleConfigInfo_0, taskConfigInfo_0).GetNovelInfo(array[i]);
-				array[i] = WaitForBackgroundAsync(LocalProviderAsyncDispatcher.InsertNovelAsync(NovelSpider.Local.LocalProvider.GetInstance(), array[i]));
-			}
-			backgroundWorker.ReportProgress(12, array[i]);
-		}
+		ArchiveLegacyManualDoWork(nameof(backgroundWorker_8_DoWork));
 	}
 
-	private void backgroundWorker_9_DoWork(object sender, DoWorkEventArgs e)
+	private async System.Threading.Tasks.Task RunInsertChaptersByOrderAsync(CancellationToken cancellationToken)
 	{
-		BackgroundWorker backgroundWorker = sender as BackgroundWorker;
 		NovelInfo chapterInfo = novelInfo_0;
-		int num = chapterInfo_0.Length;
-		int[] array = NovelSpider.Local.LocalProvider.GetInstance().UpdateChapterOrder(chapterInfo, num, int_1);
-		if (array[1] == -1 || (array[1] == -1 && num > 1) || array[0] == 0)
+		int count = chapterInfo_0.Length;
+		int[] orders = NovelSpider.Local.LocalProvider.GetInstance().UpdateChapterOrder(chapterInfo, count, int_1);
+		if (orders[1] == -1 || (orders[1] == -1 && count > 1) || orders[0] == 0)
 		{
 			return;
 		}
 		for (int i = 0; i < chapterInfo_0.Length; i++)
 		{
-			if (backgroundWorker.CancellationPending)
-			{
-				break;
-			}
+			cancellationToken.ThrowIfCancellationRequested();
 			chapterInfo.LastChapter = chapterInfo_0[i];
-			backgroundWorker.ReportProgress(21, chapterInfo.LastChapter);
-			chapterInfo = page_0.GetChapterInfo(chapterInfo, isvip: false);
-			backgroundWorker.ReportProgress(22, chapterInfo.LastChapter);
+			ReportManualProgress(21, chapterInfo.LastChapter);
+			chapterInfo = await page_0.GetChapterInfoAsync(chapterInfo, isvip: false, cancellationToken).ConfigureAwait(false);
+			ReportManualProgress(22, chapterInfo.LastChapter);
 			if (chapterInfo.LastChapter.ChapterText == null || chapterInfo.LastChapter.ChapterText.Trim() == "")
 			{
-				string strTask = comboBox_2.Text + " | " + comboBox_3.Text;
-				SpiderException.Show("发现空章节", chapterInfo, taskConfigInfo_0.Log, strTask);
+				SpiderException.Show("发现空章节", chapterInfo, taskConfigInfo_0.Log, GetManualTaskName());
 				break;
 			}
 			if (Regex.Match(chapterInfo.LastChapter.ChapterText, "<img", RegexOptions.IgnoreCase).Success && taskConfigInfo_0.OnlyText)
 			{
-				string strTask2 = comboBox_2.Text + " | " + comboBox_3.Text;
-				SpiderException.Show("发现图片章节", chapterInfo, taskConfigInfo_0.Log, strTask2);
+				SpiderException.Show("发现图片章节", chapterInfo, taskConfigInfo_0.Log, GetManualTaskName());
 				break;
 			}
-			WaitForBackgroundAsync(LocalProviderAsyncDispatcher.InsertChapterByOrderAsync(NovelSpider.Local.LocalProvider.GetInstance(), chapterInfo, taskConfigInfo_0, array[0] + i));
+			await LocalProviderAsyncDispatcher.InsertChapterByOrderAsync(NovelSpider.Local.LocalProvider.GetInstance(), chapterInfo, taskConfigInfo_0, orders[0] + i, cancellationToken).ConfigureAwait(false);
 			if (Configs.BaseConfig.ChapterHtml)
 			{
 				NovelSpider.Local.LocalProvider.GetInstance().CreateChapter(chapterInfo);
 			}
 			ChapterInfo[] chapterList = NovelSpider.Local.LocalProvider.GetInstance().GetChapterList(chapterInfo.PutID);
-			backgroundWorker.ReportProgress(30, chapterList);
+			ReportManualProgress(30, chapterList);
 			ChapterInfo[] volumeNameList = NovelSpider.Local.LocalProvider.GetInstance().GetVolumeNameList(chapterInfo.PutID);
-			backgroundWorker.ReportProgress(34, volumeNameList);
-			backgroundWorker.ReportProgress(33, null);
+			ReportManualProgress(34, volumeNameList);
+			ReportManualProgress(33, null);
 		}
-		ChapterInfo chapterInfo2 = new ChapterInfo();
-		chapterInfo2.PutID = array[1];
-		ChapterInfo chapterInfo3 = chapterInfo2;
-		ChapterInfo chapterInfo4 = new ChapterInfo();
-		chapterInfo4.PutID = int_1;
-		ChapterInfo chapterInfo5 = chapterInfo4;
-		NovelSpider.Local.LocalProvider.GetInstance().CreateChapter(chapterInfo, chapterInfo3);
-		NovelSpider.Local.LocalProvider.GetInstance().CreateChapter(chapterInfo, chapterInfo5);
-		WaitForBackgroundAsync(LocalProviderAsyncDispatcher.UpdateLastChapterAsync(NovelSpider.Local.LocalProvider.GetInstance(), chapterInfo));
+		ChapterInfo previousChapter = new ChapterInfo { PutID = orders[1] };
+		ChapterInfo insertedAfterChapter = new ChapterInfo { PutID = int_1 };
+		NovelSpider.Local.LocalProvider.GetInstance().CreateChapter(chapterInfo, previousChapter);
+		NovelSpider.Local.LocalProvider.GetInstance().CreateChapter(chapterInfo, insertedAfterChapter);
+		await LocalProviderAsyncDispatcher.UpdateLastChapterAsync(NovelSpider.Local.LocalProvider.GetInstance(), chapterInfo, cancellationToken).ConfigureAwait(false);
 		NovelSpider.Local.LocalProvider.GetInstance().CreateIndex(chapterInfo, Configs.BaseConfig.IndexHtml, Configs.BaseConfig.FullHtml, Configs.BaseConfig.CreateOPF, Configs.BaseConfig.CreateZIP, Configs.BaseConfig.CreateTXT, Configs.BaseConfig.CreateUMD, Configs.BaseConfig.CreateJAR, Configs.BaseConfig.CreateCHM, bool_8: false, bool_9: false, 0);
+	}
+
+	private void backgroundWorker_9_DoWork(object sender, DoWorkEventArgs e)
+	{
+		ArchiveLegacyManualDoWork(nameof(backgroundWorker_9_DoWork));
 	}
 
 	private void backgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
@@ -2283,7 +2285,7 @@ public class CollectManual : DockContent
 		this.backgroundWorker_5.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(backgroundWorker_12_RunWorkerCompleted);
 		this.backgroundWorker_6.WorkerReportsProgress = true;
 		this.backgroundWorker_6.WorkerSupportsCancellation = true;
-		this.backgroundWorker_6.DoWork += new System.ComponentModel.DoWorkEventHandler(backgroundWorker_6_DoWork);
+			// V10.13: backgroundWorker_6_DoWork archived; async manual append path handles this operation.
 		this.backgroundWorker_6.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(backgroundWorker_12_ProgressChanged);
 		this.backgroundWorker_6.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(backgroundWorker_12_RunWorkerCompleted);
 		this.backgroundWorker_7.WorkerReportsProgress = true;
@@ -2293,7 +2295,7 @@ public class CollectManual : DockContent
 		this.backgroundWorker_7.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(backgroundWorker_12_RunWorkerCompleted);
 		this.backgroundWorker_8.WorkerReportsProgress = true;
 		this.backgroundWorker_8.WorkerSupportsCancellation = true;
-		this.backgroundWorker_8.DoWork += new System.ComponentModel.DoWorkEventHandler(backgroundWorker_8_DoWork);
+			// V10.16: backgroundWorker_8_DoWork archived; async insert novel path handles this operation.
 		this.backgroundWorker_8.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(backgroundWorker_12_ProgressChanged);
 		this.backgroundWorker_8.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(backgroundWorker_12_RunWorkerCompleted);
 		this.toolTip_0.AutomaticDelay = 100;
@@ -2315,12 +2317,12 @@ public class CollectManual : DockContent
 		this.backgroundWorker_1.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(backgroundWorker_12_RunWorkerCompleted);
 		this.backgroundWorker_2.WorkerReportsProgress = true;
 		this.backgroundWorker_2.WorkerSupportsCancellation = true;
-		this.backgroundWorker_2.DoWork += new System.ComponentModel.DoWorkEventHandler(backgroundWorker_2_DoWork);
+			// V10.16: backgroundWorker_2_DoWork archived; async replace chapter path handles this operation.
 		this.backgroundWorker_2.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(backgroundWorker_12_ProgressChanged);
 		this.backgroundWorker_2.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(backgroundWorker_12_RunWorkerCompleted);
 		this.backgroundWorker_9.WorkerReportsProgress = true;
 		this.backgroundWorker_9.WorkerSupportsCancellation = true;
-		this.backgroundWorker_9.DoWork += new System.ComponentModel.DoWorkEventHandler(backgroundWorker_9_DoWork);
+			// V10.13: backgroundWorker_9_DoWork archived; async manual ordered insert path handles this operation.
 		this.backgroundWorker_9.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(backgroundWorker_12_ProgressChanged);
 		this.backgroundWorker_9.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(backgroundWorker_12_RunWorkerCompleted);
 		this.backgroundWorker_10.WorkerReportsProgress = true;
@@ -2655,7 +2657,46 @@ public class CollectManual : DockContent
 		comboBox_1.Text = ruleConfigInfo_0.NovelListUrl.Pattern;
 	}
 
-	private void target_listview_DoubleClick(object sender, EventArgs e)
+	private async System.Threading.Tasks.Task StartAppendSelectedChaptersAsync()
+	{
+		if (target_list_view.CheckedItems.Count == 0 || bool_0 || backgroundWorker_6.IsBusy || manualAsyncCancellation != null)
+		{
+			return;
+		}
+		bool_0 = true;
+		panel_2.Enabled = false;
+		toolStripStatusLabel_0.Text = "正在采集章节.请勿进行其他操作..";
+		List<ChapterInfo> selectedChapters = new List<ChapterInfo>();
+		for (int i = 0; i < target_list_view.Items.Count; i++)
+		{
+			if (target_list_view.Items[i].Checked)
+			{
+				selectedChapters.Add((ChapterInfo)target_list_view.Items[i].Tag);
+			}
+		}
+		novelInfo_0 = (NovelInfo)target_list_view.Tag;
+		manualAsyncCancellation = new CancellationTokenSource();
+		try
+		{
+			await RunAppendChaptersAsync(selectedChapters.ToArray(), manualAsyncCancellation.Token);
+			CompleteManualAsync();
+		}
+		catch (OperationCanceledException)
+		{
+			CompleteManualAsync(cancelled: true);
+		}
+		catch (Exception ex)
+		{
+			CompleteManualAsync(ex);
+		}
+	}
+
+	private void ArchiveLegacyManualDoWork(string name)
+	{
+		throw new NotSupportedException(name + " 已归档，请使用 async 手工采集链路。");
+	}
+
+	private async void target_listview_DoubleClick(object sender, EventArgs e)
 	{
 		bool flag = false;
 		int num = 0;
@@ -2686,7 +2727,7 @@ public class CollectManual : DockContent
 				flag = true;
 			}
 		}
-		if (target_list_view.CheckedItems.Count == 0 || bool_0 || backgroundWorker_6.IsBusy)
+		if (target_list_view.CheckedItems.Count == 0 || bool_0 || backgroundWorker_6.IsBusy || manualAsyncCancellation != null)
 		{
 			return;
 		}
@@ -2705,7 +2746,20 @@ public class CollectManual : DockContent
 		novelInfo_0 = (NovelInfo)target_list_view.Tag;
 		ChapterInfo[] argument = arrayList.ToArray();
 		arrayList.Clear();
-		backgroundWorker_6.RunWorkerAsync(argument);
+		manualAsyncCancellation = new CancellationTokenSource();
+			try
+			{
+				await RunAppendChaptersAsync(argument, manualAsyncCancellation.Token);
+				CompleteManualAsync();
+			}
+			catch (OperationCanceledException)
+			{
+				CompleteManualAsync(cancelled: true);
+			}
+			catch (Exception ex)
+			{
+				CompleteManualAsync(ex);
+			}
 	}
 
 	private void TargetMenuStrip_Opening(object sender, CancelEventArgs e)
@@ -2765,7 +2819,7 @@ public class CollectManual : DockContent
 		}
 	}
 
-	private void toolStripMenuItem_1_Click(object sender, EventArgs e)
+	private async void toolStripMenuItem_1_Click(object sender, EventArgs e)
 	{
 		if (listView_2.CheckedItems.Count == 0 || bool_0 || backgroundWorker_8.IsBusy)
 		{
@@ -2808,7 +2862,7 @@ public class CollectManual : DockContent
 		target_list_view.Items.Clear();
 	}
 
-	private void toolStripMenuItem_12_Click(object sender, EventArgs e)
+	private async void toolStripMenuItem_12_Click(object sender, EventArgs e)
 	{
 		if (target_list_view.CheckedItems.Count != listView_1.CheckedItems.Count || target_list_view.CheckedItems.Count == 0 || bool_0 || backgroundWorker_2.IsBusy)
 		{
@@ -3037,9 +3091,9 @@ public class CollectManual : DockContent
 		}
 	}
 
-	private void toolStripMenuItem_25_Click(object sender, EventArgs e)
+	private async void toolStripMenuItem_25_Click(object sender, EventArgs e)
 	{
-		if (target_list_view.CheckedItems.Count == 0 || listView_1.CheckedItems.Count != 1 || bool_0 || backgroundWorker_9.IsBusy)
+		if (target_list_view.CheckedItems.Count == 0 || listView_1.CheckedItems.Count != 1 || bool_0 || backgroundWorker_9.IsBusy || manualAsyncCancellation != null)
 		{
 			MessageBox.Show("远程章节未选择/本地章节选择数量不等于1/后台线程正忙");
 			return;
@@ -3069,7 +3123,20 @@ public class CollectManual : DockContent
 				break;
 			}
 		}
-		backgroundWorker_9.RunWorkerAsync();
+		manualAsyncCancellation = new CancellationTokenSource();
+			try
+			{
+				await RunInsertChaptersByOrderAsync(manualAsyncCancellation.Token);
+				CompleteManualAsync();
+			}
+			catch (OperationCanceledException)
+			{
+				CompleteManualAsync(cancelled: true);
+			}
+			catch (Exception ex)
+			{
+				CompleteManualAsync(ex);
+			}
 	}
 
 	private void toolStripMenuItem_26_Click(object sender, EventArgs e)
@@ -3375,7 +3442,7 @@ public class CollectManual : DockContent
 		}
 	}
 
-	private void toolStripMenuItem_34_Click(object sender, EventArgs e)
+	private async void toolStripMenuItem_34_Click(object sender, EventArgs e)
 	{
 		bool flag = false;
 		for (int i = 0; i < target_list_view.Items.Count; i++)
@@ -3408,7 +3475,7 @@ public class CollectManual : DockContent
 		novelInfo_0 = (NovelInfo)target_list_view.Tag;
 		ChapterInfo[] argument = arrayList.ToArray();
 		arrayList.Clear();
-		backgroundWorker_6.RunWorkerAsync(argument);
+		await StartAppendSelectedChaptersAsync();
 	}
 
 	private void toolStripMenuItem_35_Click(object sender, EventArgs e)
@@ -3502,7 +3569,7 @@ public class CollectManual : DockContent
 		listView_2.Items.Clear();
 	}
 
-	private void toolStripMenuItem_6_Click(object sender, EventArgs e)
+	private async void toolStripMenuItem_6_Click(object sender, EventArgs e)
 	{
 		if (target_list_view.CheckedItems.Count == 0 || bool_0 || backgroundWorker_6.IsBusy)
 		{
@@ -3523,7 +3590,7 @@ public class CollectManual : DockContent
 		novelInfo_0 = (NovelInfo)target_list_view.Tag;
 		ChapterInfo[] argument = arrayList.ToArray();
 		arrayList.Clear();
-		backgroundWorker_6.RunWorkerAsync(argument);
+		await StartAppendSelectedChaptersAsync();
 	}
 
 	private void toolStripMenuItem_8_Click(object sender, EventArgs e)

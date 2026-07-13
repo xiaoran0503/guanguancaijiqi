@@ -4,7 +4,7 @@ This branch contains the independent .NET 10 / Windows x64 migration line for No
 
 ## Current Baseline
 
-- Version: `10.11.0-net10-test / 10.11.0.0`
+- Version: `10.18.1-net10-test / 10.18.1.0`
 - `v10.3.1-net10`: Fixes the auto rule generator menu binding so it opens the rule generator instead of the retired update-novel form.
 - `v10.3.2-net10`: Improves auto rule generation for real chapter directory pages such as `www.qbxs.net`, including reusable chapter URL patterns and clearer single-book rule notes.
 - Branch: `net10-v10`

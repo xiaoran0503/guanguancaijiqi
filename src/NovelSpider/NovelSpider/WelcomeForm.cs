@@ -125,6 +125,49 @@ public class WelcomeForm : DockContent
 		{
 			"更新日志",
 			"",
+			"V10.18.1 Net10 Test    2026-07-13",
+
+			"- 版本迭代为 10.18.1.0 / 10.18.1-net10-test。",
+
+			"- 修复自动采集启动后 UI 卡住、停止按钮不可用；采集主体后台执行，进度回调切回 UI 线程。",
+
+			"",
+			"V10.18.0 Net10 Test    2026-07-13",
+
+			"- 版本迭代为 10.18.0.0 / 10.18.0-net10-test。",
+
+			"- Page.Translate/列表解析/自动代理加载继续 async 化，CollectRepair 等待改为可取消分段等待。",
+
+			"- 剩余同步 API 保留为兼容外壳，活动采集和 UI 路径优先走 async。",
+
+			"",
+			"V10.17.0 Net10 Test    2026-07-13",
+
+			"- 版本迭代为 10.17.0.0 / 10.17.0-net10-test。",
+
+			"- Page 新增 GetIdsAsync / GetNovelListAsync，自动采集列表阶段改为 async 抓取。",
+
+			"- 保留旧同步外壳供未迁移后台路径使用，后续继续拆 CollectReplace/CollectRepair。",
+
+			"",
+			"V10.16.0 Net10 Test    2026-07-13",
+
+			"- 版本迭代为 10.16.0.0 / 10.16.0-net10-test。",
+
+			"- CollectManual 添加小说与替换章节入口改为 async helper，移除 WaitForBackgroundAsync 同步桥接。",
+
+			"- 自动采集网络测速和代理测速改为 GetStringWorkAsync，保留 UI 状态回写。",
+
+			"",
+			"V10.15.0 Net10 Test    2026-07-13",
+
+			"- 版本迭代为 10.15.0.0 / 10.15.0-net10-test。",
+
+			"- 自动采集移除旧 AutoWorker.DoWork 绑定，主循环统一走 RunAutoCollectAsync / AutoWorkerCoreAsync。",
+
+			"- 自动采集等待与站点友好延时切到 Task.Delay / HostRequestThrottle.WaitAsync，可被停止操作取消。",
+
+			"",
 			"V10.7.0 Net10 Test    2026-07-13",
 			"- 版本迭代为 10.7.0.0 / 10.7.0-net10-test。",
 			"- 自动采集 Run() 移除 Application.DoEvents 忙等，后台等待改为事件或可取消分段等待。",

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
@@ -20,67 +21,82 @@ namespace NovelSpider;
 
 public class 自动采集模式 : DockContent
 {
-	private static T WaitForBackgroundAsync<T>(System.Threading.Tasks.Task<T> task)
+	private System.Threading.Tasks.Task<NovelInfo> FetchChapterInfoForAutoAsync(Page page, NovelInfo novelInfo, CancellationToken cancellationToken = default)
 	{
-		try
+		return page.GetChapterInfoAsync(novelInfo, isvip: false, cancellationToken);
+	}
+
+	private System.Threading.Tasks.Task<ChapterInfo> InsertChapterForAutoAsync(NovelInfo novelInfo, CancellationToken cancellationToken = default)
+	{
+		return LocalProviderAsyncDispatcher.InsertChapterAsync(LocalProvider.GetInstance(), novelInfo, tInfo, cancellationToken);
+	}
+
+	private System.Threading.Tasks.Task UpdateLastChapterForAutoAsync(NovelInfo novelInfo, CancellationToken cancellationToken = default)
+	{
+		return LocalProviderAsyncDispatcher.UpdateLastChapterAsync(LocalProvider.GetInstance(), novelInfo, cancellationToken);
+	}
+
+	private bool IsAutoCancellationPending()
+	{
+		return AutoWorker.CancellationPending || autoCollectCancellation?.IsCancellationRequested == true;
+	}
+
+	private void ReportAutoProgress(int progressPercentage, object userState)
+	{
+		if (IsDisposed)
 		{
-			task.Wait();
-			return task.Result;
+			return;
 		}
-		catch (AggregateException ex) when (ex.InnerExceptions.Count == 1)
+		void Report() => AutoWorker_ProgressChanged(this, new ProgressChangedEventArgs(progressPercentage, userState));
+		if (InvokeRequired)
 		{
-			System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex.InnerException!).Throw();
-			throw;
+			BeginInvoke((MethodInvoker)Report);
+		}
+		else
+		{
+			Report();
 		}
 	}
 
-	private static void WaitForBackgroundAsync(System.Threading.Tasks.Task task)
+	private void CompleteAutoCollect(RunWorkerCompletedEventArgs args)
 	{
-		try
+		if (IsDisposed)
 		{
-			task.Wait();
+			return;
 		}
-		catch (AggregateException ex) when (ex.InnerExceptions.Count == 1)
+		void Complete() => AutoWorker_RunWorkerCompleted(this, args);
+		if (InvokeRequired)
 		{
-			System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex.InnerException!).Throw();
-			throw;
+			BeginInvoke((MethodInvoker)Complete);
+		}
+		else
+		{
+			Complete();
 		}
 	}
 
-	private bool WaitOrCancel(int milliseconds)
+	private async System.Threading.Tasks.Task<bool> DelayOrCancelAsync(int milliseconds, CancellationToken cancellationToken)
 	{
-		int remaining = Math.Max(0, milliseconds);
-		while (remaining > 0)
+		if (milliseconds <= 0)
 		{
-			if (AutoWorker.CancellationPending)
-			{
-				return false;
-			}
-			int slice = Math.Min(remaining, 200);
-			Thread.Sleep(slice);
-			remaining -= slice;
+			return !IsAutoCancellationPending();
 		}
-		return !AutoWorker.CancellationPending;
-	}
-
-	private void WaitForAutoWorker()
-	{
-		using ManualResetEventSlim completed = new ManualResetEventSlim(!AutoWorker.IsBusy);
-		RunWorkerCompletedEventHandler handler = null;
-		handler = (_, _) => completed.Set();
-		AutoWorker.RunWorkerCompleted += handler;
 		try
 		{
-			while (AutoWorker.IsBusy && !completed.Wait(200))
-			{
-			}
+			using CancellationTokenSource linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, autoCollectCancellation?.Token ?? CancellationToken.None);
+			await System.Threading.Tasks.Task.Delay(milliseconds, linked.Token).ConfigureAwait(false);
+			return !IsAutoCancellationPending();
 		}
-		finally
+		catch (OperationCanceledException)
 		{
-			AutoWorker.RunWorkerCompleted -= handler;
+			return false;
 		}
 	}
 	public BackgroundWorker AutoWorker;
+
+	private CancellationTokenSource autoCollectCancellation;
+
+	private bool autoCollectRunning;
 
 	private bool bool_0;
 
@@ -542,43 +558,73 @@ public class 自动采集模式 : DockContent
 		bool_0 = bool_1;
 	}
 
-	private void AutoWorker_DoWork(object sender, DoWorkEventArgs e)
+	private async System.Threading.Tasks.Task RunAutoCollectAsync(CancellationToken cancellationToken)
 	{
-		AutoWorker.ReportProgress(2, "获得小说列表");
+		autoCollectRunning = true;
+		DoWorkEventArgs args = new DoWorkEventArgs(null);
+		try
+		{
+			await AutoWorkerCoreAsync(args, cancellationToken).ConfigureAwait(true);
+			CompleteAutoCollect(new RunWorkerCompletedEventArgs(null, null, args.Cancel));
+		}
+		catch (OperationCanceledException)
+		{
+			CompleteAutoCollect(new RunWorkerCompletedEventArgs(null, null, cancelled: true));
+		}
+		catch (Exception ex)
+		{
+			CompleteAutoCollect(new RunWorkerCompletedEventArgs(null, ex, cancelled: false));
+		}
+		finally
+		{
+			autoCollectRunning = false;
+			autoCollectCancellation?.Dispose();
+			autoCollectCancellation = null;
+		}
+	}
+
+	private async System.Threading.Tasks.Task RunAutoCollectOnBackgroundAsync(CancellationToken cancellationToken)
+	{
+		await System.Threading.Tasks.Task.Run(async () => await RunAutoCollectAsync(cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
+	}
+
+	private async System.Threading.Tasks.Task AutoWorkerCoreAsync(DoWorkEventArgs e, CancellationToken cancellationToken)
+	{
+		ReportAutoProgress(2, "获得小说列表");
 		switch (tInfo.RadioBy)
 		{
 		case "GetListUrl":
 		{
-			string[] ids = new Page(rInfo, tInfo).GetIds(tInfo.GetListUrl);
-			AutoWorker.ReportProgress(5, ids.Length);
-			method_1(ids, bool_1: true);
+			string[] ids = await new Page(rInfo, tInfo).GetIdsAsync(tInfo.GetListUrl, cancellationToken).ConfigureAwait(false);
+			ReportAutoProgress(5, ids.Length);
+			await method_1Async(ids, bool_1: true, cancellationToken).ConfigureAwait(false);
 			break;
 		}
 		case "GetOrderId":
-			AutoWorker.ReportProgress(5, tInfo.GetOrderMaxId - tInfo.GetOrderMinId);
-			method_2(tInfo.GetOrderMinId, tInfo.GetOrderMaxId, bool_1: true);
+			ReportAutoProgress(5, tInfo.GetOrderMaxId - tInfo.GetOrderMinId);
+			await method_2Async(tInfo.GetOrderMinId, tInfo.GetOrderMaxId, bool_1: true, cancellationToken).ConfigureAwait(false);
 			break;
 		case "GetSinceId":
-			AutoWorker.ReportProgress(5, tInfo.GetSinceId.Length);
-			method_1(tInfo.GetSinceId, bool_1: true);
+			ReportAutoProgress(5, tInfo.GetSinceId.Length);
+			await method_1Async(tInfo.GetSinceId, bool_1: true, cancellationToken).ConfigureAwait(false);
 			break;
 		case "PutOrderId":
-			AutoWorker.ReportProgress(5, tInfo.PutOrderMaxId - tInfo.PutOrderMinId);
-			method_2(tInfo.PutOrderMinId, tInfo.PutOrderMaxId, bool_1: false);
+			ReportAutoProgress(5, tInfo.PutOrderMaxId - tInfo.PutOrderMinId);
+			await method_2Async(tInfo.PutOrderMinId, tInfo.PutOrderMaxId, bool_1: false, cancellationToken).ConfigureAwait(false);
 			break;
 		case "OtherListUrl":
 		{
-			string[] novelList = Page.GetNovelList(tInfo.OtherListUrl, tInfo.OtherRegex, tInfo.OtherEncoding);
-			AutoWorker.ReportProgress(5, tInfo.PutSinceId.Length);
-			method_0(novelList);
+			string[] novelList = await Page.GetNovelListAsync(tInfo.OtherListUrl, tInfo.OtherRegex, tInfo.OtherEncoding, cancellationToken).ConfigureAwait(false);
+			ReportAutoProgress(5, tInfo.PutSinceId.Length);
+			await method_0Async(novelList, cancellationToken).ConfigureAwait(false);
 			break;
 		}
 		case "PutSinceId":
-			AutoWorker.ReportProgress(5, tInfo.PutSinceId.Length);
-			method_1(tInfo.PutSinceId, bool_1: false);
+			ReportAutoProgress(5, tInfo.PutSinceId.Length);
+			await method_1Async(tInfo.PutSinceId, bool_1: false, cancellationToken).ConfigureAwait(false);
 			break;
 		}
-		if (AutoWorker.CancellationPending)
+		if (IsAutoCancellationPending())
 		{
 			e.Cancel = true;
 		}
@@ -600,8 +646,8 @@ public class 自动采集模式 : DockContent
 					UriString = text
 				};
 				HttpClient httpClient2 = httpClient;
-				AutoWorker.ReportProgress(2, "执行" + text);
-				httpClient2.GetStringWork();
+				ReportAutoProgress(2, "执行" + text);
+				await httpClient2.GetStringWorkAsync(cancellationToken).ConfigureAwait(false);
 			}
 		}
 	}
@@ -805,9 +851,10 @@ public class 自动采集模式 : DockContent
 			测试网速.Enabled = false;
 			tabControl_0.SelectedIndex = tabControl_0.TabCount - 2;
 			dateTime_0 = DateTime.Now.AddMinutes(tInfo.Interval);
-			if (!AutoWorker.IsBusy)
+			if (!autoCollectRunning)
 			{
-				AutoWorker.RunWorkerAsync();
+				autoCollectCancellation = new CancellationTokenSource();
+				_ = RunAutoCollectOnBackgroundAsync(autoCollectCancellation.Token);
 			}
 		}
 	}
@@ -815,21 +862,25 @@ public class 自动采集模式 : DockContent
 	private void btnStopClick(object sender, EventArgs e)
 	{
 		停止.Enabled = false;
+		if (autoCollectCancellation != null && !autoCollectCancellation.IsCancellationRequested)
+		{
+			autoCollectCancellation.Cancel();
+			label_13.Text = "正在停止采集...";
+		}
 		if (AutoWorker.IsBusy)
 		{
 			AutoWorker.CancelAsync();
-			return;
 		}
 		if (timer_0.Enabled)
 		{
 			timer_0.Stop();
 			label_13.Text = "操作取消";
+			开始.Enabled = true;
+			测试网速.Enabled = true;
 		}
-		开始.Enabled = true;
-		测试网速.Enabled = true;
 	}
 
-	private void btnTestNetworkClick(object sender, EventArgs e)
+	private async void btnTestNetworkClick(object sender, EventArgs e)
 	{
 		label_13.Text = "正在网络测速...";
 		rInfo = (RuleConfigInfo)ConfigFileManager.LoadConfig(采集规则_0.Text, rInfo);
@@ -839,9 +890,17 @@ public class 自动采集模式 : DockContent
 		测试网速.Enabled = false;
 		停止.Enabled = false;
 		tabControl_0.SelectedIndex = tabControl_0.TabCount - 2;
-		if (!HttpWorker.IsBusy)
+		try
 		{
-			HttpWorker.RunWorkerAsync();
+			label_13.Text = await TestNetworkSpeedAsync(CancellationToken.None).ConfigureAwait(true);
+		}
+		catch (Exception ex)
+		{
+			label_13.Text = "测试失败：" + ex.Message;
+		}
+		finally
+		{
+			HttpWorker_RunWorkerCompleted(this, new RunWorkerCompletedEventArgs(null, null, cancelled: false));
 		}
 	}
 
@@ -852,9 +911,13 @@ public class 自动采集模式 : DockContent
 
 	private void CollectAuto_FormClosing(object sender, FormClosingEventArgs e)
 	{
-		if (AutoWorker.IsBusy)
+		if (autoCollectRunning || AutoWorker.IsBusy)
 		{
-			AutoWorker.CancelAsync();
+			autoCollectCancellation?.Cancel();
+			if (AutoWorker.IsBusy)
+			{
+				AutoWorker.CancelAsync();
+			}
 			e.Cancel = true;
 			MessageBox.Show("检查到采集进程正在运行，现在正在自动停止采集进程\n\n请在采集进程停止后关闭窗口！", "信息提示");
 		}
@@ -869,10 +932,7 @@ public class 自动采集模式 : DockContent
 		注意得示_16.Text = "通知：" + Configs.BaseConfig.LicenseAd;
 		string_2 = Guid.NewGuid().ToString().ToUpper();
 		label11.Text = string_2;
-		if (!LoginWorker.IsBusy)
-		{
-			LoginWorker.RunWorkerAsync();
-		}
+			_ = LoadProxyListAsync(CancellationToken.None);
 		Configs.TaskNovelInfo.Add(string_2, null);
 		string text = Text + " " + string_2;
 		Text = text;
@@ -921,7 +981,7 @@ public class 自动采集模式 : DockContent
 		}
 	}
 
-	private void CollectNovel_old(NovelInfo novelInfo_0)
+	private async System.Threading.Tasks.Task CollectNovelOldAsync(NovelInfo novelInfo_0, CancellationToken cancellationToken)
 	{
 		try
 		{
@@ -934,10 +994,10 @@ public class 自动采集模式 : DockContent
 			{
 				novelInfo_0.Name = "";
 			}
-			AutoWorker.ReportProgress(0, novelInfo_0.GetID + " | " + novelInfo_0.Name + " | " + novelInfo_0.PutID);
-			AutoWorker.ReportProgress(1, "--");
-			AutoWorker.ReportProgress(2, "获得小说信息");
-			AutoWorker.ReportProgress(4, 0);
+			ReportAutoProgress(0, novelInfo_0.GetID + " | " + novelInfo_0.Name + " | " + novelInfo_0.PutID);
+			ReportAutoProgress(1, "--");
+			ReportAutoProgress(2, "获得小说信息");
+			ReportAutoProgress(4, 0);
 			SpiderException.Debug(tInfo.ID, "CollectAuto.Collect 获得小说信息");
 			Page page = new Page(rInfo, tInfo);
 			try
@@ -953,21 +1013,21 @@ public class 自动采集模式 : DockContent
 				else if (novelInfo_0.GetID == "" || novelInfo_0.GetID == "0")
 				{
 					novelInfo_0 = LocalProvider.GetInstance().GetNovelInfo(novelInfo_0, tInfo.NameAndAuthor);
-					AutoWorker.ReportProgress(0, novelInfo_0.GetID + " | " + novelInfo_0.Name + " | " + novelInfo_0.PutID);
+					ReportAutoProgress(0, novelInfo_0.GetID + " | " + novelInfo_0.Name + " | " + novelInfo_0.PutID);
 					novelInfo_0 = page.GetNovelInfo(novelInfo_0);
 				}
 			}
 			catch (Exception ex)
 			{
-				WaitOrCancel(500);
+				await DelayOrCancelAsync(500, cancellationToken).ConfigureAwait(false);
 				SpiderException.Show(200, ex.Message, novelInfo_0, tInfo.Log, string_0, tInfo.RuleFile);
 				return;
 			}
-			if (AutoWorker.CancellationPending)
+			if (IsAutoCancellationPending())
 			{
 				return;
 			}
-			ApplyFriendlyDelay(tInfo, RequestKind.Novel);
+			await ApplyFriendlyDelayAsync(tInfo, RequestKind.Novel, cancellationToken).ConfigureAwait(false);
 			try
 			{
 				var keys = Configs.TaskNovelInfo.Keys;
@@ -989,7 +1049,7 @@ public class 自动采集模式 : DockContent
 				return;
 			}
 			Configs.TaskNovelInfo[string_2.ToString()] = novelInfo_0;
-			AutoWorker.ReportProgress(0, novelInfo_0.GetID + " | " + novelInfo_0.Name + " | " + novelInfo_0.PutID);
+			ReportAutoProgress(0, novelInfo_0.GetID + " | " + novelInfo_0.Name + " | " + novelInfo_0.PutID);
 			SpiderException.Debug(tInfo.ID, "CollectAuto.Collect 过滤小说");
 			if (tInfo.FilterNovelType != 1)
 			{
@@ -1033,7 +1093,7 @@ public class 自动采集模式 : DockContent
 			ChapterInfo[] chapterList;
 			try
 			{
-				AutoWorker.ReportProgress(2, "获得小说的章节目录");
+				ReportAutoProgress(2, "获得小说的章节目录");
 				chapterList = page.GetChapterList(novelInfo_0);
 			}
 			catch (Exception ex2)
@@ -1046,14 +1106,14 @@ public class 自动采集模式 : DockContent
 				SpiderException.Show(214, "章节组为空", novelInfo_0, tInfo.Log, string_0, tInfo.RuleFile);
 				return;
 			}
-			AutoWorker.ReportProgress(6, chapterList.Length);
-			if (AutoWorker.CancellationPending)
+			ReportAutoProgress(6, chapterList.Length);
+			if (IsAutoCancellationPending())
 			{
 				return;
 			}
 			if (novelInfo_0.PutID == 0 && novelInfo_0.IsNew)
 			{
-				AutoWorker.ReportProgress(2, "处理新书");
+				ReportAutoProgress(2, "处理新书");
 				if (!tInfo.Finish || novelInfo_0.Degree != 1 || !tInfo.NewBook)
 				{
 					SpiderException.Debug(tInfo.ID, "CollectAuto.Collect 是否添加新书判断");
@@ -1070,11 +1130,11 @@ public class 自动采集模式 : DockContent
 					}
 				}
 				SpiderException.Debug(tInfo.ID, "CollectAuto.Collect 正式入库小说信息");
-				novelInfo_0 = WaitForBackgroundAsync(LocalProviderAsyncDispatcher.InsertNovelAsync(LocalProvider.GetInstance(), novelInfo_0));
+				novelInfo_0 = await LocalProviderAsyncDispatcher.InsertNovelAsync(LocalProvider.GetInstance(), novelInfo_0, cancellationToken).ConfigureAwait(false);
 				flag2 = true;
-				AutoWorker.ReportProgress(0, novelInfo_0.GetID + " | " + novelInfo_0.Name + " | " + novelInfo_0.PutID);
+				ReportAutoProgress(0, novelInfo_0.GetID + " | " + novelInfo_0.Name + " | " + novelInfo_0.PutID);
 			}
-			if (AutoWorker.CancellationPending)
+			if (IsAutoCancellationPending())
 			{
 				return;
 			}
@@ -1154,7 +1214,7 @@ public class 自动采集模式 : DockContent
 					LocalProvider.GetInstance().UpdateNovel(novelInfo_0, bool_0: false, tInfo.ReplaceIntro, tInfo.ReplaceFullflag, tInfo.ReplaceSort, tInfo.ReplaceSort, tInfo.ReplaceImgflag, bool_6: false);
 				}
 			}
-			AutoWorker.ReportProgress(2, "判断是否开启超级模式");
+			ReportAutoProgress(2, "判断是否开启超级模式");
 			ChapterInfo[] chapterList2 = LocalProvider.GetInstance().GetChapterList(novelInfo_0.PutID);
 			bool flag3 = false;
 			novelInfo_0.LastChapter = new ChapterInfo();
@@ -1176,8 +1236,8 @@ public class 自动采集模式 : DockContent
 					{
 						if (novelInfo_0.MDegree > 0)
 						{
-							AutoWorker.ReportProgress(2, "超级修复，书籍已经完结，跳过本书。");
-							WaitOrCancel(1000);
+							ReportAutoProgress(2, "超级修复，书籍已经完结，跳过本书。");
+							await DelayOrCancelAsync(1000, cancellationToken).ConfigureAwait(false);
 							return;
 						}
 						bool flag4 = false;
@@ -1191,8 +1251,8 @@ public class 自动采集模式 : DockContent
 								{
 									break;
 								}
-								AutoWorker.ReportProgress(2, "超级修复，书籍第一章节对比失败，跳过本书。");
-								WaitOrCancel(1000);
+								ReportAutoProgress(2, "超级修复，书籍第一章节对比失败，跳过本书。");
+								await DelayOrCancelAsync(1000, cancellationToken).ConfigureAwait(false);
 								return;
 							}
 							num2 = chapterList2.Length - 1;
@@ -1246,18 +1306,18 @@ public class 自动采集模式 : DockContent
 					}
 					novelInfo_0.LastChapter = chapterList2[num4];
 				}
-				AutoWorker.ReportProgress(2, "对比最新章节开始");
+				ReportAutoProgress(2, "对比最新章节开始");
 				SpiderException.Debug(tInfo.ID, "CollectAuto.Collect 对比最新章节开始");
 				if (flag2)
 				{
 					break;
 				}
-				AutoWorker.ReportProgress(2, "正在对比最新章节");
+				ReportAutoProgress(2, "正在对比最新章节");
 				int num5 = 0;
 				int num6 = 0;
 				while (true)
 				{
-					if (AutoWorker.CancellationPending)
+					if (IsAutoCancellationPending())
 					{
 						return;
 					}
@@ -1267,9 +1327,9 @@ public class 自动采集模式 : DockContent
 					}
 					if (!tInfo.NoPBar)
 					{
-						AutoWorker.ReportProgress(1, chapterList[num6].ChapterName);
-						AutoWorker.ReportProgress(4, num6 + 1);
-						ApplyFriendlyDelay(tInfo, RequestKind.Chapter);
+						ReportAutoProgress(1, chapterList[num6].ChapterName);
+						ReportAutoProgress(4, num6 + 1);
+						await ApplyFriendlyDelayAsync(tInfo, RequestKind.Chapter, cancellationToken).ConfigureAwait(false);
 					}
 					switch (tInfo.EqualsChapter)
 					{
@@ -1336,13 +1396,13 @@ public class 自动采集模式 : DockContent
 				}
 				flag7 = true;
 			}
-			if (AutoWorker.CancellationPending)
+			if (IsAutoCancellationPending())
 			{
 				return;
 			}
 			if (!flag2 && tInfo.DuanImage)
 			{
-				AutoWorker.ReportProgress(2, "章节对比失败，启用超级更新模式");
+				ReportAutoProgress(2, "章节对比失败，启用超级更新模式");
 				flag5 = true;
 				flag6 = true;
 				num4 = -1;
@@ -1361,13 +1421,13 @@ public class 自动采集模式 : DockContent
 					SpiderException.Show(120, novelInfo_0.LastChapter.VolumeName + " | " + novelInfo_0.LastChapter.ChapterName, novelInfo_0, tInfo.Log, string_0, tInfo.RuleFile);
 					return;
 				}
-				AutoWorker.ReportProgress(2, "正在清空章节");
+				ReportAutoProgress(2, "正在清空章节");
 				LocalProvider.GetInstance().ClearNovel(novelInfo_0);
 				flag2 = true;
 			}
 			else if (tInfo.CompulsoryDeleteChapter)
 			{
-				AutoWorker.ReportProgress(2, "正在强制清空章节");
+				ReportAutoProgress(2, "正在强制清空章节");
 				LocalProvider.GetInstance().ClearNovel(novelInfo_0);
 				flag2 = true;
 				num = -1;
@@ -1378,11 +1438,11 @@ public class 自动采集模式 : DockContent
 			}
 			else
 			{
-				if (!flag5 && (AutoWorker.CancellationPending || !tInfo.OldBook || !flag2))
+				if (!flag5 && (IsAutoCancellationPending() || !tInfo.OldBook || !flag2))
 				{
 					return;
 				}
-				ApplyFriendlyDelay(tInfo, RequestKind.Index);
+				await ApplyFriendlyDelayAsync(tInfo, RequestKind.Index, cancellationToken).ConfigureAwait(false);
 				bool flag8 = false;
 				int num10 = num + 1;
 				int num11 = 0;
@@ -1392,7 +1452,7 @@ public class 自动采集模式 : DockContent
 					if (tInfo.DonnotCollectLastChapterNo > 0)
 					{
 					}
-					if (num10 >= chapterList.Length - tInfo.DonnotCollectLastChapterNo || AutoWorker.CancellationPending)
+					if (num10 >= chapterList.Length - tInfo.DonnotCollectLastChapterNo || IsAutoCancellationPending())
 					{
 						break;
 					}
@@ -1406,9 +1466,9 @@ public class 自动采集模式 : DockContent
 					{
 						if (!tInfo.NoPBar)
 						{
-							AutoWorker.ReportProgress(2, "过滤章节名");
-							AutoWorker.ReportProgress(1, chapterList[num10].ChapterName);
-							AutoWorker.ReportProgress(4, num10 + 1);
+							ReportAutoProgress(2, "过滤章节名");
+							ReportAutoProgress(1, chapterList[num10].ChapterName);
+							ReportAutoProgress(4, num10 + 1);
 						}
 						string pattern = "";
 						string[] filterVolume = tInfo.FilterVolume;
@@ -1430,9 +1490,9 @@ public class 自动采集模式 : DockContent
 					{
 						if (!tInfo.NoPBar)
 						{
-							AutoWorker.ReportProgress(2, "过滤章节名");
-							AutoWorker.ReportProgress(1, chapterList[num10].ChapterName);
-							AutoWorker.ReportProgress(4, num10 + 1);
+							ReportAutoProgress(2, "过滤章节名");
+							ReportAutoProgress(1, chapterList[num10].ChapterName);
+							ReportAutoProgress(4, num10 + 1);
 						}
 						string pattern2 = "";
 						string[] filterContinueChapterName = tInfo.FilterContinueChapterName;
@@ -1455,9 +1515,9 @@ public class 自动采集模式 : DockContent
 					{
 						if (!tInfo.NoPBar)
 						{
-							AutoWorker.ReportProgress(2, "过滤章节名");
-							AutoWorker.ReportProgress(1, chapterList[num10].ChapterName);
-							AutoWorker.ReportProgress(4, num10 + 1);
+							ReportAutoProgress(2, "过滤章节名");
+							ReportAutoProgress(1, chapterList[num10].ChapterName);
+							ReportAutoProgress(4, num10 + 1);
 						}
 						string pattern3 = "";
 						string[] filterChapterName = tInfo.FilterChapterName;
@@ -1480,9 +1540,9 @@ public class 自动采集模式 : DockContent
 					{
 						if (!tInfo.NoPBar)
 						{
-							AutoWorker.ReportProgress(2, "限制章节《" + chapterList[num10].VolumeName + "》不入库分卷名");
-							AutoWorker.ReportProgress(1, chapterList[num10].ChapterName);
-							AutoWorker.ReportProgress(4, num10 + 1);
+							ReportAutoProgress(2, "限制章节《" + chapterList[num10].VolumeName + "》不入库分卷名");
+							ReportAutoProgress(1, chapterList[num10].ChapterName);
+							ReportAutoProgress(4, num10 + 1);
 						}
 						string pattern4 = "";
 						string[] filterContinueVolume = tInfo.FilterContinueVolume;
@@ -1501,15 +1561,15 @@ public class 自动采集模式 : DockContent
 					}
 					if (flag6)
 					{
-						AutoWorker.ReportProgress(2, "启用超级模式，跳过重复章节检查");
+						ReportAutoProgress(2, "启用超级模式，跳过重复章节检查");
 					}
 					else if (tInfo.CheckRepeat)
 					{
 						if (!tInfo.NoPBar)
 						{
-							AutoWorker.ReportProgress(2, "重复章节检查");
-							AutoWorker.ReportProgress(1, chapterList[num10].ChapterName);
-							AutoWorker.ReportProgress(4, num10 + 1);
+							ReportAutoProgress(2, "重复章节检查");
+							ReportAutoProgress(1, chapterList[num10].ChapterName);
+							ReportAutoProgress(4, num10 + 1);
 						}
 						int num14 = 0;
 						bool flag9 = false;
@@ -1580,7 +1640,7 @@ public class 自动采集模式 : DockContent
 						}
 						if (tInfo.DuanImage && flag9)
 						{
-							AutoWorker.ReportProgress(2, "发现重复章节，启用超级更新模式");
+							ReportAutoProgress(2, "发现重复章节，启用超级更新模式");
 							tInfo.ReplaceChapter = true;
 							tInfo.ReplaceChapterNun = chapterList2.Length;
 							flag6 = true;
@@ -1599,12 +1659,12 @@ public class 自动采集模式 : DockContent
 							goto IL_1cf4;
 						}
 					}
-					AutoWorker.ReportProgress(1, chapterList[num10].ChapterName);
-					AutoWorker.ReportProgress(4, num10 + 1);
+					ReportAutoProgress(1, chapterList[num10].ChapterName);
+					ReportAutoProgress(4, num10 + 1);
 					novelInfo_0.LastChapter = chapterList[num10];
 					if (novelInfo_0.LastChapter.PutID > 0)
 					{
-						AutoWorker.ReportProgress(2, "开始采集替换章节第" + num11 + "个");
+						ReportAutoProgress(2, "开始采集替换章节第" + num11 + "个");
 					}
 					else
 					{
@@ -1617,11 +1677,11 @@ public class 自动采集模式 : DockContent
 								num19 += tInfo.ReplaceChapterNun - chapterList2.Length;
 							}
 						}
-						AutoWorker.ReportProgress(2, "开始采集新章节第" + num19 + "个");
+						ReportAutoProgress(2, "开始采集新章节第" + num19 + "个");
 					}
 					try
 					{
-						novelInfo_0 = page.GetChapterInfo(novelInfo_0, isvip: false);
+						novelInfo_0 = await FetchChapterInfoForAutoAsync(page, novelInfo_0, cancellationToken).ConfigureAwait(false);
 					}
 					catch (Exception ex4)
 					{
@@ -1648,7 +1708,7 @@ public class 自动采集模式 : DockContent
 					{
 						if (flag10)
 						{
-							AutoWorker.ReportProgress(2, "正在入库章节");
+							ReportAutoProgress(2, "正在入库章节");
 							if (novelInfo_0.LastChapter.ChapterText.Length > tInfo.MinChapterTextLength || tInfo.EmptyChapter == 2)
 							{
 								try
@@ -1682,7 +1742,7 @@ public class 自动采集模式 : DockContent
 										NativeMethods.ChapterCount++;
 										continue;
 									}
-									WaitForBackgroundAsync(LocalProviderAsyncDispatcher.InsertChapterAsync(LocalProvider.GetInstance(), novelInfo_0, tInfo));
+									await InsertChapterForAutoAsync(novelInfo_0, cancellationToken).ConfigureAwait(false);
 									goto IL_1c53;
 									IL_1c53:
 									NativeMethods.ChapterCount++;
@@ -1704,14 +1764,14 @@ public class 自动采集模式 : DockContent
 					IL_1cbe:
 					if (DateTime.Now.Second % 12 == 10 && !FormatDateTime.CheckHost())
 					{
-						WaitOrCancel(5000);
+						await DelayOrCancelAsync(5000, cancellationToken).ConfigureAwait(false);
 					}
-					ApplyFriendlyDelay(tInfo, RequestKind.Chapter);
+					await ApplyFriendlyDelayAsync(tInfo, RequestKind.Chapter, cancellationToken).ConfigureAwait(false);
 					goto IL_1cf4;
 					IL_1c93:
 					if (Configs.BaseConfig.ChapterHtml)
 					{
-						AutoWorker.ReportProgress(2, "正在生成章节Html");
+						ReportAutoProgress(2, "正在生成章节Html");
 						LocalProvider.GetInstance().CreateChapter(novelInfo_0);
 					}
 					flag8 = true;
@@ -1721,7 +1781,7 @@ public class 自动采集模式 : DockContent
 				}
 				if (flag8 && (Configs.BaseConfig.IndexHtml || Configs.BaseConfig.FullHtml || Configs.BaseConfig.CreateOPF || Configs.BaseConfig.CreateZIP || Configs.BaseConfig.CreateTXT || Configs.BaseConfig.CreateUMD || Configs.BaseConfig.CreateJAR || Configs.BaseConfig.CreateCHM))
 				{
-					AutoWorker.ReportProgress(2, "清理正在生成目录Html (此过程将同时生成OPF和其他格式)");
+					ReportAutoProgress(2, "清理正在生成目录Html (此过程将同时生成OPF和其他格式)");
 					LocalProvider.GetInstance().CreateIndex(novelInfo_0, Configs.BaseConfig.IndexHtml, Configs.BaseConfig.FullHtml, Configs.BaseConfig.CreateOPF, Configs.BaseConfig.CreateZIP, Configs.BaseConfig.CreateTXT, Configs.BaseConfig.CreateUMD, Configs.BaseConfig.CreateJAR, Configs.BaseConfig.CreateCHM, tInfo.DelForTxt, tInfo.DelForHtml, num3);
 				}
 			}
@@ -1732,7 +1792,7 @@ public class 自动采集模式 : DockContent
 		}
 	}
 
-	private void CollectNovel(NovelInfo novelInfo_0)
+	private async System.Threading.Tasks.Task CollectNovelAsync(NovelInfo novelInfo_0, CancellationToken cancellationToken)
 	{
 		try
 		{
@@ -1746,10 +1806,10 @@ public class 自动采集模式 : DockContent
 			{
 				novelInfo_0.Name = "";
 			}
-			AutoWorker.ReportProgress(0, novelInfo_0.GetID + " | " + novelInfo_0.Name + " | " + novelInfo_0.PutID);
-			AutoWorker.ReportProgress(1, "-");
-			AutoWorker.ReportProgress(2, "获得小说信息");
-			AutoWorker.ReportProgress(4, 0);
+			ReportAutoProgress(0, novelInfo_0.GetID + " | " + novelInfo_0.Name + " | " + novelInfo_0.PutID);
+			ReportAutoProgress(1, "-");
+			ReportAutoProgress(2, "获得小说信息");
+			ReportAutoProgress(4, 0);
 			SpiderException.Debug(tInfo.ID, "CollectAuto.Collect 获得小说信息");
 			Page page = new Page(rInfo, tInfo);
 			try
@@ -1767,7 +1827,7 @@ public class 自动采集模式 : DockContent
 							DataTable sQLite = SpiderException.GetSQLite(tInfo.RuleFile, tInfo.IpStaticNum, tInfo.IpTimeNum);
 							if (sQLite.Rows.Count <= 0)
 							{
-								AutoWorker.ReportProgress(7, "代理池已无可用IP地址，请开启 自动代理模式 进程");
+								ReportAutoProgress(7, "代理池已无可用IP地址，请开启 自动代理模式 进程");
 							}
 							else
 							{
@@ -1777,7 +1837,7 @@ public class 自动采集模式 : DockContent
 									num++;
 									page.taskConfigInfo_0.ProxyHost = row["IP"].ToString();
 									page.taskConfigInfo_0.ProxyPort = int.Parse(row["PORT"].ToString());
-									AutoWorker.ReportProgress(7, page.taskConfigInfo_0.ProxyHost + ":" + page.taskConfigInfo_0.ProxyPort + " (" + num + "/" + sQLite.Rows.Count + ")");
+									ReportAutoProgress(7, page.taskConfigInfo_0.ProxyHost + ":" + page.taskConfigInfo_0.ProxyPort + " (" + num + "/" + sQLite.Rows.Count + ")");
 									try
 									{
 										novelInfo_0 = page.GetNovelInfo(novelInfo_0);
@@ -1790,7 +1850,7 @@ public class 自动采集模式 : DockContent
 									}
 									break;
 								}
-								AutoWorker.ReportProgress(7, "-");
+								ReportAutoProgress(7, "-");
 							}
 						}
 					}
@@ -1799,7 +1859,7 @@ public class 自动采集模式 : DockContent
 				else if (novelInfo_0.GetID == "" || novelInfo_0.GetID == "0")
 				{
 					novelInfo_0 = LocalProvider.GetInstance().GetNovelInfo(novelInfo_0, tInfo.NameAndAuthor);
-					AutoWorker.ReportProgress(0, novelInfo_0.GetID + " | " + novelInfo_0.Name + " | " + novelInfo_0.PutID);
+					ReportAutoProgress(0, novelInfo_0.GetID + " | " + novelInfo_0.Name + " | " + novelInfo_0.PutID);
 					if (tInfo.IpStatic || (!tInfo.Proxy && !tInfo.NovelUrlProxy))
 					{
 						novelInfo_0 = page.GetNovelInfo(novelInfo_0);
@@ -1809,7 +1869,7 @@ public class 自动采集模式 : DockContent
 						DataTable sQLite = SpiderException.GetSQLite(tInfo.RuleFile, tInfo.IpStaticNum, tInfo.IpTimeNum);
 						if (sQLite.Rows.Count <= 0)
 						{
-							AutoWorker.ReportProgress(7, "代理池已无可用IP地址，请开启 自动代理模式 进程");
+							ReportAutoProgress(7, "代理池已无可用IP地址，请开启 自动代理模式 进程");
 						}
 						else
 						{
@@ -1819,7 +1879,7 @@ public class 自动采集模式 : DockContent
 								num++;
 								page.taskConfigInfo_0.ProxyHost = row2["IP"].ToString();
 								page.taskConfigInfo_0.ProxyPort = int.Parse(row2["PORT"].ToString());
-								AutoWorker.ReportProgress(7, page.taskConfigInfo_0.ProxyHost + ":" + page.taskConfigInfo_0.ProxyPort + " (" + num + "/" + sQLite.Rows.Count + ")");
+								ReportAutoProgress(7, page.taskConfigInfo_0.ProxyHost + ":" + page.taskConfigInfo_0.ProxyPort + " (" + num + "/" + sQLite.Rows.Count + ")");
 								try
 								{
 									novelInfo_0 = page.GetNovelInfo(novelInfo_0);
@@ -1832,23 +1892,23 @@ public class 自动采集模式 : DockContent
 								}
 								break;
 							}
-							AutoWorker.ReportProgress(7, "-");
+							ReportAutoProgress(7, "-");
 						}
 					}
 				}
 			}
 			catch (Exception ex)
 			{
-				AutoWorker.ReportProgress(2, ex.Message);
-				WaitOrCancel(500);
+				ReportAutoProgress(2, ex.Message);
+				await DelayOrCancelAsync(500, cancellationToken).ConfigureAwait(false);
 				SpiderException.Show(200, ex.Message, novelInfo_0, tInfo.Log, string_0, tInfo.RuleFile);
 				return;
 			}
-			if (AutoWorker.CancellationPending)
+			if (IsAutoCancellationPending())
 			{
 				return;
 			}
-			ApplyFriendlyDelay(tInfo, RequestKind.Novel);
+			await ApplyFriendlyDelayAsync(tInfo, RequestKind.Novel, cancellationToken).ConfigureAwait(false);
 			try
 			{
 				var keys = Configs.TaskNovelInfo.Keys;
@@ -1872,7 +1932,7 @@ public class 自动采集模式 : DockContent
 				return;
 			}
 			Configs.TaskNovelInfo[string_2.ToString()] = novelInfo_0;
-			AutoWorker.ReportProgress(0, novelInfo_0.GetID + " | " + novelInfo_0.Name + " | " + novelInfo_0.PutID);
+			ReportAutoProgress(0, novelInfo_0.GetID + " | " + novelInfo_0.Name + " | " + novelInfo_0.PutID);
 			SpiderException.Debug(tInfo.ID, "CollectAuto.Collect 过滤小说");
 			if (tInfo.FilterNovelType != 1)
 			{
@@ -1915,7 +1975,7 @@ public class 自动采集模式 : DockContent
 			bool flag2 = false;
 			try
 			{
-				AutoWorker.ReportProgress(2, "获得小说的章节目录");
+				ReportAutoProgress(2, "获得小说的章节目录");
 				if (tInfo.IpStatic || (!tInfo.Proxy && !tInfo.PubIndexUrlProxy))
 				{
 					array = page.GetChapterList(novelInfo_0);
@@ -1925,7 +1985,7 @@ public class 自动采集模式 : DockContent
 					DataTable sQLite = SpiderException.GetSQLite(tInfo.RuleFile, tInfo.IpStaticNum, tInfo.IpTimeNum);
 					if (sQLite.Rows.Count <= 0)
 					{
-						AutoWorker.ReportProgress(7, "代理池已无可用IP地址，请开启 自动代理模式 进程");
+						ReportAutoProgress(7, "代理池已无可用IP地址，请开启 自动代理模式 进程");
 					}
 					else
 					{
@@ -1935,7 +1995,7 @@ public class 自动采集模式 : DockContent
 							num++;
 							page.taskConfigInfo_0.ProxyHost = row3["IP"].ToString();
 							page.taskConfigInfo_0.ProxyPort = int.Parse(row3["PORT"].ToString());
-							AutoWorker.ReportProgress(7, page.taskConfigInfo_0.ProxyHost + ":" + page.taskConfigInfo_0.ProxyPort + " (" + num + "/" + sQLite.Rows.Count + ")");
+							ReportAutoProgress(7, page.taskConfigInfo_0.ProxyHost + ":" + page.taskConfigInfo_0.ProxyPort + " (" + num + "/" + sQLite.Rows.Count + ")");
 							try
 							{
 								array = page.GetChapterList(novelInfo_0);
@@ -1948,7 +2008,7 @@ public class 自动采集模式 : DockContent
 							}
 							break;
 						}
-						AutoWorker.ReportProgress(7, "-");
+						ReportAutoProgress(7, "-");
 					}
 				}
 			}
@@ -1959,14 +2019,14 @@ public class 自动采集模式 : DockContent
 			}
 			if (array != null && array.Length != 0)
 			{
-				AutoWorker.ReportProgress(6, array.Length);
-				if (AutoWorker.CancellationPending)
+				ReportAutoProgress(6, array.Length);
+				if (IsAutoCancellationPending())
 				{
 					return;
 				}
 				if (novelInfo_0.PutID == 0 && novelInfo_0.IsNew)
 				{
-					AutoWorker.ReportProgress(2, "处理新书");
+					ReportAutoProgress(2, "处理新书");
 					if (!tInfo.Finish || novelInfo_0.Degree != 1 || !tInfo.NewBook)
 					{
 						SpiderException.Debug(tInfo.ID, "CollectAuto.Collect 是否添加新书判断");
@@ -1983,11 +2043,11 @@ public class 自动采集模式 : DockContent
 						}
 					}
 					SpiderException.Debug(tInfo.ID, "CollectAuto.Collect 正式入库小说信息");
-					novelInfo_0 = WaitForBackgroundAsync(LocalProviderAsyncDispatcher.InsertNovelAsync(LocalProvider.GetInstance(), novelInfo_0));
+					novelInfo_0 = await LocalProviderAsyncDispatcher.InsertNovelAsync(LocalProvider.GetInstance(), novelInfo_0, cancellationToken).ConfigureAwait(false);
 					flag2 = true;
-					AutoWorker.ReportProgress(0, novelInfo_0.GetID + " | " + novelInfo_0.Name + " | " + novelInfo_0.PutID);
+					ReportAutoProgress(0, novelInfo_0.GetID + " | " + novelInfo_0.Name + " | " + novelInfo_0.PutID);
 				}
-				if (AutoWorker.CancellationPending)
+				if (IsAutoCancellationPending())
 				{
 					return;
 				}
@@ -2064,7 +2124,7 @@ public class 自动采集模式 : DockContent
 						LocalProvider.GetInstance().UpdateNovel(novelInfo_0, bool_0: false, tInfo.ReplaceIntro, tInfo.ReplaceFullflag, tInfo.ReplaceSort, tInfo.ReplaceSort, tInfo.ReplaceImgflag, bool_6: false);
 					}
 				}
-				AutoWorker.ReportProgress(2, "判断是否开启超级模式");
+				ReportAutoProgress(2, "判断是否开启超级模式");
 				ChapterInfo[] array2 = LocalProvider.GetInstance().GetChapterList(novelInfo_0.PutID);
 				bool flag3 = false;
 				novelInfo_0.LastChapter = new ChapterInfo();
@@ -2086,8 +2146,8 @@ public class 自动采集模式 : DockContent
 						{
 							if (novelInfo_0.MDegree > 0)
 							{
-								AutoWorker.ReportProgress(2, "超级修复，书籍已经完结，跳过本书。");
-								WaitOrCancel(1000);
+								ReportAutoProgress(2, "超级修复，书籍已经完结，跳过本书。");
+								await DelayOrCancelAsync(1000, cancellationToken).ConfigureAwait(false);
 								return;
 							}
 							bool flag4 = false;
@@ -2101,8 +2161,8 @@ public class 自动采集模式 : DockContent
 									{
 										break;
 									}
-									AutoWorker.ReportProgress(2, "超级修复，书籍第一章节对比失败，跳过本书。");
-									WaitOrCancel(1000);
+									ReportAutoProgress(2, "超级修复，书籍第一章节对比失败，跳过本书。");
+									await DelayOrCancelAsync(1000, cancellationToken).ConfigureAwait(false);
 									return;
 								}
 								num3 = array2.Length - 1;
@@ -2124,17 +2184,17 @@ public class 自动采集模式 : DockContent
 						novelInfo_0.LastChapter = array2[num3];
 					}
 				}
-				AutoWorker.ReportProgress(2, "对比最新章节开始");
+				ReportAutoProgress(2, "对比最新章节开始");
 				SpiderException.Debug(tInfo.ID, "CollectAuto.Collect 对比最新章节开始");
 				if (!flag2)
 				{
-					AutoWorker.ReportProgress(2, "正在对比最新章节");
-					AutoWorker.ReportProgress(1, "-");
+					ReportAutoProgress(2, "正在对比最新章节");
+					ReportAutoProgress(1, "-");
 					int num4 = 0;
 					int num5 = 0;
 					while (true)
 					{
-						if (AutoWorker.CancellationPending)
+						if (IsAutoCancellationPending())
 						{
 							return;
 						}
@@ -2144,7 +2204,7 @@ public class 自动采集模式 : DockContent
 						}
 						if (!tInfo.NoPBar)
 						{
-							AutoWorker.ReportProgress(4, num5 + 1);
+							ReportAutoProgress(4, num5 + 1);
 						}
 						switch (tInfo.EqualsChapter)
 						{
@@ -2206,7 +2266,7 @@ public class 自动采集模式 : DockContent
 						num5++;
 					}
 				}
-				if (AutoWorker.CancellationPending)
+				if (IsAutoCancellationPending())
 				{
 					return;
 				}
@@ -2217,14 +2277,14 @@ public class 自动采集模式 : DockContent
 						SpiderException.Show(120, novelInfo_0.LastChapter.VolumeName + " | " + novelInfo_0.LastChapter.ChapterName, novelInfo_0, tInfo.Log, string_0, tInfo.RuleFile);
 						return;
 					}
-					AutoWorker.ReportProgress(2, "章节对比失败，正在清空章节");
+					ReportAutoProgress(2, "章节对比失败，正在清空章节");
 					LocalProvider.GetInstance().ClearNovel(novelInfo_0);
 					array2 = new ChapterInfo[0];
 					flag2 = true;
 				}
 				else if (tInfo.CompulsoryDeleteChapter)
 				{
-					AutoWorker.ReportProgress(2, "正在强制清空章节");
+					ReportAutoProgress(2, "正在强制清空章节");
 					LocalProvider.GetInstance().ClearNovel(novelInfo_0);
 					array2 = new ChapterInfo[0];
 					flag2 = true;
@@ -2236,16 +2296,16 @@ public class 自动采集模式 : DockContent
 				}
 				else
 				{
-					if (AutoWorker.CancellationPending || !tInfo.OldBook || !flag2)
+					if (IsAutoCancellationPending() || !tInfo.OldBook || !flag2)
 					{
 						return;
 					}
-					ApplyFriendlyDelay(tInfo, RequestKind.Index);
+					await ApplyFriendlyDelayAsync(tInfo, RequestKind.Index, cancellationToken).ConfigureAwait(false);
 					bool flag5 = false;
 					int num9 = num2 + 1;
 					int num10 = 0;
 					int num11 = 0;
-					while (num9 < array.Length - tInfo.DonnotCollectLastChapterNo && !AutoWorker.CancellationPending)
+					while (num9 < array.Length - tInfo.DonnotCollectLastChapterNo && !IsAutoCancellationPending())
 					{
 						num10++;
 						num11 = num3 + num10;
@@ -2260,9 +2320,9 @@ public class 自动采集模式 : DockContent
 							{
 								if (!tInfo.NoPBar)
 								{
-									AutoWorker.ReportProgress(2, "过滤章节名");
-									AutoWorker.ReportProgress(1, array[num9].ChapterName);
-									AutoWorker.ReportProgress(4, num9 + 1);
+									ReportAutoProgress(2, "过滤章节名");
+									ReportAutoProgress(1, array[num9].ChapterName);
+									ReportAutoProgress(4, num9 + 1);
 								}
 								string pattern = "";
 								filterNovel = tInfo.FilterContinueChapterName;
@@ -2285,9 +2345,9 @@ public class 自动采集模式 : DockContent
 							{
 								if (!tInfo.NoPBar)
 								{
-									AutoWorker.ReportProgress(2, "过滤章节名");
-									AutoWorker.ReportProgress(1, array[num9].ChapterName);
-									AutoWorker.ReportProgress(4, num9 + 1);
+									ReportAutoProgress(2, "过滤章节名");
+									ReportAutoProgress(1, array[num9].ChapterName);
+									ReportAutoProgress(4, num9 + 1);
 								}
 								string pattern2 = "";
 								filterNovel = tInfo.FilterChapterName;
@@ -2310,9 +2370,9 @@ public class 自动采集模式 : DockContent
 							{
 								if (!tInfo.NoPBar)
 								{
-									AutoWorker.ReportProgress(2, "限制章节《" + array[num9].VolumeName + "》不入库分卷名");
-									AutoWorker.ReportProgress(1, array[num9].ChapterName);
-									AutoWorker.ReportProgress(4, num9 + 1);
+									ReportAutoProgress(2, "限制章节《" + array[num9].VolumeName + "》不入库分卷名");
+									ReportAutoProgress(1, array[num9].ChapterName);
+									ReportAutoProgress(4, num9 + 1);
 								}
 								string pattern3 = "";
 								filterNovel = tInfo.FilterContinueVolume;
@@ -2333,9 +2393,9 @@ public class 自动采集模式 : DockContent
 							{
 								if (!tInfo.NoPBar)
 								{
-									AutoWorker.ReportProgress(2, "重复章节检查");
-									AutoWorker.ReportProgress(1, array[num9].ChapterName);
-									AutoWorker.ReportProgress(4, num9 + 1);
+									ReportAutoProgress(2, "重复章节检查");
+									ReportAutoProgress(1, array[num9].ChapterName);
+									ReportAutoProgress(4, num9 + 1);
 								}
 								int num12 = 0;
 								bool flag6 = false;
@@ -2417,8 +2477,8 @@ public class 自动采集模式 : DockContent
 									goto IL_25e7;
 								}
 							}
-							AutoWorker.ReportProgress(1, array[num9].ChapterName);
-							AutoWorker.ReportProgress(4, num9 + 1);
+							ReportAutoProgress(1, array[num9].ChapterName);
+							ReportAutoProgress(4, num9 + 1);
 							novelInfo_0.LastChapter = array[num9];
 							if (novelInfo_0.LastChapter.PutID <= 0)
 							{
@@ -2431,11 +2491,11 @@ public class 自动采集模式 : DockContent
 										num16 += tInfo.ReplaceChapterNun - array2.Length;
 									}
 								}
-								AutoWorker.ReportProgress(2, "开始采集新章节第" + num16 + "个");
+								ReportAutoProgress(2, "开始采集新章节第" + num16 + "个");
 							}
 							else
 							{
-								AutoWorker.ReportProgress(2, "开始采集替换章节第" + num10 + "个");
+								ReportAutoProgress(2, "开始采集替换章节第" + num10 + "个");
 							}
 							bool flag7 = false;
 							string text7 = "";
@@ -2443,7 +2503,7 @@ public class 自动采集模式 : DockContent
 							{
 								try
 								{
-									novelInfo_0 = page.GetChapterInfo(novelInfo_0, isvip: false);
+									novelInfo_0 = await FetchChapterInfoForAutoAsync(page, novelInfo_0, cancellationToken).ConfigureAwait(false);
 									flag7 = true;
 								}
 								catch (Exception ex4)
@@ -2456,7 +2516,7 @@ public class 自动采集模式 : DockContent
 								DataTable sQLite = SpiderException.GetSQLite(tInfo.RuleFile, tInfo.IpStaticNum, tInfo.IpTimeNum);
 								if (sQLite.Rows.Count <= 0)
 								{
-									AutoWorker.ReportProgress(7, "代理池已无可用IP地址，请开启 自动代理模式 进程");
+									ReportAutoProgress(7, "代理池已无可用IP地址，请开启 自动代理模式 进程");
 								}
 								else
 								{
@@ -2466,10 +2526,10 @@ public class 自动采集模式 : DockContent
 										num++;
 										page.taskConfigInfo_0.ProxyHost = row4["IP"].ToString();
 										page.taskConfigInfo_0.ProxyPort = int.Parse(row4["PORT"].ToString());
-										AutoWorker.ReportProgress(7, page.taskConfigInfo_0.ProxyHost + ":" + page.taskConfigInfo_0.ProxyPort + " (" + num + "/" + sQLite.Rows.Count + ")");
+										ReportAutoProgress(7, page.taskConfigInfo_0.ProxyHost + ":" + page.taskConfigInfo_0.ProxyPort + " (" + num + "/" + sQLite.Rows.Count + ")");
 										try
 										{
-											novelInfo_0 = page.GetChapterInfo(novelInfo_0, isvip: false);
+											novelInfo_0 = await FetchChapterInfoForAutoAsync(page, novelInfo_0, cancellationToken).ConfigureAwait(false);
 											SpiderException.UpTimeSQLite(tInfo.RuleFile, page.taskConfigInfo_0.ProxyHost);
 											flag7 = true;
 										}
@@ -2481,7 +2541,7 @@ public class 自动采集模式 : DockContent
 										}
 										break;
 									}
-									AutoWorker.ReportProgress(7, "-");
+									ReportAutoProgress(7, "-");
 								}
 							}
 							if (!flag7)
@@ -2512,7 +2572,7 @@ public class 自动采集模式 : DockContent
 							}
 							if (flag8)
 							{
-								AutoWorker.ReportProgress(2, "正在入库章节");
+								ReportAutoProgress(2, "正在入库章节");
 								if (novelInfo_0.LastChapter.ChapterText.Length <= tInfo.MinChapterTextLength)
 								{
 									object[] array3 = new object[5]
@@ -2533,7 +2593,7 @@ public class 自动采集模式 : DockContent
 									if (novelInfo_0.LastChapter.PutID <= 0)
 									{
 										flag3 = true;
-										WaitForBackgroundAsync(LocalProviderAsyncDispatcher.InsertChapterAsync(LocalProvider.GetInstance(), novelInfo_0, tInfo));
+										await InsertChapterForAutoAsync(novelInfo_0, cancellationToken).ConfigureAwait(false);
 										goto IL_2405;
 									}
 									bool flag9 = true;
@@ -2574,9 +2634,9 @@ public class 自动采集模式 : DockContent
 						}
 						if (!tInfo.NoPBar)
 						{
-							AutoWorker.ReportProgress(2, "过滤章节名");
-							AutoWorker.ReportProgress(1, array[num9].ChapterName);
-							AutoWorker.ReportProgress(4, num9 + 1);
+							ReportAutoProgress(2, "过滤章节名");
+							ReportAutoProgress(1, array[num9].ChapterName);
+							ReportAutoProgress(4, num9 + 1);
 						}
 						string pattern4 = "";
 						filterNovel = tInfo.FilterVolume;
@@ -2596,7 +2656,7 @@ public class 自动采集模式 : DockContent
 						IL_2449:
 						if (Configs.BaseConfig.ChapterHtml)
 						{
-							AutoWorker.ReportProgress(2, "正在生成章节Html");
+							ReportAutoProgress(2, "正在生成章节Html");
 							LocalProvider.GetInstance().CreateChapter(novelInfo_0);
 						}
 						flag5 = true;
@@ -2607,17 +2667,17 @@ public class 自动采集模式 : DockContent
 						IL_2474:
 						if (DateTime.Now.Second % 12 == 10 && !FormatDateTime.CheckHost())
 						{
-							WaitOrCancel(5000);
+							await DelayOrCancelAsync(5000, cancellationToken).ConfigureAwait(false);
 						}
-						ApplyFriendlyDelay(tInfo, RequestKind.Chapter);
+						await ApplyFriendlyDelayAsync(tInfo, RequestKind.Chapter, cancellationToken).ConfigureAwait(false);
 						goto IL_25e7;
 					}
 					if (flag5 && (Configs.BaseConfig.IndexHtml || Configs.BaseConfig.CreateOPF))
 					{
-						AutoWorker.ReportProgress(2, "清理正在生成目录Html (此过程将同时生成OPF和其他格式)");
+						ReportAutoProgress(2, "清理正在生成目录Html (此过程将同时生成OPF和其他格式)");
 						if (flag3)
 						{
-							WaitForBackgroundAsync(LocalProviderAsyncDispatcher.UpdateLastChapterAsync(LocalProvider.GetInstance(), novelInfo_0));
+							await UpdateLastChapterForAutoAsync(novelInfo_0, cancellationToken).ConfigureAwait(false);
 						}
 						LocalProvider.GetInstance().CreateIndex(novelInfo_0, Configs.BaseConfig.IndexHtml, Configs.BaseConfig.FullHtml, Configs.BaseConfig.CreateOPF, Configs.BaseConfig.CreateZIP, Configs.BaseConfig.CreateTXT, Configs.BaseConfig.CreateUMD, Configs.BaseConfig.CreateJAR, Configs.BaseConfig.CreateCHM, bool_8: false, bool_9: false, 0);
 					}
@@ -2680,6 +2740,11 @@ public class 自动采集模式 : DockContent
 
 	private void HttpWorker_DoWork(object sender, DoWorkEventArgs e)
 	{
+		// V10.16: network speed test is handled by btnTestNetworkClick async path.
+	}
+
+	private async System.Threading.Tasks.Task<string> TestNetworkSpeedAsync(CancellationToken cancellationToken)
+	{
 		HttpClient httpClient = new HttpClient
 		{
 			UriString = rInfo.NovelListUrl.Pattern,
@@ -2691,25 +2756,15 @@ public class 自动采集模式 : DockContent
 			ProxyUser = tInfo.ProxyUser,
 			ProxyPassword = tInfo.ProxyPassword
 		};
-		HttpClient httpClient2 = httpClient;
-		string text = "";
-		Stopwatch stopwatch = new Stopwatch();
-		stopwatch.Start();
-		string stringWork = httpClient2.GetStringWork();
-		if (stringWork != string.Empty)
+		Stopwatch stopwatch = Stopwatch.StartNew();
+		string stringWork = await httpClient.GetStringWorkAsync(cancellationToken).ConfigureAwait(false);
+		if (string.IsNullOrEmpty(stringWork))
 		{
-			text = stopwatch.Elapsed.TotalSeconds.ToString("0.000") + "秒";
+			return "测试完成，" + (tInfo.Proxy ? "代理IP(" + tInfo.ProxyHost + ")访问" : "本机访问") + "不可用";
 		}
-		text = "测试完成，";
-		text = ((!tInfo.Proxy) ? (text + "本机访问") : (text + "代理IP(" + tInfo.ProxyHost + ")访问"));
-		if (text == string.Empty)
-		{
-			text += "不可用";
-			return;
-		}
-		double num = (double)stringWork.Length / 1024.0;
-		string text2 = text;
-		text = text2 + "抓取" + num.ToString("0.000") + "k字节耗时" + text;
+		double size = (double)stringWork.Length / 1024.0;
+		string access = tInfo.Proxy ? "代理IP(" + tInfo.ProxyHost + ")访问" : "本机访问";
+		return "测试完成，" + access + "抓取" + size.ToString("0.000") + "k字节耗时" + stopwatch.Elapsed.TotalSeconds.ToString("0.000") + "秒";
 	}
 
 	private void HttpWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
@@ -3263,7 +3318,6 @@ public class 自动采集模式 : DockContent
 		this.toolTip_0.SetToolTip(this.其他站编码_18, "其他站编码");
 		this.AutoWorker.WorkerReportsProgress = true;
 		this.AutoWorker.WorkerSupportsCancellation = true;
-		this.AutoWorker.DoWork += new System.ComponentModel.DoWorkEventHandler(AutoWorker_DoWork);
 		this.AutoWorker.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(AutoWorker_ProgressChanged);
 		this.AutoWorker.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(AutoWorker_RunWorkerCompleted);
 		this.注意得示_16.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left;
@@ -3323,16 +3377,16 @@ public class 自动采集模式 : DockContent
 		this.测试网速.Click += new System.EventHandler(btnTestNetworkClick);
 		this.LoginWorker.WorkerReportsProgress = true;
 		this.LoginWorker.WorkerSupportsCancellation = true;
-		this.LoginWorker.DoWork += new System.ComponentModel.DoWorkEventHandler(LoginWorker_DoWork);
+			// V10.18: LoginWorker_DoWork archived; async proxy list loading handles this operation.
 		this.LoginWorker.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(LoginWorker_ProgressChanged);
 		this.LoginWorker.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(LoginWorker_RunWorkerCompleted);
 		this.TestWorker.WorkerReportsProgress = true;
 		this.TestWorker.WorkerSupportsCancellation = true;
-		this.TestWorker.DoWork += new System.ComponentModel.DoWorkEventHandler(TestWorker_DoWork);
+			// V10.16: TestWorker_DoWork archived; async proxy test handles this operation.
 		this.TestWorker.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(TestWorker_RunWorkerCompleted);
 		this.HttpWorker.WorkerReportsProgress = true;
 		this.HttpWorker.WorkerSupportsCancellation = true;
-		this.HttpWorker.DoWork += new System.ComponentModel.DoWorkEventHandler(HttpWorker_DoWork);
+			// V10.16: HttpWorker_DoWork archived; async network speed test handles this operation.
 		this.HttpWorker.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(HttpWorker_ProgressChanged);
 		this.HttpWorker.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(HttpWorker_RunWorkerCompleted);
 		this.代理设定2.Controls.Add(this.groupBox8);
@@ -4473,7 +4527,7 @@ public class 自动采集模式 : DockContent
 		}
 	}
 
-	private void LoginWorker_DoWork(object sender, DoWorkEventArgs e)
+	private async System.Threading.Tasks.Task LoadProxyListAsync(CancellationToken cancellationToken = default)
 	{
 		if (!tInfo.Proxy)
 		{
@@ -4486,71 +4540,61 @@ public class 自动采集模式 : DockContent
 			UriString = "http://www.xicidaili.com/wn/" + text,
 			Encoding = FormatText.GetCharset(Configs.BaseConfig.CmsEncoding, "gbk")
 		};
-		HttpClient httpClient2 = httpClient;
-		string stringWork = httpClient2.GetStringWork();
+		string stringWork = await httpClient.GetStringWorkAsync(cancellationToken).ConfigureAwait(false);
 		string text2 = string.Format("{0}(?<getcontent>[\\s|\\S]+?){1}", "<table id=\"ip_list\">", "</table>");
 		Match match = SecurityUtil.RegexsMatch(stringWork, text2);
-		if (match.Success)
+		if (!match.Success)
 		{
-			stringWork = match.Groups["getcontent"].Value;
-			httpClient2.UriString = "http://www.xicidaili.com/nn/" + text;
-			string stringWork2 = httpClient2.GetStringWork();
-			text2 = string.Format("{0}(?<getcontent>[\\s|\\S]+?){1}", "<table id=\"ip_list\">", "</table>");
-			match = SecurityUtil.RegexsMatch(stringWork2, text2);
-			if (!match.Success)
-			{
-				MessageBox.Show("获取代理ip错误,请联系管理员");
-				return;
-			}
-			stringWork2 = match.Groups["getcontent"].Value;
-			stringWork += stringWork2;
-			MatchCollection matchCollection = null;
-			if (stringWork != string.Empty)
-			{
-				text2 = string.Format("{0}(?<getcontent>[\\s|\\S]+?){1}", "<tr class=\"\\w+\">", "</tr>");
-				matchCollection = SecurityUtil.RegexsMatches(stringWork, text2);
-			}
-			if (matchCollection.Count <= 0)
-			{
-				return;
-			}
-			ListViewItem[] items = new ListViewItem[matchCollection.Count];
-			int num = 0;
-			foreach (Match item in matchCollection)
-			{
-				stringWork = item.Value.Replace("\r", "").Replace("\n", "");
-				text2 = string.Format("{0}(?<getcontent>[\\s|\\S]+?){1}", "<td\\w+\\>", "</td>");
-				matchCollection = SecurityUtil.RegexsMatches(stringWork, text2);
-				if (matchCollection.Count == 9 && SecurityUtil.IsIP(SecurityUtil.NoHtml(matchCollection[1].Groups["getcontent"].Value.Trim())))
-				{
-					items[num] = new ListViewItem(SecurityUtil.NoHtml(matchCollection[1].Groups["getcontent"].Value.Trim()));
-					items[num].SubItems.Add(SecurityUtil.NoHtml(matchCollection[2].Groups["getcontent"].Value.Trim()));
-					items[num].SubItems.Add(SecurityUtil.NoHtml(matchCollection[3].Groups["getcontent"].Value.Trim()));
-					text2 = string.Format("{0}(?<getcontent>[\\s|\\S]+?){1}", "<div title=\"", "\"");
-					match = SecurityUtil.RegexsMatch(matchCollection[6].Groups["getcontent"].Value.Trim(), text2);
-					if (match.Success)
-					{
-						items[num].SubItems.Add(SecurityUtil.NoHtml(match.Groups["getcontent"].Value.Trim()));
-					}
-					else
-					{
-						items[num].SubItems.Add("未知");
-					}
-					items[num].SubItems.Add("-");
-					items[num].SubItems.Add("-");
-				}
-				num++;
-			}
-			Invoke((MethodInvoker)delegate
-			{
-				listView1.Items.Clear();
-				ProgressiveListViewLoader.ReplaceItems(listView1, items);
-			});
+			ShowErrorMessage("获取代理ip错误,请联系管理员");
+			return;
 		}
-		else
+		stringWork = match.Groups["getcontent"].Value;
+		httpClient.UriString = "http://www.xicidaili.com/nn/" + text;
+		string stringWork2 = await httpClient.GetStringWorkAsync(cancellationToken).ConfigureAwait(false);
+		text2 = string.Format("{0}(?<getcontent>[\\s|\\S]+?){1}", "<table id=\"ip_list\">", "</table>");
+		match = SecurityUtil.RegexsMatch(stringWork2, text2);
+		if (!match.Success)
 		{
-			MessageBox.Show("获取代理ip错误,请联系管理员");
+			ShowErrorMessage("获取代理ip错误,请联系管理员");
+			return;
 		}
+		stringWork += match.Groups["getcontent"].Value;
+		MatchCollection matchCollection = SecurityUtil.RegexsMatches(stringWork, string.Format("{0}(?<getcontent>[\\s|\\S]+?){1}", "<tr class=\"\\w+\">", "</tr>"));
+		if (matchCollection.Count <= 0)
+		{
+			return;
+		}
+		List<ListViewItem> items = new List<ListViewItem>();
+		foreach (Match item in matchCollection)
+		{
+			string row = item.Value.Replace("\r", "").Replace("\n", "");
+			MatchCollection cells = SecurityUtil.RegexsMatches(row, string.Format("{0}(?<getcontent>[\\s|\\S]+?){1}", "<td\\w+\\>", "</td>"));
+			if (cells.Count == 9 && SecurityUtil.IsIP(SecurityUtil.NoHtml(cells[1].Groups["getcontent"].Value.Trim())))
+			{
+				ListViewItem listItem = new ListViewItem(SecurityUtil.NoHtml(cells[1].Groups["getcontent"].Value.Trim()));
+				listItem.SubItems.Add(SecurityUtil.NoHtml(cells[2].Groups["getcontent"].Value.Trim()));
+				listItem.SubItems.Add(SecurityUtil.NoHtml(cells[3].Groups["getcontent"].Value.Trim()));
+				match = SecurityUtil.RegexsMatch(cells[6].Groups["getcontent"].Value.Trim(), string.Format("{0}(?<getcontent>[\\s|\\S]+?){1}", "<div title=\"", "\""));
+				listItem.SubItems.Add(match.Success ? SecurityUtil.NoHtml(match.Groups["getcontent"].Value.Trim()) : "未知");
+				listItem.SubItems.Add("-");
+				listItem.SubItems.Add("-");
+				items.Add(listItem);
+			}
+		}
+		if (IsDisposed)
+		{
+			return;
+		}
+		BeginInvoke((MethodInvoker)delegate
+		{
+			listView1.Items.Clear();
+			ProgressiveListViewLoader.ReplaceItems(listView1, items.ToArray());
+		});
+	}
+
+	private void LoginWorker_DoWork(object sender, DoWorkEventArgs e)
+	{
+		// V10.18: proxy list loading is handled by LoadProxyListAsync.
 	}
 
 	private void LoginWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
@@ -4561,33 +4605,33 @@ public class 自动采集模式 : DockContent
 	{
 	}
 
-	private void method_0(string[] string_3)
+	private async System.Threading.Tasks.Task method_0Async(string[] string_3, CancellationToken cancellationToken)
 	{
 		for (int i = 0; i < string_3.Length; i++)
 		{
-			if (AutoWorker.CancellationPending)
+			if (IsAutoCancellationPending())
 			{
 				break;
 			}
-			AutoWorker.ReportProgress(3, i + 1);
+			ReportAutoProgress(3, i + 1);
 			NovelInfo novelInfo = new NovelInfo
 			{
 				Name = string_3[i]
 			};
 			NovelInfo novelInfo_ = novelInfo;
-			CollectNovel(novelInfo_);
+			await CollectNovelAsync(novelInfo_, cancellationToken).ConfigureAwait(false);
 		}
 	}
 
-	private void method_1(string[] string_3, bool bool_1)
+	private async System.Threading.Tasks.Task method_1Async(string[] string_3, bool bool_1, CancellationToken cancellationToken)
 	{
 		for (int i = 0; i < string_3.Length; i++)
 		{
-			if (AutoWorker.CancellationPending)
+			if (IsAutoCancellationPending())
 			{
 				break;
 			}
-			AutoWorker.ReportProgress(3, i + 1);
+			ReportAutoProgress(3, i + 1);
 			NovelInfo novelInfo = new NovelInfo();
 			if (bool_1)
 			{
@@ -4597,19 +4641,19 @@ public class 自动采集模式 : DockContent
 			{
 				novelInfo.PutID = Convert.ToInt32(string_3[i]);
 			}
-			CollectNovel(novelInfo);
+			await CollectNovelAsync(novelInfo, cancellationToken).ConfigureAwait(false);
 		}
 	}
 
-	private void method_2(int int_0, int int_1, bool bool_1)
+	private async System.Threading.Tasks.Task method_2Async(int int_0, int int_1, bool bool_1, CancellationToken cancellationToken)
 	{
 		for (int i = int_0; i <= int_1; i++)
 		{
-			if (AutoWorker.CancellationPending)
+			if (IsAutoCancellationPending())
 			{
 				break;
 			}
-			AutoWorker.ReportProgress(3, i - int_0 + 1);
+			ReportAutoProgress(3, i - int_0 + 1);
 			NovelInfo novelInfo = new NovelInfo();
 			if (bool_1)
 			{
@@ -4619,7 +4663,7 @@ public class 自动采集模式 : DockContent
 			{
 				novelInfo.PutID = i;
 			}
-			CollectNovel(novelInfo);
+			await CollectNovelAsync(novelInfo, cancellationToken).ConfigureAwait(false);
 		}
 	}
 
@@ -4785,10 +4829,10 @@ public class 自动采集模式 : DockContent
 		return 0;
 	}
 
-	private static void ApplyFriendlyDelay(TaskConfigInfo config, RequestKind kind)
+	private static async System.Threading.Tasks.Task ApplyFriendlyDelayAsync(TaskConfigInfo config, RequestKind kind, CancellationToken cancellationToken)
 	{
 		(int minDelay, int maxDelay) = RequestDelayProfile.GetDelay(config, kind);
-		HostRequestThrottle.Wait("*", minDelay, maxDelay, kind.ToString());
+		await HostRequestThrottle.WaitAsync("*", minDelay, maxDelay, kind.ToString(), cancellationToken).ConfigureAwait(false);
 	}
 
 	private static void ShowErrorMessage(string message)
@@ -5087,34 +5131,38 @@ public class 自动采集模式 : DockContent
 
 	public void Run()
 	{
+		RunAsync(CancellationToken.None).GetAwaiter().GetResult();
+	}
+
+	public async System.Threading.Tasks.Task RunAsync(CancellationToken cancellationToken = default)
+	{
 		Console.WriteLine("开始执行");
 		if (!tInfo.Timing)
 		{
-			if (!AutoWorker.IsBusy)
+			if (!autoCollectRunning)
 			{
-				AutoWorker.RunWorkerAsync();
-				WaitForAutoWorker();
+				autoCollectCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+				await RunAutoCollectAsync(autoCollectCancellation.Token).ConfigureAwait(false);
 			}
 			return;
 		}
-		while (true)
+		while (!cancellationToken.IsCancellationRequested)
 		{
-			if (!AutoWorker.IsBusy)
+			if (!autoCollectRunning)
 			{
-				AutoWorker.RunWorkerAsync();
-				WaitForAutoWorker();
+				autoCollectCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+				await RunAutoCollectAsync(autoCollectCancellation.Token).ConfigureAwait(false);
 			}
 			for (int num = tInfo.Interval * 60; num > 0; num--)
 			{
 				Console.WriteLine("距离下次启动还有 " + num + " 秒");
-				if (!WaitOrCancel(1000))
+				if (!await DelayOrCancelAsync(1000, cancellationToken).ConfigureAwait(false))
 				{
 					return;
 				}
 			}
 		}
 	}
-
 	private void StrongReplaceFullflag_CheckedChanged(object sender, EventArgs e)
 	{
 		if (StrongReplaceFullflag.Checked)
@@ -5139,12 +5187,11 @@ public class 自动采集模式 : DockContent
 		}
 	}
 
-	private void TestWorker_DoWork(object sender, DoWorkEventArgs e)
+	private async System.Threading.Tasks.Task RunProxyTestsAsync(ListViewItem[] items, CancellationToken cancellationToken)
 	{
-		ListViewItem[] array = (ListViewItem[])e.Argument;
-		ListViewItem[] array2 = array;
-		foreach (ListViewItem item in array2)
+		foreach (ListViewItem item in items)
 		{
+			cancellationToken.ThrowIfCancellationRequested();
 			string proxyHost = item.Text.ToString();
 			int proxyPort = int.Parse(item.SubItems[1].Text.ToString());
 			HttpClient httpClient = new HttpClient
@@ -5155,15 +5202,17 @@ public class 自动采集模式 : DockContent
 				ProxyHost = proxyHost,
 				ProxyPort = proxyPort
 			};
-			HttpClient httpClient2 = httpClient;
 			string time = "不可用";
-			Stopwatch stopwatch = new Stopwatch();
-			stopwatch.Start();
-			if (httpClient2.GetStringWork() != string.Empty)
+			Stopwatch stopwatch = Stopwatch.StartNew();
+			if (await httpClient.GetStringWorkAsync(cancellationToken).ConfigureAwait(false) != string.Empty)
 			{
 				time = stopwatch.Elapsed.TotalSeconds.ToString("0.000") + "秒";
 			}
-			Invoke((MethodInvoker)delegate
+			if (IsDisposed)
+			{
+				return;
+			}
+			BeginInvoke((MethodInvoker)delegate
 			{
 				if (time == "不可用")
 				{
@@ -5183,16 +5232,17 @@ public class 自动采集模式 : DockContent
 	{
 	}
 
-	private void timer_0_Tick(object sender, EventArgs e)
+	private async void timer_0_Tick(object sender, EventArgs e)
 	{
 		if (!AutoWorker.IsBusy)
 		{
 			if (dateTime_0 < DateTime.Now)
 			{
 				dateTime_0 = DateTime.Now.AddMinutes(tInfo.Interval);
-				AutoWorker.RunWorkerAsync();
-				timer_0.Stop();
-				return;
+					timer_0.Stop();
+					autoCollectCancellation = new CancellationTokenSource();
+					await RunAutoCollectAsync(autoCollectCancellation.Token);
+					return;
 			}
 			TimeSpan timeSpan = new TimeSpan(dateTime_0.Ticks).Subtract(new TimeSpan(DateTime.Now.Ticks)).Duration();
 			label_13.Text = "距离下次循环开始还有 " + timeSpan.Days + "天" + timeSpan.Hours + "小时" + timeSpan.Minutes + "分钟" + timeSpan.Seconds + "秒";
@@ -5256,17 +5306,21 @@ public class 自动采集模式 : DockContent
 		}
 	}
 
-	private void toolStripMenuItem_23_Click(object sender, EventArgs e)
+	private async void toolStripMenuItem_23_Click(object sender, EventArgs e)
 	{
-		if (!LoginWorker.IsBusy)
+		try
 		{
-			LoginWorker.RunWorkerAsync();
+			await LoadProxyListAsync(CancellationToken.None).ConfigureAwait(true);
+		}
+		catch (Exception ex)
+		{
+			ShowErrorMessage(ex.Message);
 		}
 	}
 
-	private void toolStripMenuItem_25_Click(object sender, EventArgs e)
+	private async void toolStripMenuItem_25_Click(object sender, EventArgs e)
 	{
-		if (listView1.CheckedItems.Count == 0 || TestWorker.IsBusy)
+		if (listView1.CheckedItems.Count == 0)
 		{
 			return;
 		}

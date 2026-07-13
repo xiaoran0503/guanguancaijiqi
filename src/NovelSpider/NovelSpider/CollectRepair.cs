@@ -238,6 +238,25 @@ public class CollectRepair : DockContent
 		InitializeComponent();
 	}
 
+	private bool WaitOrCancel(int milliseconds)
+	{
+		int remaining = Math.Max(0, milliseconds);
+		while (remaining > 0)
+		{
+			if (backgroundWorker_0.CancellationPending)
+			{
+				return false;
+			}
+			int slice = Math.Min(remaining, 200);
+			using (ManualResetEventSlim waitHandle = new ManualResetEventSlim(false))
+			{
+				waitHandle.Wait(slice);
+			}
+			remaining -= slice;
+		}
+		return !backgroundWorker_0.CancellationPending;
+	}
+
 	private void backgroundWorker_0_DoWork(object sender, DoWorkEventArgs e)
 	{
 		backgroundWorker_0.ReportProgress(2, "获得错误日志小说列表");
@@ -1591,7 +1610,10 @@ public class CollectRepair : DockContent
 			backgroundWorker_0.ReportProgress(9, "失败 | " + string_3 + " | " + string_2 + " | " + novelInfo_0.GetID + " | " + ex.Message);
 			return;
 		}
-		HostRequestThrottle.Wait("*", tInfo.NovelUrlWait);
+		if (!WaitOrCancel(tInfo.NovelUrlWait))
+			{
+				return;
+			}
 		try
 		{
 			var keys = Configs.TaskNovelInfo.Keys;
@@ -1718,7 +1740,10 @@ public class CollectRepair : DockContent
 		int num2 = 0;
 		int num3 = 0;
 		int num4 = 0;
-		HostRequestThrottle.Wait("*", tInfo.IndexUrlWait);
+		if (!WaitOrCancel(tInfo.IndexUrlWait))
+			{
+				return;
+			}
 		int num5 = chapterList.Length;
 		backgroundWorker_0.ReportProgress(2, "章节循环完毕");
 		if (flag2)
