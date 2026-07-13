@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using System.Drawing;
 using System.IO;
@@ -124,6 +124,12 @@ public class WelcomeForm : DockContent
 		return string.Join(Environment.NewLine, new string[]
 		{
 			"更新日志",
+			"",
+			"V10.18.3 Net10 Test    2026-07-13",
+			"- 版本迭代为 10.18.3.0 / 10.18.3-net10-test。",
+			"- 自动采集章节写入新增 SQLite 本地缓冲，换书、定时、停止或手动提交时再写入 Jieqi。",
+			"- 自动采集任务 UI 新增数据库写入面板，可查看待提交章节并执行提交/重试/打开目录。",
+			"- 手工追加和顺序插章插入后立即提交缓存，保持章节列表刷新和 HTML 生成行为。",
 			"",
 			"V10.18.2 Net10 Test    2026-07-13",
 

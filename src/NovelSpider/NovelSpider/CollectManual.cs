@@ -1087,6 +1087,7 @@ public class CollectManual : DockContent
 				break;
 			}
 			await LocalProviderAsyncDispatcher.InsertChapterAsync(NovelSpider.Local.LocalProvider.GetInstance(), chapterInfo, taskConfigInfo_0, cancellationToken).ConfigureAwait(false);
+			await LocalProviderAsyncDispatcher.FlushBookSessionAsync(NovelSpider.Local.LocalProvider.GetInstance(), chapterInfo, taskConfigInfo_0, cancellationToken).ConfigureAwait(false);
 			if (Configs.BaseConfig.ChapterHtml)
 			{
 				NovelSpider.Local.LocalProvider.GetInstance().CreateChapter(chapterInfo);
@@ -1181,6 +1182,7 @@ public class CollectManual : DockContent
 				break;
 			}
 			await LocalProviderAsyncDispatcher.InsertChapterByOrderAsync(NovelSpider.Local.LocalProvider.GetInstance(), chapterInfo, taskConfigInfo_0, orders[0] + i, cancellationToken).ConfigureAwait(false);
+			await LocalProviderAsyncDispatcher.FlushBookSessionAsync(NovelSpider.Local.LocalProvider.GetInstance(), chapterInfo, taskConfigInfo_0, cancellationToken).ConfigureAwait(false);
 			if (Configs.BaseConfig.ChapterHtml)
 			{
 				NovelSpider.Local.LocalProvider.GetInstance().CreateChapter(chapterInfo);

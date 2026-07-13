@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -34,6 +34,32 @@ public class 自动采集模式 : DockContent
 	private System.Threading.Tasks.Task UpdateLastChapterForAutoAsync(NovelInfo novelInfo, CancellationToken cancellationToken = default)
 	{
 		return LocalProviderAsyncDispatcher.UpdateLastChapterAsync(LocalProvider.GetInstance(), novelInfo, cancellationToken);
+	}
+
+	private System.Threading.Tasks.Task BeginChapterBufferForAutoAsync(NovelInfo novelInfo, CancellationToken cancellationToken = default)
+	{
+		return LocalProviderAsyncDispatcher.BeginBookSessionAsync(LocalProvider.GetInstance(), novelInfo, tInfo, cancellationToken);
+	}
+
+	private System.Threading.Tasks.Task FlushChapterBufferForAutoAsync(NovelInfo novelInfo, CancellationToken cancellationToken = default)
+	{
+		return LocalProviderAsyncDispatcher.FlushBookSessionAsync(LocalProvider.GetInstance(), novelInfo, tInfo, cancellationToken);
+	}
+
+	private async System.Threading.Tasks.Task FlushChapterBufferIfDueForAutoAsync(NovelInfo novelInfo, CancellationToken cancellationToken = default)
+	{
+		if (!tInfo.ChapterWriteBufferEnabled || novelInfo == null || novelInfo.PutID <= 0)
+		{
+			return;
+		}
+		BookChapterBufferStatus status = LocalProviderAsyncDispatcher.GetBufferStatus(LocalProvider.GetInstance());
+		int seconds = Math.Max(10, tInfo.ChapterWriteBufferFlushSeconds);
+		if (status.PendingChapterCount > 0 && (DateTime.Now - chapterWriteBufferLastAutoFlush).TotalSeconds >= seconds)
+		{
+			ReportAutoProgress(2, "定时提交章节写入缓存");
+			await FlushChapterBufferForAutoAsync(novelInfo, cancellationToken).ConfigureAwait(false);
+			chapterWriteBufferLastAutoFlush = DateTime.Now;
+		}
 	}
 
 	private bool IsAutoCancellationPending()
@@ -97,6 +123,8 @@ public class 自动采集模式 : DockContent
 	private CancellationTokenSource autoCollectCancellation;
 
 	private bool autoCollectRunning;
+
+	private bool loadingTaskConfigToUi;
 
 	private bool bool_0;
 
@@ -177,6 +205,8 @@ public class 自动采集模式 : DockContent
 	private IContainer components;
 
 	private DateTime dateTime_0;
+
+	private DateTime chapterWriteBufferLastAutoFlush;
 
 	private CheckBox DelForHtml;
 
@@ -383,6 +413,20 @@ public class 自动采集模式 : DockContent
 
 	private CheckBox requestBackoffBox;
 
+	private CheckBox chapterWriteBufferEnabledBox;
+
+	private NumericUpDown chapterWriteBufferFlushSecondsBox;
+
+	private NumericUpDown chapterWriteBufferBatchSizeBox;
+
+	private Label chapterWriteBufferStatusLabel;
+
+	private Button chapterWriteBufferFlushButton;
+
+	private Button chapterWriteBufferRetryButton;
+
+	private Button chapterWriteBufferOpenButton;
+
 	private NumericUpDown 不采小于字符设置_6;
 
 	private CheckBox OnlyReplaceSort;
@@ -577,6 +621,14 @@ public class 自动采集模式 : DockContent
 		}
 		finally
 		{
+			try
+			{
+				await LocalProviderAsyncDispatcher.FlushAllBookSessionsAsync(LocalProvider.GetInstance(), CancellationToken.None).ConfigureAwait(false);
+			}
+			catch (Exception ex)
+			{
+				SpiderException.Debug(tInfo.ID, "章节写入缓存提交失败：" + ex.Message);
+			}
 			autoCollectRunning = false;
 			autoCollectCancellation?.Dispose();
 			autoCollectCancellation = null;
@@ -590,6 +642,11 @@ public class 自动采集模式 : DockContent
 
 	private async System.Threading.Tasks.Task AutoWorkerCoreAsync(DoWorkEventArgs e, CancellationToken cancellationToken)
 	{
+		int listDelay = await ApplyFriendlyDelayAsync(tInfo, RequestKind.List, cancellationToken).ConfigureAwait(false);
+		if (listDelay > 0)
+		{
+			ReportAutoProgress(2, "请求调度等待 " + listDelay + "ms");
+		}
 		ReportAutoProgress(2, "获得小说列表");
 		switch (tInfo.RadioBy)
 		{
@@ -998,8 +1055,9 @@ public class 自动采集模式 : DockContent
 			ReportAutoProgress(1, "--");
 			ReportAutoProgress(2, "获得小说信息");
 			ReportAutoProgress(4, 0);
-			SpiderException.Debug(tInfo.ID, "CollectAuto.Collect 获得小说信息");
-			Page page = new Page(rInfo, tInfo);
+						Page page = new Page(rInfo, tInfo);
+			await BeginChapterBufferForAutoAsync(novelInfo_0, cancellationToken).ConfigureAwait(false);
+			chapterWriteBufferLastAutoFlush = DateTime.Now;
 			try
 			{
 				if (novelInfo_0.PutID == 0)
@@ -1130,7 +1188,9 @@ public class 自动采集模式 : DockContent
 					}
 				}
 				SpiderException.Debug(tInfo.ID, "CollectAuto.Collect 正式入库小说信息");
-				novelInfo_0 = await LocalProviderAsyncDispatcher.InsertNovelAsync(LocalProvider.GetInstance(), novelInfo_0, cancellationToken).ConfigureAwait(false);
+				
+				
+			chapterWriteBufferLastAutoFlush = DateTime.Now;
 				flag2 = true;
 				ReportAutoProgress(0, novelInfo_0.GetID + " | " + novelInfo_0.Name + " | " + novelInfo_0.PutID);
 			}
@@ -1329,7 +1389,11 @@ public class 自动采集模式 : DockContent
 					{
 						ReportAutoProgress(1, chapterList[num6].ChapterName);
 						ReportAutoProgress(4, num6 + 1);
-						await ApplyFriendlyDelayAsync(tInfo, RequestKind.Chapter, cancellationToken).ConfigureAwait(false);
+						int chapterDelay = await ApplyFriendlyDelayAsync(tInfo, RequestKind.Chapter, cancellationToken).ConfigureAwait(false);
+		if (chapterDelay > 0)
+		{
+			ReportAutoProgress(2, "请求调度等待 " + chapterDelay + "ms");
+		}
 					}
 					switch (tInfo.EqualsChapter)
 					{
@@ -1766,7 +1830,11 @@ public class 自动采集模式 : DockContent
 					{
 						await DelayOrCancelAsync(5000, cancellationToken).ConfigureAwait(false);
 					}
-					await ApplyFriendlyDelayAsync(tInfo, RequestKind.Chapter, cancellationToken).ConfigureAwait(false);
+					int chapterDelay = await ApplyFriendlyDelayAsync(tInfo, RequestKind.Chapter, cancellationToken).ConfigureAwait(false);
+		if (chapterDelay > 0)
+		{
+			ReportAutoProgress(2, "请求调度等待 " + chapterDelay + "ms");
+		}
 					goto IL_1cf4;
 					IL_1c93:
 					if (Configs.BaseConfig.ChapterHtml)
@@ -1810,8 +1878,9 @@ public class 自动采集模式 : DockContent
 			ReportAutoProgress(1, "-");
 			ReportAutoProgress(2, "获得小说信息");
 			ReportAutoProgress(4, 0);
-			SpiderException.Debug(tInfo.ID, "CollectAuto.Collect 获得小说信息");
-			Page page = new Page(rInfo, tInfo);
+						Page page = new Page(rInfo, tInfo);
+			await BeginChapterBufferForAutoAsync(novelInfo_0, cancellationToken).ConfigureAwait(false);
+			chapterWriteBufferLastAutoFlush = DateTime.Now;
 			try
 			{
 				if (novelInfo_0.PutID == 0)
@@ -2043,7 +2112,9 @@ public class 自动采集模式 : DockContent
 						}
 					}
 					SpiderException.Debug(tInfo.ID, "CollectAuto.Collect 正式入库小说信息");
-					novelInfo_0 = await LocalProviderAsyncDispatcher.InsertNovelAsync(LocalProvider.GetInstance(), novelInfo_0, cancellationToken).ConfigureAwait(false);
+					
+				
+			chapterWriteBufferLastAutoFlush = DateTime.Now;
 					flag2 = true;
 					ReportAutoProgress(0, novelInfo_0.GetID + " | " + novelInfo_0.Name + " | " + novelInfo_0.PutID);
 				}
@@ -2654,7 +2725,7 @@ public class 自动采集模式 : DockContent
 						}
 						goto IL_25e7;
 						IL_2449:
-						if (Configs.BaseConfig.ChapterHtml)
+						if (Configs.BaseConfig.ChapterHtml && !tInfo.ChapterWriteBufferEnabled)
 						{
 							ReportAutoProgress(2, "正在生成章节Html");
 							LocalProvider.GetInstance().CreateChapter(novelInfo_0);
@@ -2665,12 +2736,22 @@ public class 自动采集模式 : DockContent
 						num9++;
 						continue;
 						IL_2474:
+						await FlushChapterBufferIfDueForAutoAsync(novelInfo_0, cancellationToken).ConfigureAwait(false);
 						if (DateTime.Now.Second % 12 == 10 && !FormatDateTime.CheckHost())
 						{
 							await DelayOrCancelAsync(5000, cancellationToken).ConfigureAwait(false);
 						}
-						await ApplyFriendlyDelayAsync(tInfo, RequestKind.Chapter, cancellationToken).ConfigureAwait(false);
+						int chapterDelay = await ApplyFriendlyDelayAsync(tInfo, RequestKind.Chapter, cancellationToken).ConfigureAwait(false);
+		if (chapterDelay > 0)
+		{
+			ReportAutoProgress(2, "请求调度等待 " + chapterDelay + "ms");
+		}
 						goto IL_25e7;
+					}
+					if (flag5)
+					{
+						ReportAutoProgress(2, "提交章节写入缓存");
+						await FlushChapterBufferForAutoAsync(novelInfo_0, cancellationToken).ConfigureAwait(false);
 					}
 					if (flag5 && (Configs.BaseConfig.IndexHtml || Configs.BaseConfig.CreateOPF))
 					{
@@ -2697,6 +2778,10 @@ public class 自动采集模式 : DockContent
 
 	private void comboBox_0_SelectedIndexChanged(object sender, EventArgs e)
 	{
+		if (loadingTaskConfigToUi)
+		{
+			return;
+		}
 		if (采集规则_0.Items.Count == 0 || string.IsNullOrWhiteSpace(采集规则_0.Text) || !File.Exists(采集规则_0.Text))
 		{
 			return;
@@ -2711,6 +2796,10 @@ public class 自动采集模式 : DockContent
 
 	private void comboBox_4_SelectedIndexChanged(object sender, EventArgs e)
 	{
+		if (loadingTaskConfigToUi)
+		{
+			return;
+		}
 		string_0 = 采集方案_4.Text;
 		if (string.IsNullOrWhiteSpace(string_0) || !File.Exists(string_0))
 		{
@@ -3677,7 +3766,7 @@ public class 自动采集模式 : DockContent
 		this.groupBox_9.Controls.Add(this.numericUpDown_5);
 		this.groupBox_9.Location = new System.Drawing.Point(548, 22);
 		this.groupBox_9.Name = "groupBox_9";
-		this.groupBox_9.Size = new System.Drawing.Size(232, 192);
+		this.groupBox_9.Size = new System.Drawing.Size(232, 315);
 		this.groupBox_9.TabIndex = 5;
 		this.groupBox_9.TabStop = false;
 		this.groupBox_9.Text = "请求调度";
@@ -4704,8 +4793,121 @@ public class 自动采集模式 : DockContent
 		userAgentModeBox.Items.AddRange(new object[] { "固定全局 UA", "随机 PC 浏览器 UA", "随机手机浏览器 UA", "随机爬虫 UA" });
 		userAgentModeBox.SelectedIndex = 0;
 		groupBox_9.Controls.Add(userAgentModeBox);
+		InitializeChapterBufferControls();
 	}
 
+	private void InitializeChapterBufferControls()
+	{
+		groupBox_9.Controls.Add(new Label { Text = "数据库写入", Location = new Point(10, 194), Size = new Size(78, 12) });
+		chapterWriteBufferEnabledBox = new CheckBox { Text = "章节SQLite缓冲", Location = new Point(10, 212), Size = new Size(116, 18), Checked = true };
+		groupBox_9.Controls.Add(chapterWriteBufferEnabledBox);
+		groupBox_9.Controls.Add(new Label { Text = "间隔", Location = new Point(10, 236), Size = new Size(34, 12) });
+		chapterWriteBufferFlushSecondsBox = CreateScheduleNumber(46, 232);
+		chapterWriteBufferFlushSecondsBox.Minimum = 10;
+		chapterWriteBufferFlushSecondsBox.Maximum = 3600;
+		chapterWriteBufferFlushSecondsBox.Value = 120;
+		groupBox_9.Controls.Add(chapterWriteBufferFlushSecondsBox);
+		groupBox_9.Controls.Add(new Label { Text = "批量", Location = new Point(112, 236), Size = new Size(34, 12) });
+		chapterWriteBufferBatchSizeBox = CreateScheduleNumber(148, 232);
+		chapterWriteBufferBatchSizeBox.Minimum = 1;
+		chapterWriteBufferBatchSizeBox.Maximum = 1000;
+		chapterWriteBufferBatchSizeBox.Value = 100;
+		groupBox_9.Controls.Add(chapterWriteBufferBatchSizeBox);
+		chapterWriteBufferStatusLabel = new Label { Text = "待提交：0", Location = new Point(10, 258), Size = new Size(210, 14) };
+		groupBox_9.Controls.Add(chapterWriteBufferStatusLabel);
+		chapterWriteBufferFlushButton = new Button { Text = "提交", Location = new Point(10, 282), Size = new Size(58, 23) };
+		chapterWriteBufferFlushButton.Click += ChapterWriteBufferFlushButton_Click;
+		groupBox_9.Controls.Add(chapterWriteBufferFlushButton);
+		chapterWriteBufferRetryButton = new Button { Text = "重试", Location = new Point(78, 282), Size = new Size(58, 23) };
+		chapterWriteBufferRetryButton.Click += ChapterWriteBufferRetryButton_Click;
+		groupBox_9.Controls.Add(chapterWriteBufferRetryButton);
+		chapterWriteBufferOpenButton = new Button { Text = "目录", Location = new Point(146, 282), Size = new Size(58, 23) };
+		chapterWriteBufferOpenButton.Click += ChapterWriteBufferOpenButton_Click;
+		groupBox_9.Controls.Add(chapterWriteBufferOpenButton);
+	}
+
+	private void LoadChapterBufferToUi(TaskConfigInfo task)
+	{
+		if (chapterWriteBufferEnabledBox == null || chapterWriteBufferFlushSecondsBox == null || chapterWriteBufferBatchSizeBox == null)
+		{
+			return;
+		}
+		chapterWriteBufferEnabledBox.Checked = task.ChapterWriteBufferEnabled;
+		chapterWriteBufferFlushSecondsBox.Value = ClampScheduleValue(task.ChapterWriteBufferFlushSeconds, 10, 3600);
+		chapterWriteBufferBatchSizeBox.Value = ClampScheduleValue(task.ChapterWriteBufferBatchSize, 1, 1000);
+		SetChapterBufferStatusNotLoaded();
+	}
+
+	private void SaveChapterBufferFromUi(TaskConfigInfo task)
+	{
+		if (chapterWriteBufferEnabledBox == null || chapterWriteBufferFlushSecondsBox == null || chapterWriteBufferBatchSizeBox == null)
+		{
+			return;
+		}
+		task.ChapterWriteBufferEnabled = chapterWriteBufferEnabledBox.Checked;
+		task.ChapterWriteBufferFlushSeconds = Convert.ToInt32(chapterWriteBufferFlushSecondsBox.Value);
+		task.ChapterWriteBufferBatchSize = Convert.ToInt32(chapterWriteBufferBatchSizeBox.Value);
+	}
+
+	private void SetChapterBufferStatusNotLoaded()
+	{
+		if (chapterWriteBufferStatusLabel != null)
+		{
+			chapterWriteBufferStatusLabel.Text = "待提交：未载入";
+		}
+	}
+
+	private void RefreshChapterBufferStatus()
+	{
+		if (chapterWriteBufferStatusLabel == null)
+		{
+			return;
+		}
+		try
+		{
+			BookChapterBufferStatus status = LocalProviderAsyncDispatcher.GetBufferStatus(LocalProvider.GetInstance());
+			string error = string.IsNullOrWhiteSpace(status.LastError) ? string.Empty : " 错误:" + status.LastError;
+			chapterWriteBufferStatusLabel.Text = "待提交：" + status.PendingChapterCount + error;
+		}
+		catch
+		{
+			chapterWriteBufferStatusLabel.Text = "待提交：未载入";
+		}
+	}
+
+	private async void ChapterWriteBufferFlushButton_Click(object sender, EventArgs e)
+	{
+		try
+		{
+			SaveChapterBufferFromUi(tInfo);
+			await LocalProviderAsyncDispatcher.FlushAllBookSessionsAsync(LocalProvider.GetInstance(), CancellationToken.None).ConfigureAwait(true);
+			RefreshChapterBufferStatus();
+		}
+		catch (Exception ex)
+		{
+			ShowErrorMessage(ex.InnerException == null ? ex.Message : ex.Message + Environment.NewLine + ex.InnerException.Message);
+		}
+	}
+
+	private async void ChapterWriteBufferRetryButton_Click(object sender, EventArgs e)
+	{
+		try
+		{
+			await LocalProviderAsyncDispatcher.RetryPendingSessionsAsync(LocalProvider.GetInstance(), CancellationToken.None).ConfigureAwait(true);
+			RefreshChapterBufferStatus();
+		}
+		catch (Exception ex)
+		{
+			ShowErrorMessage(ex.InnerException == null ? ex.Message : ex.Message + Environment.NewLine + ex.InnerException.Message);
+		}
+	}
+
+	private void ChapterWriteBufferOpenButton_Click(object sender, EventArgs e)
+	{
+		string directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "NovelSpider", "ChapterWriteBuffer");
+		Directory.CreateDirectory(directory);
+		Process.Start(new ProcessStartInfo { FileName = directory, UseShellExecute = true });
+	}
 	private NumericUpDown CreateScheduleNumber(int x, int y)
 	{
 		return new NumericUpDown
@@ -4829,10 +5031,10 @@ public class 自动采集模式 : DockContent
 		return 0;
 	}
 
-	private static async System.Threading.Tasks.Task ApplyFriendlyDelayAsync(TaskConfigInfo config, RequestKind kind, CancellationToken cancellationToken)
+	private static async System.Threading.Tasks.Task<int> ApplyFriendlyDelayAsync(TaskConfigInfo config, RequestKind kind, CancellationToken cancellationToken)
 	{
 		(int minDelay, int maxDelay) = RequestDelayProfile.GetDelay(config, kind);
-		await HostRequestThrottle.WaitAsync("*", minDelay, maxDelay, kind.ToString(), cancellationToken).ConfigureAwait(false);
+		return await HostRequestThrottle.WaitAsync("*", minDelay, maxDelay, kind.ToString(), cancellationToken).ConfigureAwait(false);
 	}
 
 	private static void ShowErrorMessage(string message)
@@ -4841,12 +5043,18 @@ public class 自动采集模式 : DockContent
 		{
 			Text = "错误提示"
 		};
+		if (messageForm.MessageText == null)
+		{
+			MessageBox.Show(message, "错误提示", MessageBoxButtons.OK, MessageBoxIcon.Error);
+			return;
+		}
 		messageForm.MessageText.Text = message;
 		messageForm.ShowDialog();
 	}
 
 	private void method_4()
 	{
+		loadingTaskConfigToUi = true;
 		try
 		{
 			采集规则_0.Text = tInfo.RuleFile;
@@ -4966,6 +5174,7 @@ public class 自动采集模式 : DockContent
 			textBox_9.Text = tInfo.ProxyPassword;
 			chkEnableProxy.Checked = tInfo.Proxy;
 			LoadRequestSchedulingToUi(tInfo);
+			LoadChapterBufferToUi(tInfo);
 			checkBox_20.Checked = tInfo.NoPBar;
 			索引对比判断修复.Checked = tInfo.ReplaceChapterIndex;
 			索引对比失败只修复.Checked = tInfo.ReplaceChapterTime;
@@ -4974,7 +5183,11 @@ public class 自动采集模式 : DockContent
 		}
 		catch (Exception ex)
 		{
-			ShowErrorMessage(ex.Message);
+			ShowErrorMessage(ex.InnerException == null ? ex.Message : ex.Message + Environment.NewLine + ex.InnerException.Message);
+		}
+		finally
+		{
+			loadingTaskConfigToUi = false;
 		}
 	}
 
@@ -5078,6 +5291,7 @@ public class 自动采集模式 : DockContent
 			tInfo.Proxy = chkEnableProxy.Checked;
 			tInfo.NoPBar = checkBox_20.Checked;
 			SaveRequestSchedulingFromUi(tInfo);
+			SaveChapterBufferFromUi(tInfo);
 			tInfo.ReplaceChapterIndex = 索引对比判断修复.Checked;
 			tInfo.ReplaceChapterTime = 索引对比失败只修复.Checked;
 			tInfo.ReplaceChapterTimeMin = Convert.ToInt32(ReplaceChapterTimeMin.Value);
@@ -5085,12 +5299,16 @@ public class 自动采集模式 : DockContent
 		}
 		catch (Exception ex)
 		{
-			ShowErrorMessage(ex.Message);
+			ShowErrorMessage(ex.InnerException == null ? ex.Message : ex.Message + Environment.NewLine + ex.InnerException.Message);
 		}
 	}
 
 	private void OnlyReplaceSort_CheckedChanged(object sender, EventArgs e)
 	{
+		if (loadingTaskConfigToUi)
+		{
+			return;
+		}
 		if (OnlyReplaceSort.Checked)
 		{
 			ReplaceSort.Checked = true;
@@ -5099,6 +5317,10 @@ public class 自动采集模式 : DockContent
 
 	private void ReplaceFullflag_CheckedChanged(object sender, EventArgs e)
 	{
+		if (loadingTaskConfigToUi)
+		{
+			return;
+		}
 		if (!ReplaceFullflag.Checked)
 		{
 			StrongReplaceFullflag.Checked = false;
@@ -5107,6 +5329,10 @@ public class 自动采集模式 : DockContent
 
 	private void ReplaceImgflag_CheckedChanged(object sender, EventArgs e)
 	{
+		if (loadingTaskConfigToUi)
+		{
+			return;
+		}
 		if (!ReplaceImgflag.Checked)
 		{
 			StrongReplaceImgflag.Checked = false;
@@ -5115,6 +5341,10 @@ public class 自动采集模式 : DockContent
 
 	private void ReplaceIntro_CheckedChanged(object sender, EventArgs e)
 	{
+		if (loadingTaskConfigToUi)
+		{
+			return;
+		}
 		if (!ReplaceIntro.Checked)
 		{
 			StrongReplaceIntro.Checked = false;
@@ -5123,6 +5353,10 @@ public class 自动采集模式 : DockContent
 
 	private void ReplaceSort_CheckedChanged(object sender, EventArgs e)
 	{
+		if (loadingTaskConfigToUi)
+		{
+			return;
+		}
 		if (!ReplaceSort.Checked)
 		{
 			OnlyReplaceSort.Checked = false;
@@ -5165,6 +5399,10 @@ public class 自动采集模式 : DockContent
 	}
 	private void StrongReplaceFullflag_CheckedChanged(object sender, EventArgs e)
 	{
+		if (loadingTaskConfigToUi)
+		{
+			return;
+		}
 		if (StrongReplaceFullflag.Checked)
 		{
 			ReplaceFullflag.Checked = true;
@@ -5173,6 +5411,10 @@ public class 自动采集模式 : DockContent
 
 	private void StrongReplaceImgflag_CheckedChanged(object sender, EventArgs e)
 	{
+		if (loadingTaskConfigToUi)
+		{
+			return;
+		}
 		if (StrongReplaceImgflag.Checked)
 		{
 			ReplaceImgflag.Checked = true;
@@ -5181,6 +5423,10 @@ public class 自动采集模式 : DockContent
 
 	private void StrongReplaceIntro_CheckedChanged(object sender, EventArgs e)
 	{
+		if (loadingTaskConfigToUi)
+		{
+			return;
+		}
 		if (StrongReplaceIntro.Checked)
 		{
 			ReplaceIntro.Checked = true;
@@ -5314,7 +5560,7 @@ public class 自动采集模式 : DockContent
 		}
 		catch (Exception ex)
 		{
-			ShowErrorMessage(ex.Message);
+			ShowErrorMessage(ex.InnerException == null ? ex.Message : ex.Message + Environment.NewLine + ex.InnerException.Message);
 		}
 	}
 
@@ -5396,6 +5642,9 @@ public class 自动采集模式 : DockContent
 		}
 	}
 }
+
+
+
 
 
 

@@ -53,5 +53,51 @@ public static class LocalProviderAsyncDispatcher
 		provider.UpdateLastChapter(novelInfo, chapterInfo);
 		return Task.CompletedTask;
 	}
-}
+
+	public static Task BeginBookSessionAsync(ILocalProvider provider, NovelInfo novelInfo, TaskConfigInfo taskConfigInfo, CancellationToken cancellationToken = default)
+	{
+		if (provider is IBookChapterBufferProvider bufferProvider)
+		{
+			return bufferProvider.BeginBookSessionAsync(novelInfo, taskConfigInfo, cancellationToken);
+		}
+		return Task.CompletedTask;
+	}
+
+	public static Task FlushBookSessionAsync(ILocalProvider provider, NovelInfo novelInfo, TaskConfigInfo taskConfigInfo, CancellationToken cancellationToken = default)
+	{
+		if (provider is IBookChapterBufferProvider bufferProvider)
+		{
+			return bufferProvider.FlushBookSessionAsync(novelInfo, taskConfigInfo, cancellationToken);
+		}
+		return Task.CompletedTask;
+	}
+
+	public static Task FlushAllBookSessionsAsync(ILocalProvider provider, CancellationToken cancellationToken = default)
+	{
+		if (provider is IBookChapterBufferProvider bufferProvider)
+		{
+			return bufferProvider.FlushAllBookSessionsAsync(cancellationToken);
+		}
+		return Task.CompletedTask;
+	}
+
+	public static Task RetryPendingSessionsAsync(ILocalProvider provider, CancellationToken cancellationToken = default)
+	{
+		if (provider is IBookChapterBufferProvider bufferProvider)
+		{
+			return bufferProvider.RetryPendingSessionsAsync(cancellationToken);
+		}
+		return Task.CompletedTask;
+	}
+
+	public static BookChapterBufferStatus GetBufferStatus(ILocalProvider provider)
+	{
+		if (provider is IBookChapterBufferProvider bufferProvider)
+		{
+			return bufferProvider.GetBufferStatus();
+		}
+		return new BookChapterBufferStatus();
+	}}
+
+
 

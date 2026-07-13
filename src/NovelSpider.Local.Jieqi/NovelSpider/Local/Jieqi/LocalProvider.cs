@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
@@ -20,9 +20,19 @@ using NovelSpider.Entity;
 
 namespace NovelSpider.Local.Jieqi;
 
-public class LocalProvider : ILocalProvider, IAsyncLocalProvider
+public partial class LocalProvider : ILocalProvider, IAsyncLocalProvider, IBookChapterBufferProvider
 {
 	private List<string> keywordlist = new List<string>();
+
+	private static readonly SemaphoreSlim ChapterBufferGate = new SemaphoreSlim(1, 1);
+
+	private static DateTime chapterBufferLastFlush = DateTime.MinValue;
+
+	private static string chapterBufferLastError = string.Empty;
+
+	private static int currentBufferedArticleId;
+
+	private static string currentBufferedNovelName = string.Empty;
 
 	private static ProgressBar progressBar_0;
 
@@ -3447,12 +3457,12 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 	}
 	public Task<ChapterInfo> InsertChapterAsync(NovelInfo novelInfo_0, TaskConfigInfo taskConfigInfo_0, CancellationToken cancellationToken = default)
 	{
-		return ExecuteSynchronousProviderMethodAsync(() => InsertChapter(novelInfo_0, taskConfigInfo_0), "insert_chapter", novelInfo_0?.Name ?? string.Empty, cancellationToken);
+		return BufferChapterAsync(novelInfo_0, taskConfigInfo_0, 0, byOrder: false, cancellationToken);
 	}
 
 	public Task<ChapterInfo> InsertChapterByOrderAsync(NovelInfo novelInfo_0, TaskConfigInfo taskConfigInfo_0, int int_0, CancellationToken cancellationToken = default)
 	{
-		return ExecuteSynchronousProviderMethodAsync(() => InsertChapterByOrder(novelInfo_0, taskConfigInfo_0, int_0), "insert_chapter_by_order", novelInfo_0?.Name ?? string.Empty, cancellationToken);
+		return BufferChapterAsync(novelInfo_0, taskConfigInfo_0, int_0, byOrder: true, cancellationToken);
 	}
 
 	public Task<NovelInfo> InsertNovelAsync(NovelInfo novelInfo_0, CancellationToken cancellationToken = default)
@@ -4352,6 +4362,8 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 		return stringBuilder.ToString();
 	}
 }
+
+
 
 
 

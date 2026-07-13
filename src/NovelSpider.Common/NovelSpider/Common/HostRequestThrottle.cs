@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
@@ -46,13 +46,14 @@ public static class HostRequestThrottle
 		Wait(host, intervalMilliseconds, intervalMilliseconds, string.Empty);
 	}
 
-	public static void Wait(string host, int minMilliseconds, int maxMilliseconds, string requestKind)
+	public static int Wait(string host, int minMilliseconds, int maxMilliseconds, string requestKind)
 	{
 		int delay = GetDelayMilliseconds(host, minMilliseconds, maxMilliseconds, requestKind);
 		if (delay > 0)
 		{
 			Thread.Sleep(delay);
 		}
+		return delay;
 	}
 
 	private static int GetDelayMilliseconds(string host, int minMilliseconds, int maxMilliseconds, string requestKind)
@@ -83,18 +84,19 @@ public static class HostRequestThrottle
 	}
 
 
-	public static async Task WaitAsync(string host, int intervalMilliseconds, CancellationToken cancellationToken = default)
+	public static async Task<int> WaitAsync(string host, int intervalMilliseconds, CancellationToken cancellationToken = default)
 	{
-		await WaitAsync(host, intervalMilliseconds, intervalMilliseconds, string.Empty, cancellationToken).ConfigureAwait(false);
+		return await WaitAsync(host, intervalMilliseconds, intervalMilliseconds, string.Empty, cancellationToken).ConfigureAwait(false);
 	}
 
-	public static async Task WaitAsync(string host, int minMilliseconds, int maxMilliseconds, string requestKind, CancellationToken cancellationToken = default)
+	public static async Task<int> WaitAsync(string host, int minMilliseconds, int maxMilliseconds, string requestKind, CancellationToken cancellationToken = default)
 	{
 		int delay = GetDelayMilliseconds(host, minMilliseconds, maxMilliseconds, requestKind);
 		if (delay > 0)
 		{
 			await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
 		}
+		return delay;
 	}
 
 	public static HostConcurrencyLease Enter(string host, int limit)

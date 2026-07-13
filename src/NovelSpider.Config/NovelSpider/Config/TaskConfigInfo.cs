@@ -130,6 +130,12 @@ public class TaskConfigInfo : IConfigInfo
 
 	private bool requestBackoffEnabled;
 
+	private bool chapterWriteBufferEnabled;
+
+	private int chapterWriteBufferFlushSeconds;
+
+	private int chapterWriteBufferBatchSize;
+
 	private int int_3;
 
 	private int int_4;
@@ -1332,6 +1338,24 @@ public class TaskConfigInfo : IConfigInfo
 		get => requestBackoffEnabled;
 		set => requestBackoffEnabled = value;
 	}
+
+	public bool ChapterWriteBufferEnabled
+	{
+		get => chapterWriteBufferEnabled;
+		set => chapterWriteBufferEnabled = value;
+	}
+
+	public int ChapterWriteBufferFlushSeconds
+	{
+		get => chapterWriteBufferFlushSeconds <= 0 ? 120 : chapterWriteBufferFlushSeconds;
+		set => chapterWriteBufferFlushSeconds = value;
+	}
+
+	public int ChapterWriteBufferBatchSize
+	{
+		get => chapterWriteBufferBatchSize <= 0 ? 100 : chapterWriteBufferBatchSize;
+		set => chapterWriteBufferBatchSize = value;
+	}
 	public TaskConfigInfo()
 	{
 		int_0 = 30;
@@ -1341,9 +1365,13 @@ public class TaskConfigInfo : IConfigInfo
 		string_11 = "gb2312";
 		string_12 = "";
 		requestBackoffEnabled = true;
+		chapterWriteBufferEnabled = true;
+		chapterWriteBufferFlushSeconds = 120;
+		chapterWriteBufferBatchSize = 100;
 		sameHostConcurrencyLimit = 1;
 		userAgentMode = "Fixed";
 	}
 }
+
 
 
