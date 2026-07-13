@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Data.SQLite;
 using System.IO;
@@ -30,7 +30,10 @@ public class SpiderException
 			{
 				Console.WriteLine("Debug：" + string_0);
 			}
-			File.AppendAllText("Debug.Log", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss  ") + string_0 + "\r\n", Encoding.GetEncoding("utf-8"));
+			if (Configs.BaseConfig.LogType == 0)
+				{
+					File.AppendAllText("Debug.Log", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss  ") + string_0 + "\r\n", Encoding.GetEncoding("utf-8"));
+				}
 		}
 	}
 
@@ -46,7 +49,10 @@ public class SpiderException
 			{
 				Console.WriteLine("Debug：" + string_1);
 			}
-			File.AppendAllText("Debug.Log", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss  ") + string_1 + "\r\n", Encoding.GetEncoding("utf-8"));
+			if (Configs.BaseConfig.LogType == 0)
+				{
+					File.AppendAllText("Debug.Log", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss  ") + string_1 + "\r\n", Encoding.GetEncoding("utf-8"));
+				}
 		}
 	}
 
@@ -62,7 +68,10 @@ public class SpiderException
 			{
 				Console.WriteLine("Debug：" + string_0);
 			}
-			File.AppendAllText(Application.StartupPath + "/Log/DelHtml" + DateTime.Now.ToString("yyMMdd") + ".Log", ("------------------------------------------------------------\n时间：" + DateTime.Now.ToString("yyyy-MM-dd") + "|小说：" + string_0 + "|章节：" + string_1 + "\n").Replace("\n", "\r\n"), Encoding.GetEncoding("utf-8"));
+			if (Configs.BaseConfig.LogType == 0)
+			{
+				File.AppendAllText(Application.StartupPath + "/Log/DelHtml" + DateTime.Now.ToString("yyMMdd") + ".Log", ("------------------------------------------------------------\n时间：" + DateTime.Now.ToString("yyyy-MM-dd") + "|小说：" + string_0 + "|章节：" + string_1 + "\n").Replace("\n", "\r\n"), Encoding.GetEncoding("utf-8"));
+			}
 		}
 	}
 
@@ -78,7 +87,10 @@ public class SpiderException
 			{
 				Console.WriteLine("Debug：" + string_0);
 			}
-			File.AppendAllText(Application.StartupPath + "/Log/" + DateTime.Now.ToString("yyMMdd") + "EmptyTXT.Log", ("------------------------------------------------------------\n时间：" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "\n小说：" + string_0 + "|" + int_0 + "\n章节：" + string_1 + "|" + int_1 + "\n").Replace("\n", "\r\n"), Encoding.GetEncoding("utf-8"));
+			if (Configs.BaseConfig.LogType == 0)
+			{
+				File.AppendAllText(Application.StartupPath + "/Log/" + DateTime.Now.ToString("yyMMdd") + "EmptyTXT.Log", ("------------------------------------------------------------\n时间：" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "\n小说：" + string_0 + "|" + int_0 + "\n章节：" + string_1 + "|" + int_1 + "\n").Replace("\n", "\r\n"), Encoding.GetEncoding("utf-8"));
+			}
 		}
 	}
 
@@ -124,7 +136,14 @@ public class SpiderException
 				{
 					Console.WriteLine("日志记录：" + string_0);
 				}
-				File.AppendAllText(Application.StartupPath + "/Log/" + DateTime.Today.ToString("yyyyMMdd") + ".Log", ("------------------------------------------------------------\n时间：" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "\n提示：" + string_0 + "\n").Replace("\n", "\r\n"), Encoding.GetEncoding("utf-8"));
+				if (Configs.BaseConfig.LogType == 0)
+				{
+					File.AppendAllText(Application.StartupPath + "/Log/" + DateTime.Today.ToString("yyyyMMdd") + ".Log", ("------------------------------------------------------------\n时间：" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "\n提示：" + string_0 + "\n").Replace("\n", "\r\n"), Encoding.GetEncoding("utf-8"));
+				}
+				else
+				{
+					SQLite(0, string_0, new NovelInfo { GetID = "0", Name = "未知", PutID = 0 }, string.Empty, string.Empty);
+				}
 				return;
 			}
 		}
@@ -143,11 +162,22 @@ public class SpiderException
 		}
 		lock (object_0)
 		{
+			if (novelInfo_0 == null)
+			{
+				novelInfo_0 = new NovelInfo { GetID = "0", Name = "未知", PutID = 0 };
+			}
 			if (Configs.CmdModel)
 			{
 				Console.WriteLine("日志记录：" + string_0 + "\t" + novelInfo_0.GetID + "|" + novelInfo_0.Name + "|" + novelInfo_0.PutID);
 			}
-			File.AppendAllText(Application.StartupPath + "/Log/" + DateTime.Today.ToString("yyyyMMdd") + ".Log", ("------------------------------------------------------------\n时间：" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "\n提示：" + string_0 + "\n小说：" + novelInfo_0.GetID + "|" + novelInfo_0.Name + "|" + novelInfo_0.PutID + "\n方案：" + strTask + "\n").Replace("\n", "\r\n"), Encoding.GetEncoding("utf-8"));
+			if (Configs.BaseConfig.LogType == 0)
+			{
+				File.AppendAllText(Application.StartupPath + "/Log/" + DateTime.Today.ToString("yyyyMMdd") + ".Log", ("------------------------------------------------------------\n时间：" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "\n提示：" + string_0 + "\n小说：" + novelInfo_0.GetID + "|" + novelInfo_0.Name + "|" + novelInfo_0.PutID + "\n方案：" + strTask + "\n").Replace("\n", "\r\n"), Encoding.GetEncoding("utf-8"));
+			}
+			else
+			{
+				SQLite(0, string_0, novelInfo_0, strTask, string.Empty);
+			}
 		}
 	}
 

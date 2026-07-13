@@ -1,3 +1,9 @@
+V10.18.2 Net10 Test    2026-07-13
+- 版本迭代为 `10.18.2.0 / 10.18.2-net10-test`。
+- 修复选择 SQLite 日志模式后仍生成文本调试日志的问题：`SpiderException.Debug` 在 SQLite 模式下不再写入 `Debug.Log`。
+- 修复无错误码任务日志绕过 SQLite 设置的问题：`SpiderException.Show(string, bool)` 与 `Show(string, NovelInfo, ...)` 在 SQLite 模式下写入 `TaskLog`。
+- 文本日志模式保持原行为；SQLite 模式下错误码日志继续写入每日 `.db3`。
+
 V10.18.1 Net10 Test    2026-07-13
 - 版本迭代为 `10.18.1.0 / 10.18.1-net10-test`。
 - 修复启动自动采集后 UI 被采集主循环占用的问题：开始按钮不再直接 await 主采集任务，采集主体改由 `RunAutoCollectOnBackgroundAsync` 在后台执行。

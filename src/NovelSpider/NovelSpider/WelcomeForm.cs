@@ -125,6 +125,13 @@ public class WelcomeForm : DockContent
 		{
 			"更新日志",
 			"",
+			"V10.18.2 Net10 Test    2026-07-13",
+
+			"- 版本迭代为 10.18.2.0 / 10.18.2-net10-test。",
+
+			"- 修复 SQLite 日志模式仍落文本 Debug.Log/普通任务日志的问题。",
+
+			"",
 			"V10.18.1 Net10 Test    2026-07-13",
 
 			"- 版本迭代为 10.18.1.0 / 10.18.1-net10-test。",
