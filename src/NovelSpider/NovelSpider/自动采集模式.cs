@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.ComponentModel;
 using System.Data;
@@ -44,6 +44,40 @@ public class 自动采集模式 : DockContent
 		{
 			System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex.InnerException!).Throw();
 			throw;
+		}
+	}
+
+	private bool WaitOrCancel(int milliseconds)
+	{
+		int remaining = Math.Max(0, milliseconds);
+		while (remaining > 0)
+		{
+			if (AutoWorker.CancellationPending)
+			{
+				return false;
+			}
+			int slice = Math.Min(remaining, 200);
+			Thread.Sleep(slice);
+			remaining -= slice;
+		}
+		return !AutoWorker.CancellationPending;
+	}
+
+	private void WaitForAutoWorker()
+	{
+		using ManualResetEventSlim completed = new ManualResetEventSlim(!AutoWorker.IsBusy);
+		RunWorkerCompletedEventHandler handler = null;
+		handler = (_, _) => completed.Set();
+		AutoWorker.RunWorkerCompleted += handler;
+		try
+		{
+			while (AutoWorker.IsBusy && !completed.Wait(200))
+			{
+			}
+		}
+		finally
+		{
+			AutoWorker.RunWorkerCompleted -= handler;
 		}
 	}
 	public BackgroundWorker AutoWorker;
@@ -925,7 +959,7 @@ public class 自动采集模式 : DockContent
 			}
 			catch (Exception ex)
 			{
-				Thread.Sleep(500);
+				WaitOrCancel(500);
 				SpiderException.Show(200, ex.Message, novelInfo_0, tInfo.Log, string_0, tInfo.RuleFile);
 				return;
 			}
@@ -936,7 +970,7 @@ public class 自动采集模式 : DockContent
 			ApplyFriendlyDelay(tInfo, RequestKind.Novel);
 			try
 			{
-				ICollection keys = Configs.TaskNovelInfo.Keys;
+				var keys = Configs.TaskNovelInfo.Keys;
 				if (Configs.TaskNovelInfo.Count != 0)
 				{
 					foreach (string item in keys)
@@ -1143,7 +1177,7 @@ public class 自动采集模式 : DockContent
 						if (novelInfo_0.MDegree > 0)
 						{
 							AutoWorker.ReportProgress(2, "超级修复，书籍已经完结，跳过本书。");
-							Thread.Sleep(1000);
+							WaitOrCancel(1000);
 							return;
 						}
 						bool flag4 = false;
@@ -1158,7 +1192,7 @@ public class 自动采集模式 : DockContent
 									break;
 								}
 								AutoWorker.ReportProgress(2, "超级修复，书籍第一章节对比失败，跳过本书。");
-								Thread.Sleep(1000);
+								WaitOrCancel(1000);
 								return;
 							}
 							num2 = chapterList2.Length - 1;
@@ -1670,7 +1704,7 @@ public class 自动采集模式 : DockContent
 					IL_1cbe:
 					if (DateTime.Now.Second % 12 == 10 && !FormatDateTime.CheckHost())
 					{
-						Thread.Sleep(5000);
+						WaitOrCancel(5000);
 					}
 					ApplyFriendlyDelay(tInfo, RequestKind.Chapter);
 					goto IL_1cf4;
@@ -1806,7 +1840,7 @@ public class 自动采集模式 : DockContent
 			catch (Exception ex)
 			{
 				AutoWorker.ReportProgress(2, ex.Message);
-				Thread.Sleep(500);
+				WaitOrCancel(500);
 				SpiderException.Show(200, ex.Message, novelInfo_0, tInfo.Log, string_0, tInfo.RuleFile);
 				return;
 			}
@@ -1817,7 +1851,7 @@ public class 自动采集模式 : DockContent
 			ApplyFriendlyDelay(tInfo, RequestKind.Novel);
 			try
 			{
-				ICollection keys = Configs.TaskNovelInfo.Keys;
+				var keys = Configs.TaskNovelInfo.Keys;
 				if (Configs.TaskNovelInfo.Count != 0)
 				{
 					IEnumerator enumerator3 = keys.GetEnumerator();
@@ -2053,7 +2087,7 @@ public class 自动采集模式 : DockContent
 							if (novelInfo_0.MDegree > 0)
 							{
 								AutoWorker.ReportProgress(2, "超级修复，书籍已经完结，跳过本书。");
-								Thread.Sleep(1000);
+								WaitOrCancel(1000);
 								return;
 							}
 							bool flag4 = false;
@@ -2068,7 +2102,7 @@ public class 自动采集模式 : DockContent
 										break;
 									}
 									AutoWorker.ReportProgress(2, "超级修复，书籍第一章节对比失败，跳过本书。");
-									Thread.Sleep(1000);
+									WaitOrCancel(1000);
 									return;
 								}
 								num3 = array2.Length - 1;
@@ -2573,7 +2607,7 @@ public class 自动采集模式 : DockContent
 						IL_2474:
 						if (DateTime.Now.Second % 12 == 10 && !FormatDateTime.CheckHost())
 						{
-							Thread.Sleep(5000);
+							WaitOrCancel(5000);
 						}
 						ApplyFriendlyDelay(tInfo, RequestKind.Chapter);
 						goto IL_25e7;
@@ -5059,11 +5093,7 @@ public class 自动采集模式 : DockContent
 			if (!AutoWorker.IsBusy)
 			{
 				AutoWorker.RunWorkerAsync();
-				while (AutoWorker.IsBusy)
-				{
-					Application.DoEvents();
-					Thread.Sleep(1);
-				}
+				WaitForAutoWorker();
 			}
 			return;
 		}
@@ -5072,16 +5102,15 @@ public class 自动采集模式 : DockContent
 			if (!AutoWorker.IsBusy)
 			{
 				AutoWorker.RunWorkerAsync();
-				while (AutoWorker.IsBusy)
-				{
-					Application.DoEvents();
-					Thread.Sleep(1);
-				}
+				WaitForAutoWorker();
 			}
 			for (int num = tInfo.Interval * 60; num > 0; num--)
 			{
 				Console.WriteLine("距离下次启动还有 " + num + " 秒");
-				Thread.Sleep(1000);
+				if (!WaitOrCancel(1000))
+				{
+					return;
+				}
 			}
 		}
 	}

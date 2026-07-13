@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
@@ -12,10 +12,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using System.Windows.Forms;
-using ICSharpCode.SharpZipLib.Zip;
 using MySqlConnector;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using System.Text.Json.Nodes;
 using NovelSpider.Common;
 using NovelSpider.Config;
 using NovelSpider.Entity;
@@ -163,6 +161,8 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 		};
 	}
 
+	private sealed record InsertedNovelRow(string ArticleCode, string LastChapter);
+
 	private static void ReadInsertedNovel(MySqlTransaction transaction, NovelInfo novelInfo, bool includeArticleCode)
 	{
 		object articleId = MySqlHelper.ExecuteScalar(transaction, CommandType.Text, "SELECT LAST_INSERT_ID()");
@@ -170,18 +170,22 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 		string sql = includeArticleCode
 			? "SELECT `articleid`,`articlecode`,`lastchapter` FROM `jieqi_article_article` WHERE `articleid`=@articleid"
 			: "SELECT `articleid`,`lastchapter` FROM `jieqi_article_article` WHERE `articleid`=@articleid";
-		DataTable dataTable = MySqlHelper.ExecuteDataTable(transaction, CommandType.Text, sql, new MySqlParameter("@articleid", novelInfo.PutID));
-		if (dataTable.Rows.Count == 0)
+		InsertedNovelRow row = MySqlHelper.ExecuteSingleRow(transaction, CommandType.Text, sql, reader =>
+		{
+			string articleCode = includeArticleCode && !reader.IsDBNull(reader.GetOrdinal("articlecode")) ? reader.GetString("articlecode") : string.Empty;
+			string lastChapter = !reader.IsDBNull(reader.GetOrdinal("lastchapter")) ? reader.GetString("lastchapter") : string.Empty;
+			return new InsertedNovelRow(articleCode, lastChapter);
+		}, null, new MySqlParameter("@articleid", novelInfo.PutID));
+		if (row == null)
 		{
 			return;
 		}
-		DataRow row = dataTable.Rows[0];
 		if (includeArticleCode)
 		{
-			novelInfo.PinYin = row["articlecode"].ToString();
+			novelInfo.PinYin = row.ArticleCode;
 			novelInfo.PinYinSan = novelInfo.PinYin.Length >= 3 ? novelInfo.PinYin.Substring(0, 3) : novelInfo.PinYin;
 		}
-		novelInfo.LastChapter.ChapterName = row["lastchapter"].ToString();
+		novelInfo.LastChapter.ChapterName = row.LastChapter;
 		novelInfo.LastChapter.VolumeName = "书籍正在生成中,请稍等几分钟后刷新即可阅读";
 	}
 
@@ -264,9 +268,9 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 			using Stream responseStream = httpResponse.Content.ReadAsStream();
 			using StreamReader responseReader = new StreamReader(responseStream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
 			string value = responseReader.ReadToEnd();
-			JObject jObject = (JObject)JsonConvert.DeserializeObject(value);
-			int num = int.Parse(jObject["success"].ToString());
-			int num2 = int.Parse(jObject["remain"].ToString());
+			JsonNode jsonNode = JsonNode.Parse(value);
+			int num = jsonNode?["success"]?.GetValue<int>() ?? 0;
+			int num2 = jsonNode?["remain"]?.GetValue<int>() ?? 0;
 			if (!flag)
 			{
 				string string_4 = string.Concat(new object[1] { "INSERT INTO [PushLog] (SUCCESS,REMAIN,LASTTIME) values ( " + num + "," + num2 + ",'" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "')" });
@@ -1889,7 +1893,6 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 		if (isGenZip)
 		{
 			string string_5 = Config.HtmlDir + "/" + currentNovel.PutID / 1000 + "/" + currentNovel.PutID.ToString();
-			new ZipLib().ZipToFile(string_5, currentNovel.PutID + ".zip");
 			string text52 = Config.ZipDir + "/" + currentNovel.PutID / 1000;
 			if (!Directory.Exists(text52))
 			{
@@ -1900,6 +1903,7 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 			{
 				File.Delete(path6);
 			}
+			new ZipLib().ZipToFile(string_5, path6);
 			string text53 = ".zip";
 			if (Config.JieqiArticleConfigs["zipfile"] != null)
 			{
@@ -1974,11 +1978,7 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 			ChapterFileWriter.WriteTextAtomic(Config.JarDir + "\\" + currentNovel.PutID / 1000 + "\\Jar\\data\\" + currentNovel.PutID.ToString() + "\\part" + num21.ToString(), text54.Substring(num21 * 5000), Encoding.UTF8);
 			string contents2 = "Manifest-Version: 1.0\nMIDlet-Delete-Confirm: Please don't kill me!i will change you live.\nParamVid: null\nMIDlet-1: MBookME, /icon.png, cn.com.mbook.mbookme.MBookMEMIDlet\nParamAud: null\nMicroEdition-Configuration: CLDC-1.0\nCreated-By: 1.5.0_04 (Sun Microsystems Inc.)\nMIDlet-Version: 1.0.0\nMIDlet-Description: " + currentNovel.Name + "\nMIDlet-Name: " + currentNovel.PutID + "\nMIDlet-Vendor: " + Config.JieqiDefine["JIEQI_SITE_NAME"].ToString() + "\nMicroEdition-Profile: MIDP-1.0\nParamTxt: C:\\" + currentNovel.PutID + ".txt\nParamImg: null\n";
 			ChapterFileWriter.WriteTextAtomic(Config.JarDir + "\\" + currentNovel.PutID / 1000 + "\\Jar\\META-INF\\MANIFEST.MF", contents2, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-			FastZip fastZip = new FastZip
-			{
-				CreateEmptyDirectories = true
-			};
-			fastZip.CreateZip(Config.JarDir + "\\" + currentNovel.PutID / 1000 + "\\" + currentNovel.PutID.ToString() + ".jar", Config.JarDir + "\\" + currentNovel.PutID / 1000 + "\\Jar\\", recurse: true, "");
+			new ZipLib().ZipToFile(Path.Combine(Config.JarDir, (currentNovel.PutID / 1000).ToString(), "Jar"), Path.Combine(Config.JarDir, (currentNovel.PutID / 1000).ToString(), currentNovel.PutID + ".jar"));
 			Directory.Delete(Config.JarDir + "\\" + currentNovel.PutID / 1000 + "\\Jar", recursive: true);
 		}
 	}
@@ -3833,7 +3833,7 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 			{
 				string text = mySqlDataReader2["articleid"].ToString();
 				string string_4 = mySqlDataReader2["articlename"].ToString();
-				string string_5 = "UPDATE `jieqi_article_article` SET `articlecode`='" + CHz2Py.Convert4Hz2Py(string_4) + "' WHERE `articleid`=" + text.ToString();
+				string string_5 = "UPDATE `jieqi_article_article` SET `articlecode`='" + CHz2Py.Convert4Hz2Py(string_4) + "' WHERE `articleid`=@articleid" + text.ToString();
 				MySqlHelper.ExecuteNonQuery(MySqlHelper.ConnectionString, CommandType.Text, string_5, (MySqlParameter[])null);
 			}
 			mySqlDataReader2.Close();

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.ComponentModel;
 using System.Data;
@@ -1591,10 +1591,10 @@ public class CollectRepair : DockContent
 			backgroundWorker_0.ReportProgress(9, "失败 | " + string_3 + " | " + string_2 + " | " + novelInfo_0.GetID + " | " + ex.Message);
 			return;
 		}
-		Thread.Sleep(tInfo.NovelUrlWait);
+		HostRequestThrottle.Wait("*", tInfo.NovelUrlWait);
 		try
 		{
-			ICollection keys = Configs.TaskNovelInfo.Keys;
+			var keys = Configs.TaskNovelInfo.Keys;
 			if (Configs.TaskNovelInfo.Count != 0)
 			{
 				IEnumerator enumerator = keys.GetEnumerator();
@@ -1718,7 +1718,7 @@ public class CollectRepair : DockContent
 		int num2 = 0;
 		int num3 = 0;
 		int num4 = 0;
-		Thread.Sleep(tInfo.IndexUrlWait);
+		HostRequestThrottle.Wait("*", tInfo.IndexUrlWait);
 		int num5 = chapterList.Length;
 		backgroundWorker_0.ReportProgress(2, "章节循环完毕");
 		if (flag2)

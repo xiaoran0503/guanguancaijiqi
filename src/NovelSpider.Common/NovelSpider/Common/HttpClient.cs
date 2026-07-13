@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -6,8 +6,9 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
-using ICSharpCode.SharpZipLib.GZip;
-using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
+using System.Threading;
+using System.Threading.Tasks;
+using System.IO.Compression;
 using NovelSpider.Config;
 
 namespace NovelSpider.Common;
@@ -251,21 +252,31 @@ public class HttpClient
 
 	public Image GetImageWork()
 	{
+		return GetImageWorkAsync().GetAwaiter().GetResult();
+	}
+
+	public async Task<Image> GetImageWorkAsync(CancellationToken cancellationToken = default)
+	{
 		Image image = null;
 		try
 		{
 			Uri requestUri = new Uri(string_0);
 			CookieContainer cookieContainer = CreateCookieContainer(requestUri);
-			using HttpResponseMessage response = SendModernRequest(requestUri, cookieContainer);
-			using Stream responseStream = response.Content.ReadAsStream();
+			using HttpResponseMessage response = await SendModernRequestAsync(requestUri, cookieContainer, cancellationToken).ConfigureAwait(false);
+			using Stream responseStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
 			image = Image.FromStream(responseStream);
-			CookieCollection cookies = cookieContainer.GetCookies(requestUri);
+			CookieCollection cookies = cookieContainer.GetCookies(response.RequestMessage?.RequestUri ?? requestUri);
 			if (cookies.Count > 0)
 			{
 				cookieCollection_1 = cookies;
 			}
 		}
-		catch (Exception ex)
+		catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+		{
+			SpiderException.Debug(ex.Message + string_0);
+			string_5 = ex.Message;
+		}
+		catch (Exception ex) when (ex is not OperationCanceledException)
 		{
 			SpiderException.Debug(ex.Message + string_0);
 			string_5 = ex.Message;
@@ -276,34 +287,15 @@ public class HttpClient
 
 	public string GetStringWork()
 	{
-		if (string_0.IndexOf("16k.cn") <= 0 && string_0.IndexOf("16kxs.com") <= 0)
+		if (!IsLegacySocketSite(string_0))
 		{
-			Uri requestUri = new Uri(string_0);
-			CookieContainer cookieContainer = CreateCookieContainer(requestUri);
-			try
-			{
-				using HttpResponseMessage modernResponse = SendModernRequest(requestUri, cookieContainer);
-				string_3 = ReadResponseText(modernResponse);
-				string_4 = ((int)modernResponse.StatusCode).ToString();
-				if (string_4 == "302")
-				{
-					string_0 = modernResponse.RequestMessage.RequestUri.ToString();
-					string_3 = modernResponse.Headers.Location?.ToString();
-				}
-				CookieCollection cookies = cookieContainer.GetCookies(modernResponse.RequestMessage.RequestUri);
-				if (cookies.Count > 0)
-				{
-					cookieCollection_1 = cookies;
-				}
-			}
-			catch (Exception ex)
-			{
-				SpiderException.Debug(ex.Message + string_0);
-				string_5 = ex.Message;
-				return "";
-			}
-			return ResHtml;
+			return GetStringWorkAsync().GetAwaiter().GetResult();
 		}
+		return GetStringWorkLegacySocket();
+	}
+
+	private string GetStringWorkLegacySocket()
+	{
 		HttpRequest httpRequest = new HttpRequest
 		{
 			RequestUri = new Uri(string_0),
@@ -348,11 +340,11 @@ public class HttpClient
 		memoryStream.Seek(0L, SeekOrigin.Begin);
 		if (httpResponse.Headers["ContentEncoding"] == "gzip")
 		{
-			streamReader2 = new StreamReader(new GZipInputStream(memoryStream), encoding_0);
+			streamReader2 = new StreamReader(new GZipStream(memoryStream, CompressionMode.Decompress), encoding_0);
 		}
 		else if (httpResponse.Headers["ContentEncoding"] == "deflate")
 		{
-			streamReader2 = new StreamReader(new InflaterInputStream(memoryStream), encoding_0);
+			streamReader2 = new StreamReader(new DeflateStream(memoryStream, CompressionMode.Decompress), encoding_0);
 		}
 		if (streamReader2 == null)
 		{
@@ -372,6 +364,52 @@ public class HttpClient
 		return string_3;
 	}
 
+	public async Task<string> GetStringWorkAsync(CancellationToken cancellationToken = default)
+	{
+		if (IsLegacySocketSite(string_0))
+		{
+			return await Task.Run(GetStringWorkLegacySocket, cancellationToken).ConfigureAwait(false);
+		}
+
+		Uri requestUri = new Uri(string_0);
+		CookieContainer cookieContainer = CreateCookieContainer(requestUri);
+		try
+		{
+			using HttpResponseMessage modernResponse = await SendModernRequestAsync(requestUri, cookieContainer, cancellationToken).ConfigureAwait(false);
+			string_3 = await ReadResponseTextAsync(modernResponse, cancellationToken).ConfigureAwait(false);
+			string_4 = ((int)modernResponse.StatusCode).ToString();
+			if (string_4 == "302")
+			{
+				string_0 = modernResponse.RequestMessage?.RequestUri?.ToString();
+				string_3 = modernResponse.Headers.Location?.ToString();
+			}
+			CookieCollection cookies = cookieContainer.GetCookies(modernResponse.RequestMessage?.RequestUri ?? requestUri);
+			if (cookies.Count > 0)
+			{
+				cookieCollection_1 = cookies;
+			}
+		}
+		catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+		{
+			SpiderException.Debug(ex.Message + string_0);
+			string_5 = ex.Message;
+			return "";
+		}
+		catch (Exception ex) when (ex is not OperationCanceledException)
+		{
+			SpiderException.Debug(ex.Message + string_0);
+			string_5 = ex.Message;
+			return "";
+		}
+		return ResHtml;
+	}
+
+	private static bool IsLegacySocketSite(string uri)
+	{
+		return uri.IndexOf("16k.cn", StringComparison.OrdinalIgnoreCase) > 0 ||
+			uri.IndexOf("16kxs.com", StringComparison.OrdinalIgnoreCase) > 0;
+	}
+
 	private CookieContainer CreateCookieContainer(Uri uri)
 	{
 		CookieContainer cookieContainer = new CookieContainer();
@@ -386,7 +424,7 @@ public class HttpClient
 		return cookieContainer;
 	}
 
-	private HttpResponseMessage SendModernRequest(Uri requestUri, CookieContainer cookieContainer)
+	private async Task<HttpResponseMessage> SendModernRequestAsync(Uri requestUri, CookieContainer cookieContainer, CancellationToken cancellationToken = default)
 	{
 		Uri currentUri = requestUri;
 		bool forceGet = false;
@@ -394,7 +432,7 @@ public class HttpClient
 		{
 			HttpRequestMessage request = CreateModernHttpRequest(currentUri, forceGet);
 			ApplyRequestCookies(request, currentUri, cookieContainer);
-			HttpResponseMessage response = HttpTransportPool.Send(request, CreateTransportOptions(), Timeout > 0 ? Timeout : Configs.BaseConfig.HttpTimeOut);
+			HttpResponseMessage response = await HttpTransportPool.SendAsync(request, CreateTransportOptions(), Timeout > 0 ? Timeout : Configs.BaseConfig.HttpTimeOut, cancellationToken).ConfigureAwait(false);
 			StoreResponseCookies(response, currentUri, cookieContainer);
 			if (!bool_0 || !IsRedirect(response) || response.Headers.Location == null)
 			{
@@ -409,7 +447,7 @@ public class HttpClient
 		}
 		HttpRequestMessage finalRequest = CreateModernHttpRequest(currentUri, forceGet: true);
 		ApplyRequestCookies(finalRequest, currentUri, cookieContainer);
-		HttpResponseMessage finalResponse = HttpTransportPool.Send(finalRequest, CreateTransportOptions(), Timeout > 0 ? Timeout : Configs.BaseConfig.HttpTimeOut);
+		HttpResponseMessage finalResponse = await HttpTransportPool.SendAsync(finalRequest, CreateTransportOptions(), Timeout > 0 ? Timeout : Configs.BaseConfig.HttpTimeOut, cancellationToken).ConfigureAwait(false);
 		StoreResponseCookies(finalResponse, currentUri, cookieContainer);
 		return finalResponse;
 	}
@@ -464,33 +502,17 @@ public class HttpClient
 		}
 	}
 
-	private string ReadResponseText(HttpResponseMessage response)
+	private async Task<string> ReadResponseTextAsync(HttpResponseMessage response, CancellationToken cancellationToken = default)
 	{
-		using Stream responseStream = response.Content.ReadAsStream();
-		StreamReader streamReader = null;
-		Stream decodeStream = null;
-		string contentEncoding = string.Join(",", response.Content.Headers.ContentEncoding);
-		if (contentEncoding.IndexOf("gzip", StringComparison.OrdinalIgnoreCase) >= 0)
+		using Stream responseStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+		using StreamReader streamReader = new StreamReader(responseStream, encoding_0);
+		StringBuilder stringBuilder = new StringBuilder();
+		char[] array = new char[4096];
+		for (int count = await streamReader.ReadAsync(array.AsMemory(0, array.Length), cancellationToken).ConfigureAwait(false); count > 0; count = await streamReader.ReadAsync(array.AsMemory(0, array.Length), cancellationToken).ConfigureAwait(false))
 		{
-			decodeStream = new GZipInputStream(responseStream);
-			streamReader = new StreamReader(decodeStream, encoding_0);
+			stringBuilder.Append(array, 0, count);
 		}
-		else if (contentEncoding.IndexOf("deflate", StringComparison.OrdinalIgnoreCase) >= 0)
-		{
-			decodeStream = new InflaterInputStream(responseStream);
-			streamReader = new StreamReader(decodeStream, encoding_0);
-		}
-		streamReader ??= new StreamReader(responseStream, encoding_0);
-		using (streamReader)
-		{
-			StringBuilder stringBuilder = new StringBuilder();
-			char[] array = new char[4096];
-			for (int count = streamReader.Read(array, 0, array.Length); count > 0; count = streamReader.Read(array, 0, array.Length))
-			{
-				stringBuilder.Append(array, 0, count);
-			}
-			return stringBuilder.ToString();
-		}
+		return stringBuilder.ToString();
 	}
 
 	private HttpRequestMessage CreateModernHttpRequest(Uri uri, bool forceGet)

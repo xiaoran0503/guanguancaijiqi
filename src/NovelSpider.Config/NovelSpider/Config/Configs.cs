@@ -1,5 +1,5 @@
-using System;
-using System.Collections;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 
@@ -29,7 +29,7 @@ public class Configs
 
 	public static TaskConfigInfo TaskConfig;
 
-	public static Hashtable TaskNovelInfo;
+	public static Dictionary<string, object> TaskNovelInfo;
 
 	public static Guid UserID;
 
@@ -72,8 +72,8 @@ public class Configs
 		HaveFunction = "ZhanQunPinyinDir中译英";
 		UserID = Guid.NewGuid();
 		AssemblyVersion = Assembly.GetExecutingAssembly().GetName().Version;
-		DisplayVersion = "10.5.1-net10-test";
-		TaskNovelInfo = new Hashtable();
+		DisplayVersion = "10.11.0-net10-test";
+		TaskNovelInfo = new Dictionary<string, object>();
 		IsDemo = false;
 		Build = new DateTime(2026, 7, 9);
 	}

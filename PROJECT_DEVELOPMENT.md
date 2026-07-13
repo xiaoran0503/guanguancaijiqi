@@ -69,9 +69,9 @@ V8.0、V8.2、V8.4、V8.5、V8.6、V8.7、V8.8、V8.10.3、V8.13.3、V8.17.1 已
 Net10 迁移测试分支补充：
 
 - 当前 active solution 目标框架为 `.NET 10 / net10.0-windows`，SDK 固定为 `10.0.301`。
-- 当前 Net10 测试版本为 `10.5.1-net10-test / 10.5.1.0`，发布平台固定为 Windows-only `win-x64` / `x64`。
+- 当前 Net10 测试版本为 `10.11.0-net10-test / 10.11.0.0`，发布平台固定为 Windows-only `win-x64` / `x64`。
 - GitHub Actions 已加入 `net10-v10` 分支：推送 `net10-v10` / `main` 自动构建并上传 Windows x64 artifact，推送 `v10.*-net10` tag 自动创建 GitHub Release。
-- active solution 依赖采用 NuGet 稳定最新版策略；截至 2026-07-09，`MySqlConnector 2.6.1`、`Newtonsoft.Json 13.0.4`、`System.Data.SQLite.Core 1.0.119`、DockPanelSuite `3.1.1`、SharpZipLib `1.4.2`、CHSPinYinConv `1.0.0`、jieba.NET `0.42.2`、`System.Management 10.0.9` 和 `Microsoft.Extensions.* 10.0.9` 均无 stable 更新。
+- active solution 依赖采用 NuGet 稳定最新版策略；截至 2026-07-09，`MySqlConnector 2.6.1`、`System.Data.SQLite.Core 1.0.119`、DockPanelSuite `3.1.1`、SharpZipLib `1.4.2`、CHSPinYinConv `1.0.0`、jieba.NET `0.42.2`、`System.Management 10.0.9` 和 `Microsoft.Extensions.* 10.0.9` 均无 stable 更新。
 - 不采用 beta/preview 包，例如 `Newtonsoft.Json 13.0.5-beta1`、`Microsoft.Data.SqlClient 7.1.0-preview1.*` 或 `.NET 11 preview` 包。
 - active solution 和发布包不包含 `System.Data.SqlClient` / `Microsoft.Data.SqlClient`；`NovelSpider.Local.Qiwen` 仍为归档源码，不参与 active dependency audit。
 
@@ -301,7 +301,7 @@ V8.1 新增事项：
 - MariaDB `10.x/11.x` 自动补齐 `Charset=utf8mb4;SslMode=Preferred`。
 - Percona Server `5.7.x/8.x` 走 MySQL 协议兼容策略。
 - 连接测试弹窗显示服务器类型、版本、版本说明、字符集、排序规则和 SQL Mode。
-- 依赖升级：`MySqlConnector 2.6.1`、`Newtonsoft.Json 13.0.4`、`System.Data.SqlClient 4.9.1`。
+- 依赖升级：`MySqlConnector 2.6.1`；active JSON 解析已迁移到内置 `System.Text.Json`，`Newtonsoft.Json 13.0.4` 仅作为 jieba.NET 传递依赖漏洞覆盖项保留，SqlClient 相关项目保持归档不发布。
 - 显式覆盖 `jieba.NET` 带入的旧传递依赖，消除 `System.Drawing.Common 4.7.0` 高危漏洞链。
 
 数据库兼容矩阵：
@@ -518,6 +518,12 @@ V8.0 已完成事项：
 
 
 
+- V10.7.0: UI/后台等待现代化，移除自动采集 Run() 的 Application.DoEvents 忙等，自动采集/修复/配置图转文等待改为事件或可取消分段等待。
+- V10.6.1: 修复 10.6.0 async 网络管线中超时 `OperationCanceledException` 直接冒泡的问题，恢复规则测试/采集请求超时返回空响应并按原重试语义处理。
+- V10.6.0: 网络现代化大版本，将 HttpTransportPool/Common HttpClient 现代分支升级为 async/await 管线，Page 核心规则请求包装接入 async 节流、退避和同域并发租约；Jieqi 项目移除直接 SharpZipLib 依赖。
+- V10.5.4: 稳态现代化第五阶段将普通 ZipLib 目录打包切换到 System.IO.Compression.ZipArchive，并为 HostRequestThrottle 增加 async 同域并发租约入口；UMD 特殊压缩继续保留 SharpZipLib。
+- V10.5.3: 稳态现代化第四阶段保留 DockPanelSuite 并封装 Dock 打开入口，移除 active Jieqi 的 Newtonsoft.Json 依赖，封面保存收敛到公共 ImageService，网络解压热路径改用 System.IO.Compression，并为站点节流新增 async/cancellation 入口。
+- V10.5.2: WinForms 现代化第三阶段清理 MessageForm / TaskForm 小窗体，使用空条件 Dispose、简化事件绑定和绘图类型名；大窗体继续保持保守改造。
 - V10.5.1: WinForms 现代化第二阶段整理自动生成采集规则窗体，集中输入读取、忙碌状态、保存文件名规范化，并复用本地页面抓取 HttpClient。
 - V10.5.0: WinForms 现代化第一阶段集中自动采集任务请求调度 UI 的加载、保存和规范化逻辑，清理任务保存/读取附近反编译式错误弹窗代码，保持界面行为不变。
 - V10.4.0: 自动采集任务界面提供请求调度/站点友好访问配置，可直接设置随机延时区间、UA 模式、同域并发和失败退避，不需要手工修改 XML。

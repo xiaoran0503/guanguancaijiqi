@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.ComponentModel;
 using System.Drawing;
 using System.IO;
@@ -124,6 +124,35 @@ public class WelcomeForm : DockContent
 		return string.Join(Environment.NewLine, new string[]
 		{
 			"更新日志",
+			"",
+			"V10.7.0 Net10 Test    2026-07-13",
+			"- 版本迭代为 10.7.0.0 / 10.7.0-net10-test。",
+			"- 自动采集 Run() 移除 Application.DoEvents 忙等，后台等待改为事件或可取消分段等待。",
+			"- CollectRepair 延时统一到 HostRequestThrottle，ConfigForm 图转文等待改为事件等待。",
+			"",
+			"V10.6.1 Net10 Test    2026-07-13",
+			"- 版本迭代为 10.6.1.0 / 10.6.1-net10-test。",
+			"- 修复 async 网络管线超时 OperationCanceledException 直接冒泡，规则测试恢复旧重试/空响应语义。",
+			"",
+			"V10.6.0 Net10 Test    2026-07-13",
+			"- 版本迭代为 10.6.0.0 / 10.6.0-net10-test。",
+			"- 网络现代化大版本：HttpTransportPool/Common HttpClient 现代分支升级为 async/await 管线。",
+			"- Page 核心规则请求包装接入 async 节流、失败退避和同域并发租约，Jieqi 项目移除直接 SharpZipLib 依赖。",
+			"",
+			"V10.5.4 Net10 Test    2026-07-13",
+			"- 版本迭代为 10.5.4.0 / 10.5.4-net10-test。",
+			"- 普通 ZipLib 目录打包改用 System.IO.Compression.ZipArchive，HostRequestThrottle 增加 async 同域并发租约入口。",
+			"- UMD 特殊压缩继续保留 SharpZipLib，避免扩大低频格式风险。",
+			"",
+			"V10.5.3 Net10 Test    2026-07-13",
+			"- 版本迭代为 10.5.3.0 / 10.5.3-net10-test。",
+			"- 保留 DockPanelSuite 并封装 Dock 打开入口，移除 active Jieqi 的 Newtonsoft.Json 依赖，封面保存收敛到公共 ImageService。",
+			"- 网络 gzip/deflate 解压热路径改用 System.IO.Compression，并为站点节流新增 async/cancellation 入口。",
+			"",
+			"V10.5.2 Net10 Test    2026-07-11",
+			"- 版本迭代为 10.5.2.0 / 10.5.2-net10-test。",
+			"- 清理 MessageForm / TaskForm 小窗体，使用空条件 Dispose、简化事件绑定和绘图类型名。",
+			"- 大窗体继续保持保守改造策略，避免中文控件名和历史字符串处理引入风险。",
 			"",
 			"V10.5.1 Net10 Test    2026-07-11",
 			"- 版本迭代为 10.5.1.0 / 10.5.1-net10-test。",

@@ -1,6 +1,7 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Threading;
+using System.Threading.Tasks;
 using NovelSpider.Config;
 
 namespace NovelSpider.Common;
@@ -47,10 +48,19 @@ public static class HostRequestThrottle
 
 	public static void Wait(string host, int minMilliseconds, int maxMilliseconds, string requestKind)
 	{
+		int delay = GetDelayMilliseconds(host, minMilliseconds, maxMilliseconds, requestKind);
+		if (delay > 0)
+		{
+			Thread.Sleep(delay);
+		}
+	}
+
+	private static int GetDelayMilliseconds(string host, int minMilliseconds, int maxMilliseconds, string requestKind)
+	{
 		(minMilliseconds, maxMilliseconds) = RequestDelayProfile.Normalize(minMilliseconds, maxMilliseconds);
 		if (maxMilliseconds <= 0)
 		{
-			return;
+			return 0;
 		}
 		host = NormalizeHost(host);
 		int intervalMilliseconds = minMilliseconds == maxMilliseconds ? minMilliseconds : Random.Shared.Next(minMilliseconds, maxMilliseconds + 1);
@@ -58,17 +68,32 @@ public static class HostRequestThrottle
 		lock (state.SyncRoot)
 		{
 			DateTime now = DateTime.UtcNow;
+			int remainingMilliseconds = 0;
 			if (state.LastRequestUtc != DateTime.MinValue)
 			{
-				int remainingMilliseconds = intervalMilliseconds - (int)(now - state.LastRequestUtc).TotalMilliseconds;
+				remainingMilliseconds = intervalMilliseconds - (int)(now - state.LastRequestUtc).TotalMilliseconds;
 				if (remainingMilliseconds > 0)
 				{
 					PerformanceTelemetry.Record("http", "request_delay", remainingMilliseconds, host, message: "kind=" + requestKind);
-					Thread.Sleep(remainingMilliseconds);
-					now = DateTime.UtcNow;
 				}
 			}
-			state.LastRequestUtc = now;
+			state.LastRequestUtc = remainingMilliseconds > 0 ? now.AddMilliseconds(remainingMilliseconds) : now;
+			return Math.Max(0, remainingMilliseconds);
+		}
+	}
+
+
+	public static async Task WaitAsync(string host, int intervalMilliseconds, CancellationToken cancellationToken = default)
+	{
+		await WaitAsync(host, intervalMilliseconds, intervalMilliseconds, string.Empty, cancellationToken).ConfigureAwait(false);
+	}
+
+	public static async Task WaitAsync(string host, int minMilliseconds, int maxMilliseconds, string requestKind, CancellationToken cancellationToken = default)
+	{
+		int delay = GetDelayMilliseconds(host, minMilliseconds, maxMilliseconds, requestKind);
+		if (delay > 0)
+		{
+			await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
 		}
 	}
 
@@ -81,22 +106,49 @@ public static class HostRequestThrottle
 		return new HostConcurrencyLease(semaphore);
 	}
 
+	public static async Task<HostConcurrencyLease> EnterAsync(string host, int limit, CancellationToken cancellationToken = default)
+	{
+		limit = limit <= 0 ? 1 : limit;
+		host = NormalizeHost(host);
+		SemaphoreSlim semaphore = Semaphores.GetOrAdd(host + "|" + limit, static (_, count) => new SemaphoreSlim(count, count), limit);
+		await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+		return new HostConcurrencyLease(semaphore);
+	}
+
 	public static void WaitForBackoff(string host, TaskConfigInfo taskConfig, string requestKind)
+	{
+		int delay = GetBackoffDelay(host, taskConfig, requestKind);
+		if (delay > 0)
+		{
+			Thread.Sleep(delay);
+		}
+	}
+
+	public static async Task WaitForBackoffAsync(string host, TaskConfigInfo taskConfig, string requestKind, CancellationToken cancellationToken = default)
+	{
+		int delay = GetBackoffDelay(host, taskConfig, requestKind);
+		if (delay > 0)
+		{
+			await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+		}
+	}
+
+	private static int GetBackoffDelay(string host, TaskConfigInfo taskConfig, string requestKind)
 	{
 		if (taskConfig == null || !taskConfig.RequestBackoffEnabled)
 		{
-			return;
+			return 0;
 		}
 		host = NormalizeHost(host);
 		FailureState state = Failures.GetOrAdd(host, static _ => new FailureState());
 		int failures = Volatile.Read(ref state.ConsecutiveFailures);
 		if (failures <= 0)
 		{
-			return;
+			return 0;
 		}
 		int delay = Math.Min(30000, failures * failures * 500);
 		PerformanceTelemetry.Record("http", "request_backoff", delay, host, succeed: false, message: "kind=" + requestKind + ";failures=" + failures);
-		Thread.Sleep(delay);
+		return delay;
 	}
 
 	public static void ReportResult(string host, TaskConfigInfo taskConfig, bool succeeded, string reason = "")

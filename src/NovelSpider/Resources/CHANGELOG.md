@@ -1,3 +1,55 @@
+V10.11.0 Net10 Test    2026-07-13
+- 版本迭代为 `10.11.0.0 / 10.11.0-net10-test`。
+- 网络层继续现代化：`HttpClient` 将 16k 特殊旧 socket 站点分支隔离为 legacy 方法，async 入口可通过后台执行路径复用旧站兼容逻辑，现代站点仍走 `HttpTransportPool` / `SocketsHttpHandler`。
+- 采集层新增 `Page.GetChapterInfoAsync`，章节正文、二段正文 URL、分页正文请求复用 async retry、同域节流、失败退避、UA 策略和取消管线；旧同步 `GetChapterInfo` 保留兼容包装。
+- 规则测试窗体接入 async 章节正文抓取，取消测试时正文页网络请求可以通过 `CancellationToken` 中断。
+- Jieqi `MySqlHelper` 新增事务内 `ExecuteSingleRowAsync`，为后续小说、章节、分卷状态查询 DTO 化和真实 async 数据库链路继续铺路。
+
+V10.10.0 Net10 Test    2026-07-13
+- 版本迭代为 `10.10.0.0 / 10.10.0-net10-test`。
+- V10.8.0 后台任务现代化：规则测试窗体已移除 `BackgroundWorker` 执行路径，改为 `async Task`、`CancellationTokenSource`、运行代次和分批日志追加；自动采集/手工采集大窗体保留分阶段拆解边界。
+- V10.9.0 数据库读取现代化：`MySqlHelper` 新增事务内单行 reader 映射 helper，Jieqi 插入小说后的回读改为轻量 DTO，减少 `DataTable/DataRow` 分配。
+- V10.10.0 类型质量：`Configs.TaskNovelInfo` 从 `Hashtable` 改为泛型字典，首批新封装模块启用 `#nullable enable` 并修正空值边界。
+- 新增 `DOCK_MIGRATION_ASSESSMENT.md`，结论为 V10.x 保留 DockPanelSuite，通过 `DockWorkspaceService` 继续收敛依赖；Krypton Toolkit 仅作为独立 UI 大版本评估。
+
+V10.7.0 Net10 Test    2026-07-13
+- 版本迭代为 `10.7.0.0 / 10.7.0-net10-test`。
+- 自动采集 `Run()` 移除 `Application.DoEvents` + `Thread.Sleep(1)` 忙等，改为 `RunWorkerCompleted` 事件等待。
+- 自动采集中的短暂停顿、周期等待和主机检查等待改为可取消分段等待，停止任务时更快响应。
+- `CollectRepair` 的规则延时等待改用统一 `HostRequestThrottle`，延时语义与任务请求调度保持一致。
+- `ConfigForm` 图转文 WebBrowser 渲染等待改为 `ManualResetEventSlim` 事件等待，避免固定 100 秒轮询。
+
+V10.6.1 Net10 Test    2026-07-13
+- 版本迭代为 `10.6.1.0 / 10.6.1-net10-test`。
+- 修复 V10.6.0 async 网络管线中请求超时 `OperationCanceledException` 直接冒泡的问题。
+- 规则测试、列表抓取和封面下载在内部超时后恢复旧行为：记录调试信息并返回空响应/空图片，由上层按原有重试或“没有获得列表”语义处理。
+- 保留外部显式 `CancellationToken` 的取消语义，后续窗体关闭或停止任务仍可真正取消请求。
+
+V10.6.0 Net10 Test    2026-07-13
+- 版本迭代为 `10.6.0.0 / 10.6.0-net10-test`。
+- `HttpTransportPool` 新增真实 `SendAsync`，统一记录 async 网络耗时、取消、超时和网络错误。
+- `NovelSpider.Common.HttpClient` 现代站点分支新增 `GetStringWorkAsync` / `GetImageWorkAsync`，同步入口桥接到 async 管线，保留 16k 特殊 socket 分支。
+- `Page` 核心规则请求包装接入 async 节流、失败退避和同域并发租约，减少采集线程阻塞等待。
+- Jieqi active 项目移除直接 SharpZipLib 包引用；Common 仅为 UMD 特殊压缩继续保留 SharpZipLib。
+
+V10.5.4 Net10 Test    2026-07-13
+- 版本迭代为 `10.5.4.0 / 10.5.4-net10-test`。
+- 将普通 `ZipLib` 目录打包实现迁移到 `System.IO.Compression.ZipArchive`，减少 SharpZipLib 在常规 zip 场景的使用。
+- 为 `HostRequestThrottle` 增加 async 同域并发租约入口，后续采集链路可使用 `WaitAsync` / `EnterAsync` 逐步替代阻塞等待。
+- UMD 生成器中的特殊 Deflater 压缩暂时保留 SharpZipLib，避免扩大低频格式风险。
+
+V10.5.3 Net10 Test    2026-07-13
+- 版本迭代为 `10.5.3.0 / 10.5.3-net10-test`。
+- 保留 DockPanelSuite，新增 DockWorkspaceService 统一主窗口 DockContent 打开入口，降低后续 UI 容器替换风险。
+- 将 active Jieqi 的百度推送 JSON 解析迁移到 `System.Text.Json.Nodes`，移除 Newtonsoft.Json 包引用。
+- 新增公共 `ImageService` 隔离 System.Drawing 封面保存逻辑，为后续 ImageSharp/SkiaSharp 替换预留边界。
+- 将网络 gzip/deflate 解压热路径改为 `System.IO.Compression`，减少对 SharpZipLib 的普通 HTTP 解压依赖。
+- 为 HostRequestThrottle 新增 async/cancellation 等待入口，并移除规则测试中的硬编码短暂停顿。
+
+V10.5.2 Net10 Test    2026-07-11
+- 版本迭代为 `10.5.2.0 / 10.5.2-net10-test`。
+- WinForms 现代化第三阶段：清理 `MessageForm` 与 `TaskForm` 小窗体，使用空条件 Dispose、简化事件绑定和绘图类型名。
+- 保持大窗体保守改造策略；本轮未继续拆分 `自动采集模式.cs`，避免中文控件名和历史字符串处理引入风险。
 V10.5.1 Net10 Test    2026-07-11
 - 版本迭代为 `10.5.1.0 / 10.5.1-net10-test`。
 - WinForms 现代化第二阶段：整理 `RuleAutoGenerateForm`，将规则生成输入读取集中到 `RuleGenerationInput`，减少按钮事件直接读取控件的分散逻辑。

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
@@ -20,6 +20,8 @@ public class MdiForm : Form
 	private IContainer components;
 
 	private DockContent activeDockContent;
+
+	private DockWorkspaceService dockWorkspace;
 
 	private ConfigForm configForm_0;
 
@@ -505,25 +507,9 @@ public class MdiForm : Form
 
 	private void ShowDockContent(DockContent content)
 	{
-		if (content == null || content.IsDisposed)
-		{
-			return;
-		}
-
-		if (content.MdiParent != null)
-		{
-			content.MdiParent = null;
-		}
-
-		if (content.DockPanel == dockPanel)
-		{
-			content.Show();
-			content.Focus();
-			return;
-		}
-
-		activeDockContent = content;
-		content.Show(dockPanel, DockState.Document);
+		dockWorkspace ??= new DockWorkspaceService(dockPanel);
+		dockWorkspace.ShowDocument(content);
+		activeDockContent = dockWorkspace.ActiveContent;
 	}
 
 	private void MdiForm_Shown(object sender, EventArgs e)

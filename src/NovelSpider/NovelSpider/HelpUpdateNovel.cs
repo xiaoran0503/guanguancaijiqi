@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.ComponentModel;
 using System.Drawing;
 using System.Threading;
@@ -88,6 +88,22 @@ public class HelpUpdateNovel : DockContent
 
 	public TaskConfigInfo tInfo;
 
+	private bool WaitOrCancel(int milliseconds)
+	{
+		int remaining = Math.Max(0, milliseconds);
+		while (remaining > 0)
+		{
+			if (backgroundWorker_0.CancellationPending)
+			{
+				return false;
+			}
+			int slice = Math.Min(remaining, 200);
+			Thread.Sleep(slice);
+			remaining -= slice;
+		}
+		return !backgroundWorker_0.CancellationPending;
+	}
+
 	public HelpUpdateNovel()
 	{
 		rInfo = new RuleConfigInfo();
@@ -118,7 +134,10 @@ public class HelpUpdateNovel : DockContent
 			NovelInfo novelInfo = new NovelInfo();
 			if (flag)
 			{
-				Thread.Sleep(Convert.ToInt32(更新循环搜索时间.Value) * 1000);
+				if (!WaitOrCancel(Convert.ToInt32(更新循环搜索时间.Value) * 1000))
+					{
+						break;
+					}
 				NovelInfo novelInfo2 = new NovelInfo();
 				novelInfo2.PutID = num;
 				NovelInfo novelInfo3 = novelInfo2;

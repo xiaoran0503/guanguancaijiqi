@@ -1,10 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Web;
 using NovelSpider.Common;
 using NovelSpider.Config;
@@ -87,17 +88,22 @@ public partial class Page
 	}
 	private string GetStringWorkWithEmptyRetry(HttpClient httpClient, int maxAttempts = 2, string subject = "", RequestKind requestKind = RequestKind.Chapter)
 	{
+		return GetStringWorkWithEmptyRetryAsync(httpClient, maxAttempts, subject, requestKind).GetAwaiter().GetResult();
+	}
+
+	private async Task<string> GetStringWorkWithEmptyRetryAsync(HttpClient httpClient, int maxAttempts = 2, string subject = "", RequestKind requestKind = RequestKind.Chapter, CancellationToken cancellationToken = default)
+	{
 		string text = string.Empty;
 		string host = GetRequestHost(httpClient, subject);
 		httpClient.UserAgent = RequestUserAgentProvider.Resolve(taskConfigInfo_0, host);
 		for (int attempt = 1; attempt <= maxAttempts; attempt++)
 		{
-			HostRequestThrottle.WaitForBackoff(host, taskConfigInfo_0, requestKind.ToString());
+			await HostRequestThrottle.WaitForBackoffAsync(host, taskConfigInfo_0, requestKind.ToString(), cancellationToken).ConfigureAwait(false);
 			(int minDelay, int maxDelay) = RequestDelayProfile.GetDelay(taskConfigInfo_0, requestKind);
-			HostRequestThrottle.Wait(host, minDelay, maxDelay, requestKind.ToString());
-			using IDisposable concurrency = HostRequestThrottle.Enter(host, taskConfigInfo_0?.SameHostConcurrencyLimit ?? 1);
-			using IDisposable measure = PerformanceTelemetry.Measure("http", "get_string_work", subject);
-			text = httpClient.GetStringWork();
+			await HostRequestThrottle.WaitAsync(host, minDelay, maxDelay, requestKind.ToString(), cancellationToken).ConfigureAwait(false);
+			using IDisposable concurrency = await HostRequestThrottle.EnterAsync(host, taskConfigInfo_0?.SameHostConcurrencyLimit ?? 1, cancellationToken).ConfigureAwait(false);
+			using IDisposable measure = PerformanceTelemetry.Measure("http", "get_string_work_async", subject);
+			text = await httpClient.GetStringWorkAsync(cancellationToken).ConfigureAwait(false);
 			bool succeeded = !string.IsNullOrEmpty(text);
 			HostRequestThrottle.ReportResult(host, taskConfigInfo_0, succeeded, succeeded ? string.Empty : "empty_response");
 			if (succeeded)
@@ -119,6 +125,11 @@ public partial class Page
 	}
 
 	public NovelInfo GetChapterInfo(NovelInfo novelInfo_0, bool isvip)
+	{
+		return GetChapterInfoAsync(novelInfo_0, isvip).GetAwaiter().GetResult();
+	}
+
+	public async Task<NovelInfo> GetChapterInfoAsync(NovelInfo novelInfo_0, bool isvip, CancellationToken cancellationToken = default)
 	{
 		using IDisposable chapterScope = PerformanceTelemetry.Measure("collect", "chapter_total", novelInfo_0?.LastChapter?.ChapterName ?? novelInfo_0?.Name);
 		string text = ruleConfigInfo_0.PubContentUrl.Pattern;
@@ -160,7 +171,7 @@ public partial class Page
 			Referer = novelInfo_0.IndexUrl.AbsoluteUri,
 			Cookies = ruleConfigInfo_0.PubCookies.Pattern
 		};
-		string stringWork = GetStringWorkWithEmptyRetry(httpClient, subject: novelInfo_0.LastChapter.ChapterUrl.AbsoluteUri, requestKind: RequestKind.Chapter);
+		string stringWork = await GetStringWorkWithEmptyRetryAsync(httpClient, subject: novelInfo_0.LastChapter.ChapterUrl.AbsoluteUri, requestKind: RequestKind.Chapter, cancellationToken: cancellationToken).ConfigureAwait(false);
 		if (!string.IsNullOrEmpty(ruleConfigInfo_0.PubContent_GetTextKey.Pattern))
 		{
 			try
@@ -207,7 +218,7 @@ public partial class Page
 					UriString = novelInfo_0.LastChapter.TextUrl.AbsoluteUri,
 					Referer = novelInfo_0.LastChapter.ChapterUrl.AbsoluteUri
 				};
-				stringWork = GetStringWorkWithEmptyRetry(httpClient2, 3, novelInfo_0.LastChapter.TextUrl.AbsoluteUri, RequestKind.Chapter);
+				stringWork = await GetStringWorkWithEmptyRetryAsync(httpClient2, 3, novelInfo_0.LastChapter.TextUrl.AbsoluteUri, RequestKind.Chapter, cancellationToken).ConfigureAwait(false);
 			}
 			catch
 			{
@@ -286,7 +297,7 @@ public partial class Page
 					UriString = uri.AbsoluteUri,
 					Referer = uri.AbsoluteUri
 				};
-				string stringWork2 = GetStringWorkWithEmptyRetry(httpClient3, subject: uri.AbsoluteUri, requestKind: RequestKind.Chapter);
+				string stringWork2 = await GetStringWorkWithEmptyRetryAsync(httpClient3, subject: uri.AbsoluteUri, requestKind: RequestKind.Chapter, cancellationToken: cancellationToken).ConfigureAwait(false);
 				novelInfo_0.LastChapter.ChapterText += Match(stringWork2, ruleConfigInfo_0.PubContentText, bool_0: true);
 			}
 		}
@@ -551,10 +562,17 @@ public partial class Page
 		string[] array = ((!(ruleConfigInfo_0.PubVolumeSplit.Pattern != "")) ? RuleRegexCache.Get("000000000000000000000", ruleConfigInfo_0.PubVolumeSplit.Options).Split(text2) : RuleRegexCache.Get(ruleConfigInfo_0.PubVolumeSplit.Pattern, ruleConfigInfo_0.PubVolumeSplit.Options).Split(text2));
 		for (int i = 0; i < array.Length; i++)
 		{
-			ruleConfigInfo_0.PubVolumeName.FilterPattern = ruleConfigInfo_0.PubVolumeName.FilterPattern.Replace("{$小说名称$}", novelInfo_0.Name).Replace("{$分类名称$}", novelInfo_0.LagerSort).Replace("{$小说作者$}", novelInfo_0.Author)
+			string volumeNameFilter = ruleConfigInfo_0.PubVolumeName.FilterPattern.Replace("{$小说名称$}", novelInfo_0.Name).Replace("{$分类名称$}", novelInfo_0.LagerSort).Replace("{$小说作者$}", novelInfo_0.Author)
 				.Replace("&nbsp;", " ")
 				.Trim();
-			string text3 = WhitespaceRegex().Replace(Match(array[i], ruleConfigInfo_0.PubVolumeName, bool_0: true), " ").Replace("&nbsp;", " ").Trim();
+			RegexInfo volumeNameRule = new RegexInfo
+			{
+				Pattern = ruleConfigInfo_0.PubVolumeName.Pattern,
+				FilterPattern = volumeNameFilter,
+				Options = ruleConfigInfo_0.PubVolumeName.Options,
+				Method = ruleConfigInfo_0.PubVolumeName.Method
+			};
+			string text3 = WhitespaceRegex().Replace(Match(array[i], volumeNameRule, bool_0: true), " ").Replace("&nbsp;", " ").Trim();
 			MatchCollection matchCollection = RuleRegexCache.Get(ruleConfigInfo_0.PubChapterName.Pattern, ruleConfigInfo_0.PubChapterName.Options).Matches(array[i]);
 			MatchCollection matchCollection2 = RuleRegexCache.Get(ruleConfigInfo_0.PubChapter_GetChapterKey.Pattern, ruleConfigInfo_0.PubChapter_GetChapterKey.Options).Matches(array[i]);
 			if (matchCollection.Count != matchCollection2.Count)
@@ -787,13 +805,10 @@ public partial class Page
 			Uri uri = new Uri(novelInfo_0.NovelUrl, relativeUri);
 			if (uri.ToString().ToLower().StartsWith("http"))
 			{
-				if (ruleConfigInfo_0.NovelDefaultCoverUrl == null)
+				RegexInfo defaultCoverRule = ruleConfigInfo_0.NovelDefaultCoverUrl;
+				if (!string.IsNullOrEmpty(defaultCoverRule?.Pattern))
 				{
-					ruleConfigInfo_0.NovelDefaultCoverUrl = new RegexInfo();
-				}
-				if (!string.IsNullOrEmpty(ruleConfigInfo_0.NovelDefaultCoverUrl.Pattern))
-				{
-					if (uri.ToString().IndexOf(ruleConfigInfo_0.NovelDefaultCoverUrl.Pattern) < 0)
+					if (uri.ToString().IndexOf(defaultCoverRule.Pattern) < 0)
 					{
 						HttpClient httpClient3 = new HttpClient
 						{

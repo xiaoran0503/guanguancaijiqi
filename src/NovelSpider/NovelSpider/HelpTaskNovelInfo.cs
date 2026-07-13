@@ -91,7 +91,7 @@ public class HelpTaskNovelInfo : DockContent
 	{
 		listView_0.Items.Clear();
 		int num = 0;
-		ICollection keys = Configs.TaskNovelInfo.Keys;
+		var keys = Configs.TaskNovelInfo.Keys;
 		if (Configs.TaskNovelInfo.Count == 0)
 		{
 			return;

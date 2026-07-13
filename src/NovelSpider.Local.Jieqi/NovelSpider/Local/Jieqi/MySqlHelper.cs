@@ -11,6 +11,8 @@ namespace NovelSpider.Local.Jieqi;
 
 public abstract class MySqlHelper
 {
+	public delegate T RowMapper<T>(MySqlDataReader reader);
+
 	public static string ConnectionString;
 
 	private static ConcurrentDictionary<string, MySqlParameter[]> parameterCache;
@@ -265,6 +267,39 @@ public abstract class MySqlHelper
 		object result = mySqlCommand.ExecuteScalar();
 		mySqlCommand.Parameters.Clear();
 		return result;
+	}
+
+	public static T ExecuteSingleRow<T>(MySqlTransaction mySqlTransaction_0, CommandType commandType_0, string string_0, RowMapper<T> mapper, T defaultValue = default, params MySqlParameter[] mySqlParameter_0)
+	{
+		using IDisposable scope = PerformanceTelemetry.Measure("mysql", "reader_single_tx", GetCommandSubject(string_0));
+		MySqlCommand mySqlCommand = new MySqlCommand();
+		smethod_0(mySqlCommand, mySqlTransaction_0.Connection, mySqlTransaction_0, commandType_0, string_0, mySqlParameter_0);
+		try
+		{
+			using MySqlDataReader reader = mySqlCommand.ExecuteReader(CommandBehavior.SingleRow);
+			return reader.Read() ? mapper(reader) : defaultValue;
+		}
+		finally
+		{
+			mySqlCommand.Parameters.Clear();
+		}
+	}
+
+
+	public static async Task<T> ExecuteSingleRowAsync<T>(MySqlTransaction mySqlTransaction_0, CommandType commandType_0, string string_0, RowMapper<T> mapper, T defaultValue = default, CancellationToken cancellationToken = default, params MySqlParameter[] mySqlParameter_0)
+	{
+		using IDisposable scope = PerformanceTelemetry.Measure("mysql", "reader_single_tx_async", GetCommandSubject(string_0));
+		MySqlCommand mySqlCommand = new MySqlCommand();
+		smethod_0(mySqlCommand, mySqlTransaction_0.Connection, mySqlTransaction_0, commandType_0, string_0, mySqlParameter_0);
+		try
+		{
+			await using MySqlDataReader reader = await mySqlCommand.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken).ConfigureAwait(false);
+			return await reader.ReadAsync(cancellationToken).ConfigureAwait(false) ? mapper(reader) : defaultValue;
+		}
+		finally
+		{
+			mySqlCommand.Parameters.Clear();
+		}
 	}
 
 	public static object ExecuteScalar(string string_0, CommandType commandType_0, string string_1, params MySqlParameter[] mySqlParameter_0)

@@ -502,7 +502,7 @@ public class CollectReplace : DockContent
 				if (array[i] == tInfo.RuleFile)
 				{
 					comboBox_0.Text = tInfo.RuleFile;
-					rInfo = (RuleConfigInfo)ConfigFileManager.LoadConfig(tInfo.RuleFile, rInfo);
+					rInfo = (RuleConfigInfo)ConfigFileManager.LoadConfig(comboBox_0.Text, rInfo);
 					textBox_0.Text = rInfo.NovelListUrl.Pattern;
 					if (!bool_0)
 					{
@@ -1685,7 +1685,7 @@ public class CollectReplace : DockContent
 		}
 		try
 		{
-			ICollection keys = Configs.TaskNovelInfo.Keys;
+			var keys = Configs.TaskNovelInfo.Keys;
 			if (Configs.TaskNovelInfo.Count != 0)
 			{
 				IEnumerator enumerator = keys.GetEnumerator();

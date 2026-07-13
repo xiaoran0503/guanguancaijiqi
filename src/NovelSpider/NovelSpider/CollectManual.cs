@@ -1459,7 +1459,7 @@ public class CollectManual : DockContent
 		new FileInfo(fileName);
 		taskConfigInfo_0 = (TaskConfigInfo)ConfigFileManager.LoadConfig(fileName, taskConfigInfo_0);
 		comboBox_3.Text = taskConfigInfo_0.RuleFile;
-		ruleConfigInfo_0 = (RuleConfigInfo)ConfigFileManager.LoadConfig(comboBox_3.Text, ruleConfigInfo_0);
+		ruleConfigInfo_0 = (RuleConfigInfo)ConfigFileManager.LoadConfig(taskConfigInfo_0.RuleFile, ruleConfigInfo_0);
 		page_0 = new Page(ruleConfigInfo_0, taskConfigInfo_0);
 		method_0();
 	}

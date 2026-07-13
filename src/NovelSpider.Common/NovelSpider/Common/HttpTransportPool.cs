@@ -1,9 +1,10 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http;
 using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace NovelSpider.Common;
 
@@ -74,6 +75,35 @@ internal static class HttpTransportPool
 		{
 			stopwatch.Stop();
 			PerformanceTelemetry.Record("http", "send", stopwatch.ElapsedMilliseconds, request.RequestUri?.Host ?? string.Empty, succeed: false, message: "network_error:" + exception.Message);
+			throw;
+		}
+	}
+
+	public static async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpTransportOptions options, int timeoutSeconds, CancellationToken cancellationToken = default)
+	{
+		Net10RuntimeBootstrap.Initialize();
+		bool reusedTransport = Clients.TryGetValue(options, out Lazy<System.Net.Http.HttpClient> existingClient) && existingClient.IsValueCreated;
+		System.Net.Http.HttpClient client = Clients.GetOrAdd(options, static item => new Lazy<System.Net.Http.HttpClient>(() => CreateClient(item))).Value;
+		using CancellationTokenSource timeoutTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds > 0 ? timeoutSeconds : 20));
+		using CancellationTokenSource linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutTokenSource.Token);
+		Stopwatch stopwatch = Stopwatch.StartNew();
+		try
+		{
+			HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, linkedTokenSource.Token).ConfigureAwait(false);
+			stopwatch.Stop();
+			PerformanceTelemetry.Record("http", "send_async", stopwatch.ElapsedMilliseconds, request.RequestUri?.Host ?? string.Empty, message: $"status={(int)response.StatusCode};transport={(reusedTransport ? "reused" : "new")}");
+			return response;
+		}
+		catch (OperationCanceledException)
+		{
+			stopwatch.Stop();
+			PerformanceTelemetry.Record("http", "send_async", stopwatch.ElapsedMilliseconds, request.RequestUri?.Host ?? string.Empty, succeed: false, message: cancellationToken.IsCancellationRequested ? "cancelled" : "timeout");
+			throw;
+		}
+		catch (HttpRequestException exception)
+		{
+			stopwatch.Stop();
+			PerformanceTelemetry.Record("http", "send_async", stopwatch.ElapsedMilliseconds, request.RequestUri?.Host ?? string.Empty, succeed: false, message: "network_error:" + exception.Message);
 			throw;
 		}
 	}

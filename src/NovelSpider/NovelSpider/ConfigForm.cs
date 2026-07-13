@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
@@ -393,6 +393,8 @@ public class ConfigForm : DockContent
 
 	private bool picEnd;
 
+	private readonly ManualResetEventSlim imageRenderCompleted = new ManualResetEventSlim(false);
+
 	private string picPath;
 
 	private ComboBox 日志保存周期BOX;
@@ -694,6 +696,7 @@ public class ConfigForm : DockContent
 			imgHeight = image.Height;
 			image.Dispose();
 		}
+		imageRenderCompleted.Reset();
 		BeginInvoke(new MethodInvoker(() =>
 		{
 			if (!IsDisposed)
@@ -701,10 +704,14 @@ public class ConfigForm : DockContent
 				EnsureImageBrowser().Navigate(imgPath);
 			}
 		}));
-		for (int i = 0; i < 10000; i++)
+		for (int i = 0; i < 150; i++)
 		{
-			Thread.Sleep(100);
-			if (picEnd)
+			if (backgroundWorker1.CancellationPending)
+			{
+				e.Cancel = true;
+				return;
+			}
+			if (imageRenderCompleted.Wait(200) || picEnd)
 			{
 				break;
 			}
