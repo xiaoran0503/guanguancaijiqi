@@ -1,4 +1,4 @@
-# DockPanelSuite Migration Assessment
+﻿# DockPanelSuite Migration Assessment
 
 ## Current State
 
@@ -34,3 +34,10 @@ This should be treated as a separate major UI version, not part of Net10 runtime
 ## Recommendation
 
 Keep DockPanelSuite for V10.x. Continue the facade route through `DockWorkspaceService`, modernize high-frequency forms incrementally, and postpone Krypton until a dedicated UI redesign milestone with screenshots, interaction specs, and a full regression matrix.
+
+
+## V10.18.5 Status
+
+当前有效基线为 `V10.18.5`。DockPanelSuite 继续保留，近期重点仍是采集、网络、日志和数据库调用路径的稳态现代化，而不是替换 UI 外壳。
+
+章节数据库缓存实验保持回滚状态；它不改变 Dock 迁移结论。Krypton Toolkit 若要引入，应作为独立 UI 大版本重新评估，不应混入采集和入库稳定性修复。

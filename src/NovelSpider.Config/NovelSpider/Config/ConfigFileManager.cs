@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Xml;
 using System.Xml.Serialization;
 
 namespace NovelSpider.Config;
@@ -27,7 +28,13 @@ public class ConfigFileManager
 		try
 		{
 			fileStream = new FileStream(string_0, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-			return (IConfigInfo)new XmlSerializer(type_0).Deserialize(fileStream);
+			XmlReaderSettings xmlReaderSettings = new XmlReaderSettings
+			{
+				DtdProcessing = DtdProcessing.Prohibit,
+				XmlResolver = null
+			};
+			using XmlReader xmlReader = XmlReader.Create(fileStream, xmlReaderSettings);
+			return (IConfigInfo)new XmlSerializer(type_0).Deserialize(xmlReader);
 		}
 		catch
 		{

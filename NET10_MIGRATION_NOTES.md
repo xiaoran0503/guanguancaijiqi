@@ -1,42 +1,54 @@
-# NovelSpider Net10 Migration Notes
+﻿# NovelSpider Net10 迁移说明
 
-## Current Branch
+## 当前分支
 
-- Source: `E:\采集器\Modernized_Net10_Working`
-- Output: `E:\采集器\ModernizedOutput_Net10_Test`
-- Baseline copied from: `E:\采集器\Modernized_Net8_Final_Baseline_V8.17.1`
-- Target framework: `net10.0-windows`
-- Platform target: `x64`
-- Runtime identifier: `win-x64`
-- SDK pinned by `global.json`: `10.0.301`
-- Runtime tested against: `.NET 10.0.9`
-- Test version: `10.18.2-net10-test / 10.18.2.0`
+- 源码目录：`E:\缓存\shipsay\采集器\Modernized_Net10_Git_Working`
+- 本地测试输出：`E:\缓存\shipsay\采集器\ModernizedOutput_Net10_Test`
+- 迁移来源：`E:\缓存\shipsay\采集器\Modernized_Net8_Final_Baseline_V8.17.1`
+- 目标框架：`net10.0-windows`
+- 平台目标：`x64`
+- Runtime Identifier：`win-x64`
+- SDK：`global.json` 固定 `10.0.301`
+- 已测试运行时：`.NET 10.0.9`
+- 当前有效版本：`10.18.5-net10-test / 10.18.5.0`
+- 目标标签：`v10.18.5-net10`
 
-## Migration Boundaries
+## V10.18.5 当前边界
 
-- Do not modify `E:\采集器\Modernized_Working` from this branch.
-- Keep Qiwen archived only: no solution entry, no main-program reference, no published `NovelSpider.Local.Qiwen.dll` or `Microsoft.Data.SqlClient.dll`.
-- Do not change XML rule formats or database schemas during the Net10 smoke phase.
-- Use stable NuGet releases only for the active Net10 solution. Do not adopt beta/preview packages unless a future migration explicitly changes this policy.
-- Keep archived `NovelSpider.Local.Qiwen` unchanged while archived. It may not restore against the active Net10 project graph because it remains a non-solution archival project.
-- The main WinForms project embeds the legacy `.resources` files only so existing `GetString()` calls can load form text such as `NovelSpider.ConfigForm.resources`. Code no longer calls `GetObject()` for legacy form icons or toolbar images, avoiding BinaryFormatter deserialization in .NET 10.
-- Program icons are native executable icons: `NovelSpider.exe` uses `Decompiled\NovelSpider\app.ico`; `NovelAdmin.exe` and `NovelVip.exe` use `Decompiled\NovelVip\app.ico`.
-- `Net10RuntimeBootstrap` no longer sets `ServicePointManager`; .NET 10 uses runtime-native TLS defaults. The initializer now keeps only code-page registration and regex cache sizing.
-- The active Net10 solution is Windows-only and x64-only: solution configurations use `x64`, active projects set `PlatformTarget=x64`, and publish uses `win-x64`.
-- Startup UI avoids constructing the heavy `ConfigForm` during main-window load; the welcome page is deferred until after the main window is visible, and its changelog text is filled after the first paint.
-- The hidden `WebBrowser` used only for image-to-text is now created when that feature is invoked, rather than while constructing `ConfigForm`.
-- Dynamic XML rule regexes use a bounded cache with a 10-second timeout. Fixed internal patterns use `GeneratedRegex`; rule XML remains unchanged.
-- Enabled performance telemetry batches CSV writes in the background and includes `ui` timing points for main-window load, welcome-page open, and configuration construction/open.
-- GitHub Actions build and release automation is available on `net10-v10`, `main`, and `v10.*-net10` tags. CI uses repository-relative scripts and `runtime\Rules` / `runtime\Tasks` seed data.
+`V10.18.5` 是当前 Net10 维护线，继续沿用现有 Jieqi 写库语义，不启用章节 SQLite 写库缓存。此前的缓存实验已回滚，仍不得恢复。
 
-## Dependency Audit
+在没有新的设计、验证计划和可回滚原型之前，不要重新引入以下内容：
 
-As of the Net10 dependency audit on 2026-07-09, the active solution has no stable NuGet updates available and no vulnerable packages reported by NuGet.
+- `ChapterWriteBuffer`
+- `BookChapterBuffer`
+- `IBookChapterBufferProvider`
+- `jieqi-chapter-buffer.db3`
+- 自动采集界面的章节数据库缓存面板
 
-Active stable package baselines:
+SQLite 日志模式修复继续保留；章节写库缓存实验不保留。
+
+## 迁移边界
+
+- Net8 仅保留最终基线目录，不从本分支恢复或修改旧 `Modernized_Working`。
+- Qiwen 只保留归档源码，不加入 solution，不被主程序引用，不发布 `NovelSpider.Local.Qiwen.dll` 或 `Microsoft.Data.SqlClient.dll`。
+- 不修改 XML 规则格式，不引入 JSON 规则副本，不做 DOM V11 规则迁移。
+- 不修改 Jieqi 数据库 schema。
+- active Net10 solution 只使用 NuGet 稳定版，不使用 beta/preview 包。
+- 归档的 `NovelSpider.Local.Qiwen` 不参与 active 依赖审计；未来如果恢复，必须独立迁移和验证 SQL Server。
+- 主 WinForms 项目仍保留必要 `.resources`，用于旧窗体 `GetString()` 文本加载；代码不再通过 `GetObject()` 读取旧图标或 toolbar 图片，避免 .NET 10 下 BinaryFormatter 反序列化路径。
+- 程序图标使用原生可执行文件图标。active 发布包只发布 `NovelSpider.exe`；NovelAdmin/NovelVip 图标设置只作为归档源码历史保留。
+- `Net10RuntimeBootstrap` 不再设置 `ServicePointManager`；.NET 10 使用运行时默认 TLS。初始化只保留编码页注册和正则缓存设置。
+- active Net10 solution 固定 Windows-only 和 x64-only：solution configuration 使用 `x64`，active project 设置 `PlatformTarget=x64`，发布使用 `win-x64`。
+- GitHub Actions 已覆盖 `net10-v10`、`main` 和 `v10.*-net10` tag，CI 使用仓库相对路径脚本和 `runtime\Rules` / `runtime\Tasks` 种子数据。
+
+## 依赖审计
+
+截至 2026-07-09 的 Net10 依赖审计，active solution 没有稳定版依赖可升级，也没有 NuGet 报告的漏洞包。
+
+当前 active 稳定依赖基线：
 
 - `MySqlConnector 2.6.1`
-- Active code uses built-in `System.Text.Json`; `Newtonsoft.Json 13.0.4` remains as a direct stable transitive override for jieba.NET.
+- active 代码使用内置 `System.Text.Json`；`Newtonsoft.Json 13.0.4` 仍作为 jieba.NET 的直接稳定传递依赖覆盖保留。
 - `System.Data.SQLite.Core 1.0.119`
 - `SharpZipLib 1.4.2`
 - `CHSPinYinConv 1.0.0`
@@ -47,39 +59,20 @@ Active stable package baselines:
 - `Microsoft.Extensions.DependencyInjection.Abstractions 10.0.9`
 - `Microsoft.Extensions.Logging.Abstractions 10.0.9`
 
-Preview/beta packages intentionally excluded:
+明确排除的预览/测试版本：
 
 - `Newtonsoft.Json 13.0.5-beta1`
 - `Microsoft.Data.SqlClient 7.1.0-preview1.*`
-- `.NET 11 preview` packages such as `System.Management 11.0.0-preview.*` and `Microsoft.Extensions.* 11.0.0-preview.*`
+- `.NET 11 preview` 包，例如 `System.Management 11.0.0-preview.*` 和 `Microsoft.Extensions.* 11.0.0-preview.*`
 
-SQL Server dependency boundary:
+SQL Server 依赖边界：
 
-- Active Net10 solution and publish output do not reference `System.Data.SqlClient` or `Microsoft.Data.SqlClient`.
-- `NovelSpider.Local.Qiwen` remains archived with its historical `Microsoft.Data.SqlClient 6.1.1` reference and is excluded from active dependency modernization.
-- If Qiwen is ever reactivated, migrate it separately to `net10.0-windows`, update `Microsoft.Data.SqlClient` to the latest stable version at that time, re-add solution/publish coverage, and validate SQL Server behavior.
+- active Net10 solution 和发布包不引用 `System.Data.SqlClient` 或 `Microsoft.Data.SqlClient`。
+- `NovelSpider.Local.Qiwen` 作为归档源码保留历史 `Microsoft.Data.SqlClient 6.1.1` 引用，但不纳入 active dependency modernization。
+- 如果将来恢复 Qiwen，必须单独迁移到 `net10.0-windows`，更新到当时最新稳定 SQL Server 驱动，恢复 solution/publish 覆盖，并重新验证 SQL Server 行为。
 
-## Local Machine Note
+## 本机运行说明
 
-This machine has Windows `10.0.19045`. The .NET 10 supported OS metadata does not list normal Windows 10 22H2 as a clear supported desktop OS target. It is acceptable for local migration testing, but final release validation should be repeated on an officially supported Windows 11, Windows Server, or LTSC environment.
+当前机器 Windows 版本为 `10.0.19045`。本机可用于迁移测试，但最终发布验证建议在官方支持的 Windows 11、Windows Server 或 LTSC 环境重复执行。
 
-Reference: `https://builds.dotnet.microsoft.com/dotnet/release-metadata/10.0/supported-os.json`
-
-
-
-
-
-
-- V10.7.0: UI/后台等待现代化，移除自动采集 Run() 的 Application.DoEvents 忙等，自动采集/修复/配置图转文等待改为事件或可取消分段等待。
-- V10.6.1: 修复 10.6.0 async 网络管线中超时 `OperationCanceledException` 直接冒泡的问题，恢复规则测试/采集请求超时返回空响应并按原重试语义处理。
-- V10.6.0: 网络现代化大版本，将 HttpTransportPool/Common HttpClient 现代分支升级为 async/await 管线，Page 核心规则请求包装接入 async 节流、退避和同域并发租约；Jieqi 项目移除直接 SharpZipLib 依赖。
-- V10.5.4: 稳态现代化第五阶段将普通 ZipLib 目录打包切换到 System.IO.Compression.ZipArchive，并为 HostRequestThrottle 增加 async 同域并发租约入口；UMD 特殊压缩继续保留 SharpZipLib。
-- V10.5.3: 稳态现代化第四阶段保留 DockPanelSuite 并封装 Dock 打开入口，移除 active Jieqi 的 Newtonsoft.Json 依赖，封面保存收敛到公共 ImageService，网络解压热路径改用 System.IO.Compression，并为站点节流新增 async/cancellation 入口。
-- V10.5.2: WinForms 现代化第三阶段清理 MessageForm / TaskForm 小窗体，使用空条件 Dispose、简化事件绑定和绘图类型名；大窗体继续保持保守改造。
-- V10.5.1: WinForms 现代化第二阶段整理自动生成采集规则窗体，集中输入读取、忙碌状态、保存文件名规范化，并复用本地页面抓取 HttpClient。
-- V10.5.0: WinForms 现代化第一阶段集中自动采集任务请求调度 UI 的加载、保存和规范化逻辑，清理任务保存/读取附近反编译式错误弹窗代码，保持界面行为不变。
-- V10.4.0: 自动采集任务界面提供请求调度/站点友好访问配置，可直接设置随机延时区间、UA 模式、同域并发和失败退避，不需要手工修改 XML。
-
-
-
-
+参考：`https://builds.dotnet.microsoft.com/dotnet/release-metadata/10.0/supported-os.json`

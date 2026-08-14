@@ -43,19 +43,18 @@ public abstract class MySqlHelper
 	{
 		using IDisposable scope = PerformanceTelemetry.Measure("mysql", "datatable", GetCommandSubject(string_1));
 		MySqlCommand mySqlCommand = new MySqlCommand();
-		MySqlConnection mySqlConnection = new MySqlConnection(NormalizeConnectionString(string_0));
+		using MySqlConnection mySqlConnection = new MySqlConnection(NormalizeConnectionString(string_0));
 		DataTable dataTable = new DataTable();
 		try
 		{
 			smethod_0(mySqlCommand, mySqlConnection, null, commandType_0, string_1, mySqlParameter_0);
-			new MySqlDataAdapter(mySqlCommand).Fill(dataTable);
+			using MySqlDataAdapter mySqlDataAdapter = new MySqlDataAdapter(mySqlCommand);
+			mySqlDataAdapter.Fill(dataTable);
 			mySqlCommand.Parameters.Clear();
-			mySqlConnection.Close();
 			return dataTable;
 		}
 		catch
 		{
-			mySqlConnection.Close();
 			throw;
 		}
 	}

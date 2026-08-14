@@ -1,9 +1,9 @@
 using System;
-using System.Data.SQLite;
 using System.IO;
 using System.Management;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.Data.Sqlite;
 using NovelSpider.Config;
 
 namespace NovelSpider.Common;
@@ -71,8 +71,10 @@ public class Keys
 		FileInfo fileInfo = new FileInfo("Key.License");
 		if (fileInfo.Exists)
 		{
-			SQLiteConnection sQLiteConnection = new SQLiteConnection("Data Source=" + fileInfo.FullName);
-			sQLiteConnection.SetPassword(Configs.LoginPassword);
+			// Microsoft.Data.Sqlite 不支持加密数据库（无 SetPassword）。
+			// 旧 Qiwen Key.License 加密读取路径在此被移除：未加密的 Key.License 仍可加载，
+			// 加密文件将打开失败并安全返回（不加载授权）。
+			SqliteConnection sQLiteConnection = new SqliteConnection("Data Source=" + fileInfo.FullName);
 			try
 			{
 				sQLiteConnection.Open();
@@ -81,8 +83,9 @@ public class Keys
 			{
 				return;
 			}
-			SQLiteDataReader sQLiteDataReader = new SQLiteCommand(sQLiteConnection)
+			SqliteDataReader sQLiteDataReader = new SqliteCommand
 			{
+				Connection = sQLiteConnection,
 				CommandText = "Select * From SerialNumer"
 			}.ExecuteReader();
 			if (sQLiteDataReader.Read())

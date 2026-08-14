@@ -125,6 +125,13 @@ public class WelcomeForm : DockContent
 		{
 			"更新日志",
 			"",
+			"V10.18.5 Net10 Test    2026-08-14",
+
+			"- 版本迭代为 10.18.5.0 / 10.18.5-net10-test。",
+
+			"- 依赖现代化收尾：移除停用孤儿依赖 CHSPinYinConv/jieba.NET/System.Data.SQLite.Core，改用 PinYinConverterCore 1.0.2、内置 n-gram 分词、Microsoft.Data.Sqlite 10.0.11。",
+
+			"",
 			"V10.18.2 Net10 Test    2026-07-13",
 
 			"- 版本迭代为 10.18.2.0 / 10.18.2-net10-test。",

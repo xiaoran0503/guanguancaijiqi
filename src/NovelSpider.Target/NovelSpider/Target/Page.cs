@@ -434,7 +434,7 @@ public partial class Page
 			break;
 		}
 		case 2:
-			if (FormatText.GetInt(array2[0].GetID, -1) >= 0)
+			if (array2.Length > 0 && FormatText.GetInt(array2[0].GetID, -1) >= 0)
 			{
 				list.AddRange(array2);
 				list.Sort((ChapterInfo chapterInfo_0, ChapterInfo chapterInfo_1) => Comparer<int>.Default.Compare(Convert.ToInt32(chapterInfo_0.GetID), Convert.ToInt32(chapterInfo_1.GetID)));
@@ -442,7 +442,7 @@ public partial class Page
 			}
 			break;
 		case 3:
-			if (FormatText.GetInt(array2[0].GetID, -1) >= 0)
+			if (array2.Length > 0 && FormatText.GetInt(array2[0].GetID, -1) >= 0)
 			{
 				list.AddRange(array2);
 				list.Sort((ChapterInfo chapterInfo_0, ChapterInfo chapterInfo_1) => Comparer<int>.Default.Compare(Convert.ToInt32(chapterInfo_1.GetID), Convert.ToInt32(chapterInfo_0.GetID)));
@@ -450,7 +450,7 @@ public partial class Page
 			}
 			break;
 		case 4:
-			if (FormatText.GetInt(array2[0].GetID, -1) >= 0)
+			if (array2.Length > 0 && FormatText.GetInt(array2[0].GetID, -1) >= 0)
 			{
 				list.AddRange(array2);
 				list.Sort((ChapterInfo chapterInfo_0, ChapterInfo chapterInfo_1) => Comparer<int>.Default.Compare(Convert.ToInt32(chapterInfo_0.ChapterName), Convert.ToInt32(chapterInfo_1.ChapterName)));
@@ -458,7 +458,7 @@ public partial class Page
 			}
 			break;
 		case 5:
-			if (FormatText.GetInt(array2[0].GetID, -1) >= 0)
+			if (array2.Length > 0 && FormatText.GetInt(array2[0].GetID, -1) >= 0)
 			{
 				list.AddRange(array2);
 				list.Sort((ChapterInfo chapterInfo_0, ChapterInfo chapterInfo_1) => Comparer<int>.Default.Compare(Convert.ToInt32(chapterInfo_1.ChapterName), Convert.ToInt32(chapterInfo_0.ChapterName)));
@@ -1157,7 +1157,7 @@ public partial class Page
 			{
 				HttpClient httpClient = new HttpClient
 				{
-					UriString = "http://translate.google.cn/",
+					UriString = "https://translate.google.cn/",
 					PostData = "js=y&prev=_t&hl=zh-CN&ie=UTF-8&layout=1&eotf=1&text=" + HttpUtility.UrlEncode(FormatText.Typesetting(string_0), FormatText.GetCharset(Configs.BaseConfig.CmsEncoding, "gbk")).ToUpper() + "&file=&sl=zh-CN&tl=en",
 					Encoding = FormatText.GetCharset(Configs.BaseConfig.CmsEncoding, "gbk")
 				};
@@ -1171,7 +1171,7 @@ public partial class Page
 			}
 			HttpClient httpClient2 = new HttpClient
 			{
-				UriString = "http://translate.google.cn/translate_a/t?client=t&text=" + HttpUtility.UrlEncode(string_0, FormatText.GetCharset(Configs.BaseConfig.CmsEncoding, "gbk")).ToUpper() + "&sl=zh-CN&tl=en&otf=1&pc=0",
+				UriString = "https://translate.google.cn/translate_a/t?client=t&text=" + HttpUtility.UrlEncode(string_0, FormatText.GetCharset(Configs.BaseConfig.CmsEncoding, "gbk")).ToUpper() + "&sl=zh-CN&tl=en&otf=1&pc=0",
 				Encoding = FormatText.GetCharset(Configs.BaseConfig.CmsEncoding, "gbk")
 			};
 			Match match2 = GoogleTranslateShortResultRegex().Match(await httpClient2.GetStringWorkAsync(cancellationToken).ConfigureAwait(false));

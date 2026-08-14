@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Data;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using System.IO;
 using System.Text;
 using System.Windows.Forms;
@@ -123,7 +123,7 @@ public class SpiderException
 		}
 		string string_2 = "Data Source=" + fileInfo.FullName;
 		string string_3 = "delete FROM [TaskLog] WHERE NID=@nid and NOVELNAME=@novelname";
-		return Convert.ToInt32(SQLiteHelper.ExecuteNonQuery(string_2, string_3, new SQLiteParameter("@nid", int_0), new SQLiteParameter("@novelname", string_0))) != 0;
+		return Convert.ToInt32(SQLiteHelper.ExecuteNonQuery(string_2, string_3, new SqliteParameter("@nid", int_0), new SqliteParameter("@novelname", string_0))) != 0;
 	}
 
 	public static void Show(string string_0, bool bool_0)
@@ -247,17 +247,17 @@ public class SpiderException
 		string string_3 = "Data Source=" + fileInfo.FullName;
 		if (!fileInfo.Exists)
 		{
-			SQLiteConnection.CreateFile(fileInfo.FullName);
+			// Microsoft.Data.Sqlite 在首次打开连接时自动创建数据库文件，无需 CreateFile。
 			string string_4 = "CREATE TABLE [TaskLog] ([EXID] INT,[TASKFILE] NVARCHAR(100),[RULEFILE] NVARCHAR(100),[EXMSG] NTEXT,[NID] INT,[NOVELNAME] NVARCHAR(200),[GETID] NVARCHAR(100),[NOVELURL] NVARCHAR(300),[INDEXURL] NVARCHAR(300),[LASTTIME] NVARCHAR(100),[LASTNUM] INT);";
 			SQLiteHelper.ExecuteNonQuery(string_3, string_4, (IDataParameter[])null);
 		}
 		string string_5 = "SELECT Count(*) FROM [TaskLog] WHERE EXID=@exid AND RULEFILE=@rulefile AND NOVELNAME=@novelname AND EXMSG=@exmsg AND GETID=@getid";
 		if (Convert.ToInt32(SQLiteHelper.ExecuteScalar(string_3, string_5,
-			new SQLiteParameter("@exid", int_0),
-			new SQLiteParameter("@rulefile", string_2),
-			new SQLiteParameter("@novelname", novelInfo_0.Name),
-			new SQLiteParameter("@exmsg", string_0),
-			new SQLiteParameter("@getid", novelInfo_0.GetID))) == 0)
+			new SqliteParameter("@exid", int_0),
+			new SqliteParameter("@rulefile", string_2),
+			new SqliteParameter("@novelname", novelInfo_0.Name),
+			new SqliteParameter("@exmsg", string_0),
+			new SqliteParameter("@getid", novelInfo_0.GetID))) == 0)
 		{
 			string text7 = "";
 			string text8 = "";
@@ -272,17 +272,17 @@ public class SpiderException
 			int num2 = SecurityUtil.ConvertDateTimeInt(DateTime.Now);
 			string string_6 = "INSERT INTO [TaskLog] (EXID,TASKFILE,RULEFILE,EXMSG,NOVELNAME,NOVELURL,INDEXURL,NID,GETID,LASTTIME,LASTNUM) values (@exid,@taskfile,@rulefile,@exmsg,@novelname,@novelurl,@indexurl,@nid,@getid,@lasttime,@lastnum)";
 			SQLiteHelper.ExecuteNonQuery(string_3, string_6,
-				new SQLiteParameter("@exid", int_0),
-				new SQLiteParameter("@taskfile", string_1),
-				new SQLiteParameter("@rulefile", string_2),
-				new SQLiteParameter("@exmsg", string_0),
-				new SQLiteParameter("@novelname", novelInfo_0.Name),
-				new SQLiteParameter("@novelurl", text7),
-				new SQLiteParameter("@indexurl", text8),
-				new SQLiteParameter("@nid", novelInfo_0.PutID),
-				new SQLiteParameter("@getid", novelInfo_0.GetID),
-				new SQLiteParameter("@lasttime", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")),
-				new SQLiteParameter("@lastnum", num2));
+				new SqliteParameter("@exid", int_0),
+				new SqliteParameter("@taskfile", string_1),
+				new SqliteParameter("@rulefile", string_2),
+				new SqliteParameter("@exmsg", string_0),
+				new SqliteParameter("@novelname", novelInfo_0.Name),
+				new SqliteParameter("@novelurl", text7),
+				new SqliteParameter("@indexurl", text8),
+				new SqliteParameter("@nid", novelInfo_0.PutID),
+				new SqliteParameter("@getid", novelInfo_0.GetID),
+				new SqliteParameter("@lasttime", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")),
+				new SqliteParameter("@lastnum", num2));
 		}
 	}
 
@@ -293,8 +293,8 @@ public class SpiderException
 		Path.GetDirectoryName(fileInfo.FullName);
 		if (File.Exists(fileInfo.FullName))
 		{
-			string string_2 = "SELECT * FROM [IpInfo] WHERE ISLOCK=0 AND ADDNUMTIME>" + (FormatText.GetTime(DateTime.Now) - countTime * 60) + " ORDER BY ADDNUMTIME DESC";
-			return SQLiteHelper.ExecuteDataset(string_, string_2).Tables[0];
+			string string_2 = "SELECT * FROM [IpInfo] WHERE ISLOCK=0 AND ADDNUMTIME>@addnumtime ORDER BY ADDNUMTIME DESC";
+			return SQLiteHelper.ExecuteDataset(string_, string_2, new SqliteParameter("@addnumtime", FormatText.GetTime(DateTime.Now) - countTime * 60)).Tables[0];
 		}
 		return new DataTable();
 	}
@@ -306,13 +306,10 @@ public class SpiderException
 		Path.GetDirectoryName(fileInfo.FullName);
 		if (File.Exists(fileInfo.FullName))
 		{
-			string[] array = new string[5] { "SELECT * FROM [IpInfo] WHERE ISLOCK=0 AND ADDNUMTIME>", null, null, null, null };
-			array[1] = (FormatText.GetTime(DateTime.Now) - countTime * 60).ToString();
-			array[2] = " AND GONUMTIME<";
-			array[3] = (FormatText.GetTime(DateTime.Now) - goTime).ToString();
-			array[4] = " ORDER BY RANDOM() LIMIT 0,10";
-			string string_2 = string.Concat(array);
-			return SQLiteHelper.ExecuteDataset(string_, string_2).Tables[0];
+			string string_2 = "SELECT * FROM [IpInfo] WHERE ISLOCK=0 AND ADDNUMTIME>@addnumtime AND GONUMTIME<@gonumtime ORDER BY RANDOM() LIMIT 0,10";
+			return SQLiteHelper.ExecuteDataset(string_, string_2,
+				new SqliteParameter("@addnumtime", FormatText.GetTime(DateTime.Now) - countTime * 60),
+				new SqliteParameter("@gonumtime", FormatText.GetTime(DateTime.Now) - goTime)).Tables[0];
 		}
 		return new DataTable();
 	}
@@ -324,9 +321,8 @@ public class SpiderException
 		Path.GetDirectoryName(fileInfo.FullName);
 		if (File.Exists(fileInfo.FullName))
 		{
-			object[] array = new object[3] { "UPDATE [IpInfo] SET ISLOCK=1 WHERE IP='", ip, "'" };
-			string string_2 = string.Concat(array);
-			SQLiteHelper.ExecuteNonQuery(string_, string_2, (IDataParameter[])null);
+			string string_2 = "UPDATE [IpInfo] SET ISLOCK=1 WHERE IP=@ip";
+			SQLiteHelper.ExecuteNonQuery(string_, string_2, new SqliteParameter("@ip", ip));
 		}
 	}
 
@@ -337,16 +333,10 @@ public class SpiderException
 		Path.GetDirectoryName(fileInfo.FullName);
 		if (File.Exists(fileInfo.FullName))
 		{
-			object[] array = new object[5]
-			{
-				"UPDATE [IpInfo] SET ISLOCK=0, GONUMTIME=",
-				FormatText.GetTime(DateTime.Now),
-				" WHERE IP='",
-				ip,
-				"'"
-			};
-			string string_2 = string.Concat(array);
-			SQLiteHelper.ExecuteNonQuery(string_, string_2, (IDataParameter[])null);
+			string string_2 = "UPDATE [IpInfo] SET ISLOCK=0, GONUMTIME=@gonumtime WHERE IP=@ip";
+			SQLiteHelper.ExecuteNonQuery(string_, string_2,
+				new SqliteParameter("@gonumtime", FormatText.GetTime(DateTime.Now)),
+				new SqliteParameter("@ip", ip));
 		}
 	}
 }

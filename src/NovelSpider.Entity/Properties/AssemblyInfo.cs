@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -16,8 +16,8 @@ using System.Runtime.Versioning;
 [assembly: AssemblyTrademark("")]
 [assembly: ComVisible(false)]
 [assembly: Guid("9947a03f-65fb-461a-b305-b0ce4a61f0e4")]
-[assembly: AssemblyFileVersion("10.18.2.0")]
-[assembly: AssemblyVersion("10.18.2.0")]
+[assembly: AssemblyFileVersion("10.18.5.0")]
+[assembly: AssemblyVersion("10.18.5.0")]
 
 
 

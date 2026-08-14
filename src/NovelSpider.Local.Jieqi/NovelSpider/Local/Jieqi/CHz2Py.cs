@@ -1,6 +1,7 @@
 using System.Collections;
 using System.IO;
 using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.International.Converters.PinYinConverter;
 
@@ -47,22 +48,23 @@ public class CHz2Py
 
 	public static string GetFirstPinyin(string string_0)
 	{
-		string text = string.Empty;
-		for (int i = 0; i < string_0.Length; i++)
+		if (string.IsNullOrEmpty(string_0))
 		{
-			char ch = string_0[i];
-			try
-			{
-				ChineseChar chineseChar = new ChineseChar(ch);
-				string text2 = chineseChar.Pinyins[0].ToString();
-				text += text2.Substring(0, 1);
-			}
-			catch
-			{
-				text += ch;
-			}
+			return "";
 		}
-		return text;
+		try
+		{
+			StringBuilder stringBuilder = new StringBuilder();
+			foreach (char c in string_0)
+			{
+				stringBuilder.Append(FirstLetterOf(c));
+			}
+			return stringBuilder.ToString();
+		}
+		catch
+		{
+			return "";
+		}
 	}
 
 	public static int Hz2Py(string string_0, ref string string_1)
@@ -82,9 +84,7 @@ public class CHz2Py
 			string_1 = CHz2Py.string_1[num];
 			return string_0.Length;
 		}
-		ChineseChar chineseChar = new ChineseChar(string_0[0]);
-		string_1 = chineseChar.Pinyins[0].ToString();
-		string_1 = string_1.Substring(0, string_1.Length - 1);
+		string_1 = FullPinyinOf(string_0[0]);
 		return string_0.Length;
 	}
 
@@ -95,6 +95,55 @@ public class CHz2Py
 			return false;
 		}
 		return true;
+	}
+
+	private static string FullPinyinOf(char char_0)
+	{
+		try
+		{
+			ChineseChar chineseChar = new ChineseChar(char_0);
+			return StripPinyin(chineseChar.Pinyins[0]);
+		}
+		catch
+		{
+			return char_0.ToString();
+		}
+	}
+
+	private static string FirstLetterOf(char char_0)
+	{
+		try
+		{
+			ChineseChar chineseChar = new ChineseChar(char_0);
+			foreach (char c in chineseChar.Pinyins[0])
+			{
+				if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
+				{
+					return char.ToLower(c).ToString();
+				}
+			}
+		}
+		catch
+		{
+		}
+		return char_0.ToString();
+	}
+
+	private static string StripPinyin(string string_0)
+	{
+		if (string.IsNullOrEmpty(string_0))
+		{
+			return "";
+		}
+		StringBuilder stringBuilder = new StringBuilder();
+		foreach (char c in string_0)
+		{
+			if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
+			{
+				stringBuilder.Append(char.ToLower(c));
+			}
+		}
+		return stringBuilder.ToString();
 	}
 
 	public static void smethod_0()

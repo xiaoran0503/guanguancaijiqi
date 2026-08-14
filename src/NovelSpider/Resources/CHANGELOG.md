@@ -1,3 +1,16 @@
+V10.18.5 Net10 Test    2026-08-14
+- 版本迭代为 `10.18.5.0 / 10.18.5-net10-test`。
+- 依赖现代化收尾：移除停用孤立依赖 `CHSPinYinConv`/`jieba.NET`/`System.Data.SQLite.Core`，改用受维护替代品 `PinYinConverterCore 1.0.2`（命名空间 `Microsoft.International.Converters.PinYinConverter` 与算法同原 MS 国际包，中文转拼音行为一致）、内置轻量 n-gram 分词、`Microsoft.Data.Sqlite 10.0.11`。
+- 升级 4 个稳定版依赖：`MySqlConnector 2.6.1→2.6.2`、`System.Management 10.0.9→10.0.11`、`Microsoft.Extensions.DependencyInjection.Abstractions`/`Logging.Abstractions 10.0.9→10.0.11`。
+- 建立标准交付流程：每次完整构建前清理 `ModernizedOutput_Net10_Test` 旧构建产物（保留 BaseConfig.xml/TaskConfig.xml/Log/Rules/Tasks 运行数据），重建并做无头功能冒烟测试。
+
+V10.18.4 Net10 Test    2026-08-08
+- 版本迭代为 `10.18.4.0 / 10.18.4-net10-test`。
+- 新增采集器发版流程文档和自动版本脚本：BUG 修复递增小版本，新增功能递增中间版本，Net 基线升级时主版本号跟随 Net 基线。
+- 修复 Jieqi 原子文本写入器忽略传入编码的问题：UTF-8 写入继续统一为无 BOM，非 UTF-8 调用按传入编码写入。
+- 修复 Jieqi 数据库拼音化维护 SQL：`articlecode` 更新改为参数化 `articlecode/articleid`，避免生成无效的 `@articleid123` 语句。
+- 修复拼音化字段检测连续调用 `Read()` 导致首行跳过和误判的问题。
+
 V10.18.2 Net10 Test    2026-07-13
 - 版本迭代为 `10.18.2.0 / 10.18.2-net10-test`。
 - 修复选择 SQLite 日志模式后仍生成文本调试日志的问题：`SpiderException.Debug` 在 SQLite 模式下不再写入 `Debug.Log`。

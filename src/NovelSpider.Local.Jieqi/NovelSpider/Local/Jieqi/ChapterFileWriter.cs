@@ -32,6 +32,7 @@ internal static class ChapterFileWriter
 		Directory.CreateDirectory(directory);
 		string targetPath = Path.Combine(directory, fileName);
 		string tempPath = targetPath + "." + Environment.ProcessId + "." + Guid.NewGuid().ToString("N") + ".tmp";
+		Encoding writeEncoding = NormalizeWriteEncoding(encoding);
 		try
 		{
 			FileStreamOptions options = new FileStreamOptions
@@ -43,7 +44,7 @@ internal static class ChapterFileWriter
 				Options = FileOptions.SequentialScan
 			};
 			using (FileStream stream = new FileStream(tempPath, options))
-			using (StreamWriter writer = new StreamWriter(stream, TextEncodingPolicy.Utf8NoBom, BufferSize))
+			using (StreamWriter writer = new StreamWriter(stream, writeEncoding, BufferSize))
 			{
 				writer.Write(content ?? string.Empty);
 			}
@@ -63,6 +64,15 @@ internal static class ChapterFileWriter
 			}
 			throw;
 		}
+	}
+
+	private static Encoding NormalizeWriteEncoding(Encoding encoding)
+	{
+		if (encoding == null || encoding.CodePage == Encoding.UTF8.CodePage)
+		{
+			return TextEncodingPolicy.Utf8NoBom;
+		}
+		return encoding;
 	}
 }
 

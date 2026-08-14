@@ -19,9 +19,9 @@
     <ProjectReference Include="..\NovelSpider.Config\NovelSpider.Config.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.11" />
+    <PackageReference Include="PinYinConverterCore" Version="1.0.2" />
     <PackageReference Include="SharpZipLib" Version="1.4.2" />
-    <PackageReference Include="CHSPinYinConv" Version="1.0.0" />
-    <PackageReference Include="System.Management" Version="10.0.9" />
+    <PackageReference Include="System.Management" Version="10.0.11" />
   </ItemGroup>
 </Project>

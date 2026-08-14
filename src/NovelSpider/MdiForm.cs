@@ -536,10 +536,6 @@ public class MdiForm : Form
 
 	private void timer_0_Tick(object sender, EventArgs e)
 	{
-		if (DateTime.Now.Hour == 3 && Text.IndexOf("V8.0") < 0)
-		{
-			Application.Exit();
-		}
 	}
 
 	private void toolStripMenuItem_1_Click(object sender, EventArgs e)

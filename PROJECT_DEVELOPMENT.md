@@ -1,24 +1,26 @@
-# NovelSpider 现代化项目开发文档
+﻿# NovelSpider 现代化项目开发文档
 
 ## 1. 文档目的
 
 本文档用于记录 `NovelSpider` 现代化版本的项目结构、构建发布方式、版本迭代规则、关键改造点和后续开发注意事项。
 
-当前目录是从 `V8.17.1 / 8.17.1.0` 的 `.NET 8 / net8.0-windows` 最终基线复制出的 `.NET 10 / net10.0-windows` 迁移测试分支。Net8 维护仍只在 `Modernized_Working` 进行，不要把本目录的迁移改动回写到 Net8 分支。
+当前目录是从 `V8.17.1 / 8.17.1.0` 的 `.NET 8 / net8.0-windows` 最终基线复制出的 `.NET 10 / net10.0-windows` 迁移测试分支。Net8 现在只保留最终基线源码和运行包，不再保留旧 `Modernized_Working` 维护分支。
 
 当前工作目录：
 
 ```text
-E:\采集器\Modernized_Net10_Working
+E:\缓存\shipsay\采集器\Modernized_Net10_Git_Working
 ```
 
 当前测试输出目录：
 
 ```text
-E:\采集器\ModernizedOutput_Net10_Test
+E:\缓存\shipsay\采集器\ModernizedOutput_Net10_Test
 ```
 
 V8.0、V8.2、V8.4、V8.5、V8.6、V8.7、V8.8、V8.10.3、V8.13.3、V8.17.1 已作为里程碑版本封存。本分支先验证 Net10 可编译、可发布、可启动和核心采集/Jieqi 流程可用。
+
+注意：下表中的旧里程碑路径仅作为历史记录保留。2026-08-08 起，采集器根目录只保留 Net8 最终基线和 Net10 当前维护版本，旧版本、里程碑、旧输出和旧备份实际归档在 `E:\缓存\shipsay\temp\back\采集器_历史版本归档_20260808_101429`。
 
 ## 2. 版本与目录约定
 
@@ -34,21 +36,22 @@ V8.0、V8.2、V8.4、V8.5、V8.6、V8.7、V8.8、V8.10.3、V8.13.3、V8.17.1 已
 | V8.7 里程碑运行包 | `E:\采集器\ModernizedOutput_V8.7_Milestone` | SQL Server 驱动现代化稳定包 |
 | V8.13.3 PreV8.14 里程碑源码 | `E:\采集器\Modernized_V8.13.3_PreV8.14_Milestone` | V8.14-V8.17 前的稳定回退点 |
 | V8.13.3 PreV8.14 里程碑运行包 | `E:\采集器\ModernizedOutput_V8.13.3_PreV8.14_Milestone` | V8.13.3 可用运行包回退点 |
-| Net8 最终基线源码 | `E:\采集器\Modernized_Net8_Final_Baseline_V8.17.1` | V8.17.1 Net8 最终源码基线，只读保存 |
-| Net8 最终基线运行包 | `E:\采集器\ModernizedOutput_Net8_Final_Baseline_V8.17.1` | V8.17.1 Net8 最终运行包，只读保存 |
-| Net8 维护源码 | `E:\采集器\Modernized_Working` | Net8 稳定维护分支，不接收 Net10 迁移改动 |
-| Net10 迁移源码 | `E:\采集器\Modernized_Net10_Working` | 当前 Net10 测试分支 |
-| Net10 测试输出 | `E:\采集器\ModernizedOutput_Net10_Test` | 当前 Net10 发布测试包 |
+| Net8 最终基线源码 | `E:\缓存\shipsay\采集器\Modernized_Net8_Final_Baseline_V8.17.1` | V8.17.1 Net8 最终源码基线，只读保存 |
+| Net8 最终基线运行包 | `E:\缓存\shipsay\采集器\ModernizedOutput_Net8_Final_Baseline_V8.17.1` | V8.17.1 Net8 最终运行包，只读保存 |
+| Net10 迁移源码 | `E:\缓存\shipsay\采集器\Modernized_Net10_Git_Working` | 当前 Net10 Git 测试分支 |
+| Net10 测试输出 | `E:\缓存\shipsay\采集器\ModernizedOutput_Net10_Test` | 当前 Net10 发布测试包 |
+| 历史版本归档 | `E:\缓存\shipsay\temp\back\采集器_历史版本归档_20260808_101429` | 已移出采集器根目录的旧版本、里程碑、旧输出和旧备份 |
 
 版本规则：
 
-- `8.0` 是 .NET 8 现代化后的初始里程碑版本。
-- 小功能和修复可使用 `8.0.1`、`8.0.2`。
-- 较大功能迭代可使用 `8.1`、`8.2`。
+- BUG 修复类发版：最后一位小版本号 `+1`，例如 `10.18.4` -> `10.18.5`。
+- 新增功能类发版：中间版本号 `+1`，小版本归零，例如 `10.18.3` -> `10.19.0`。
+- Net 基线更新：头部主版本号等于 Net 基线版本号，例如 Net11 基线使用 `11.0.0-net11-test / 11.0.0.0`。
 - 程序界面显示版本使用 `Configs.DisplayVersion`。
 - 文件属性版本使用各项目 `Properties\AssemblyInfo.cs` 中的 `AssemblyVersion` 和 `AssemblyFileVersion`。
 - 每次版本变化都要同步更新 `src\NovelSpider\Resources\CHANGELOG.md` 中的“更新日志”。
-- Net8 维护分支不得升级 `TargetFramework`；Net10 迁移必须使用独立工作区，例如 `E:\采集器\Modernized_Net10_Working`。
+- 发版前优先运行 `scripts\bump-version.ps1` 自动同步版本号和更新日志，完整流程见 `RELEASE_PROCESS.md`。
+- Net8 最终基线不得升级 `TargetFramework`；Net10 迁移必须使用独立工作区，例如 `E:\缓存\shipsay\采集器\Modernized_Net10_Git_Working`。
 
 ## 3. 技术栈
 
@@ -69,7 +72,8 @@ V8.0、V8.2、V8.4、V8.5、V8.6、V8.7、V8.8、V8.10.3、V8.13.3、V8.17.1 已
 Net10 迁移测试分支补充：
 
 - 当前 active solution 目标框架为 `.NET 10 / net10.0-windows`，SDK 固定为 `10.0.301`。
-- 当前 Net10 测试版本为 `10.18.2-net10-test / 10.18.2.0`，发布平台固定为 Windows-only `win-x64` / `x64`。
+- 当前 Net10 测试版本为 `10.18.5-net10-test / 10.18.5.0`，发布平台固定为 Windows-only `win-x64` / `x64`。
+- V10.18.5 是当前有效基线；章节 SQLite 写库缓存实验已放弃并回滚，不再作为当前开发状态。
 - GitHub Actions 已加入 `net10-v10` 分支：推送 `net10-v10` / `main` 自动构建并上传 Windows x64 artifact，推送 `v10.*-net10` tag 自动创建 GitHub Release。
 - active solution 依赖采用 NuGet 稳定最新版策略；截至 2026-07-09，`MySqlConnector 2.6.1`、`System.Data.SQLite.Core 1.0.119`、DockPanelSuite `3.1.1`、SharpZipLib `1.4.2`、CHSPinYinConv `1.0.0`、jieba.NET `0.42.2`、`System.Management 10.0.9` 和 `Microsoft.Extensions.* 10.0.9` 均无 stable 更新。
 - 不采用 beta/preview 包，例如 `Newtonsoft.Json 13.0.5-beta1`、`Microsoft.Data.SqlClient 7.1.0-preview1.*` 或 `.NET 11 preview` 包。
@@ -79,14 +83,14 @@ Net10 迁移测试分支补充：
 
 - Windows 10/11
 - .NET 8 SDK
-- Windows Desktop Runtime 8，如果只运行发布包则至少需要运行时
+- Windows Desktop Runtime 10，如果只运行发布包则至少需要运行时
 
 ## 4. 解决方案结构
 
 解决方案文件：
 
 ```text
-E:\采集器\Modernized_Working\NovelSpider.sln
+E:\缓存\shipsay\采集器\Modernized_Net10_Git_Working\NovelSpider.sln
 ```
 
 主要项目：
@@ -209,12 +213,20 @@ src\NovelSpider.Common\NovelSpider\Common\FormatText.cs
 src\NovelSpider.Local.Jieqi\NovelSpider\Local\Jieqi\CHz2Py.cs
 ```
 
+## 9.1 当前 Net10 活跃边界
+
+- XML 规则仍是唯一规则格式，不生成 JSON 规则缓存或 DOM V11 规则副本。
+- 当前 active CMS 只保留 Jieqi；Qiwen、NovelAdmin、NovelVip 继续归档，不进入解决方案和发布包。
+- 自动采集、规则测试、手工采集继续沿 async/cancellation 方向现代化，但不得恢复章节 SQLite 写库缓存代码。
+- SQLite 日志模式与章节写库缓存是两个不同功能：V10.18.5 保留 SQLite 日志修复，不保留章节写库缓存。
+- DockPanelSuite 继续保留，Krypton Toolkit 只作为未来 UI 大版本评估项。
+
 ## 10. 构建命令
 
 在任意目录可执行：
 
 ```powershell
-dotnet build "E:\采集器\Modernized_Working\NovelSpider.sln" -c Release -v:minimal
+.\scripts\build-release.ps1
 ```
 
 当前主线要求 Release 构建保持：
@@ -228,23 +240,23 @@ dotnet build "E:\采集器\Modernized_Working\NovelSpider.sln" -c Release -v:min
 
 ## 11. 发布命令
 
-发布到当前运行目录：
+默认发布到 `artifacts\NovelSpider-Net10-win-x64`：
 
 ```powershell
-$out = "E:\采集器\ModernizedOutput"
-$projects = @(
-  "E:\采集器\Modernized_Working\src\NovelSpider\NovelSpider.csproj",
-)
-foreach ($project in $projects) {
-  dotnet publish $project -c Release -o $out -v:quiet -p:WarningLevel=0
-  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-}
+.\scripts\publish-all.ps1
+```
+
+如需发布到本地测试输出目录：
+
+```powershell
+$env:NOVELSPIDER_PUBLISH_DIR = "E:\缓存\shipsay\采集器\ModernizedOutput_Net10_Test"
+.\scripts\publish-all.ps1
 ```
 
 发布后应检查：
 
 ```powershell
-Get-ChildItem -LiteralPath "E:\采集器\ModernizedOutput" -Include NovelSpider.exe -File |
+Get-ChildItem -LiteralPath "E:\缓存\shipsay\采集器\ModernizedOutput_Net10_Test" -Include NovelSpider.exe -File |
   ForEach-Object { $_.VersionInfo.FileVersion }
 ```
 
@@ -252,15 +264,14 @@ Get-ChildItem -LiteralPath "E:\采集器\ModernizedOutput" -Include NovelSpider.
 
 每次发布后至少测试：
 
-1. 双击 `E:\采集器\ModernizedOutput\NovelSpider.exe`。
+1. 双击 `E:\缓存\shipsay\采集器\ModernizedOutput_Net10_Test\NovelSpider.exe`。
 2. 主窗口能正常打开，不出现 DockPanel 主题错误。
 3. 顶部菜单没有遮挡文档标签栏。
 4. 默认打开“更新日志”页面。
-5. 标题栏显示 `V8.1` 或当前迭代版本。
+5. 标题栏显示当前 Net10 迭代版本。
 6. 点击菜单中的“更新日志”，页面能重复打开或聚焦。
-7. 双击 `NovelAdmin.exe`，确认窗口能打开。
-8. 双击 `NovelVip.exe`，确认普通功能和高级功能显示可用。
-9. 如改动采集逻辑，至少打开自动采集、手动采集、规则、配置页面确认不崩。
+7. 发布包不包含 NovelAdmin、NovelVip、Qiwen 或 SqlClient 退役 DLL。
+8. 如改动采集逻辑，至少打开自动采集、手动采集、规则、配置页面确认不崩。
 
 ## 13. 开发原则
 
@@ -269,24 +280,23 @@ Get-ChildItem -LiteralPath "E:\采集器\ModernizedOutput" -Include NovelSpider.
 - 旧反编译代码命名混乱，非必要不要大规模重命名，避免扩大风险。
 - 修改 WinForms 设计器代码时要小心控件初始化顺序。
 - DockPanel 子窗体统一继承 `DockContent` 并通过 `ShowDockContent` 打开。
-- 新功能优先加在 `Modernized_Working`，不要修改 `Modernized_V8.0_Milestone`。
+- 新功能优先加在 `Modernized_Net10_Git_Working`，不要修改历史归档目录。
 - 发布前必须重新编译，并确认输出目录里的 exe 时间和版本已更新。
 
 ## 14. 版本迭代流程
 
 建议流程：
 
-1. 在 `Modernized_Working` 修改代码。
-2. 更新 `Configs.DisplayVersion` 和相关 `AssemblyInfo.cs`。
-3. 在 `src\NovelSpider\Resources\CHANGELOG.md` 顶部新增更新日志。
+1. 在 `Modernized_Net10_Git_Working` 修改代码。
+2. 按发布类型运行 `scripts\bump-version.ps1`，自动更新 `Configs.DisplayVersion`、active `AssemblyInfo.cs`、更新日志和当前版本文档。
+3. 检查 `RELEASE_PROCESS.md` 中的版本规则和标签状态，确认没有复用已回滚实验标签。
 4. 执行 Release 构建。
-5. 发布到 `E:\采集器\ModernizedOutput`。
-6. 手工冒烟测试三个 exe。
-7. 如果该版本稳定，再复制封存为新的里程碑目录，例如：
+5. 发布到 `E:\缓存\shipsay\采集器\ModernizedOutput_Net10_Test` 或默认 `artifacts\NovelSpider-Net10-win-x64`。
+6. 手工冒烟测试 active `NovelSpider.exe`。
+7. 如果该版本稳定，再按需在 `E:\缓存\shipsay\temp\back` 或 Git tag 中封存，不要把新里程碑散落回采集器根目录。
 
 ```text
-E:\采集器\Modernized_V8.1_Milestone
-E:\采集器\ModernizedOutput_V8.1_Milestone
+E:\缓存\shipsay\temp\back
 ```
 
 
@@ -410,7 +420,7 @@ V8.10.1 热修事项：
 V8.10 新增事项：
 
 - 已将 V8.9/.NET 10 失败线归档为 `E:\采集器\Modernized_V8.9_Failed_Net10`、`E:\采集器\ModernizedOutput_V8.9_Failed_Net10`，主线不再继续该方向。
-- 已从 V8.8 可信里程碑恢复 `E:\采集器\Modernized_Working`，继续以 `.NET 8 Windows WinForms` 作为稳定基线。
+- 已从 V8.8 可信里程碑恢复当时的 Net8 工作目录，继续以 `.NET 8 Windows WinForms` 作为稳定基线。
 - 版本升级为 `8.10.0.0 / 8.10`，发布输出仍覆盖到 `E:\采集器\ModernizedOutput`。
 - 保留自动采集窗口稳定性兜底：`Rules`、`Tasks`、`Log` 目录不存在时返回空数组；配置路径为空或文件不存在时返回默认配置对象；规则/方案下拉空选择时跳过加载。
 - HTTPS 采集底层恢复为 net8 池化传输层，按代理配置复用连接和 TLS 握手，同时保留同步 `GetStringWork()`、POST、Referer、UA、Cookie、代理、编码和规则解析行为。
@@ -527,7 +537,3 @@ V8.0 已完成事项：
 - V10.5.1: WinForms 现代化第二阶段整理自动生成采集规则窗体，集中输入读取、忙碌状态、保存文件名规范化，并复用本地页面抓取 HttpClient。
 - V10.5.0: WinForms 现代化第一阶段集中自动采集任务请求调度 UI 的加载、保存和规范化逻辑，清理任务保存/读取附近反编译式错误弹窗代码，保持界面行为不变。
 - V10.4.0: 自动采集任务界面提供请求调度/站点友好访问配置，可直接设置随机延时区间、UA 模式、同域并发和失败退避，不需要手工修改 XML。
-
-
-
-

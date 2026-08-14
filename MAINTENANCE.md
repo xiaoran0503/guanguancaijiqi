@@ -1,18 +1,19 @@
-# NovelSpider 维护清单
+﻿# NovelSpider 维护清单
 
 ## 固定基线
 
 - 当前主线：`net10.0-windows`
 - 当前平台：Windows-only `win-x64` / `x64`
-- 当前版本：`10.18.2-net10-test / 10.18.2.0`
-- 当前工作目录：`E:\采集器\Modernized_Net10_Working`
-- 当前发布目录：`E:\采集器\ModernizedOutput_Net10_Test`
+- 当前版本：`10.18.5-net10-test / 10.18.5.0`
+- 当前工作目录：`E:\缓存\shipsay\采集器\Modernized_Net10_Git_Working`
+- 当前发布目录：`E:\缓存\shipsay\采集器\ModernizedOutput_Net10_Test`
 - 固定 SDK：`.NET SDK 10.0.301`
-- Net8 最终基线源码：`E:\采集器\Modernized_Net8_Final_Baseline_V8.17.1`
-- Net8 最终基线运行包：`E:\采集器\ModernizedOutput_Net8_Final_Baseline_V8.17.1`
+- Net8 最终基线源码：`E:\缓存\shipsay\采集器\Modernized_Net8_Final_Baseline_V8.17.1`
+- Net8 最终基线运行包：`E:\缓存\shipsay\采集器\ModernizedOutput_Net8_Final_Baseline_V8.17.1`
+- 历史版本归档：`E:\缓存\shipsay\temp\back\采集器_历史版本归档_20260808_101429`
 - 里程碑目录只读保存，不直接修改。
 - 当前主线只支持 Jieqi；Qiwen 源码保留归档，但 UI、解决方案和发布包不再启用。
-- 本分支只做 Net10 迁移测试；不得把改动回写到 `Modernized_Working`，也不得恢复 Qiwen 运行入口。
+- 本分支只做 Net10 迁移测试；不得恢复 Qiwen 运行入口。
 - 依赖升级策略：当前 active Net10 solution 只采用 NuGet 稳定最新版，不使用 beta/preview 包；归档 Qiwen 项目不纳入依赖现代化。
 
 ## 常见修改入口
@@ -29,7 +30,7 @@
 | CMS Active CMS 配置 | `src\NovelSpider.Config\NovelSpider\Config\SupportedCms.cs` |
 | SQLite 采集日志 | `src\NovelSpider.Common\NovelSpider\Common\SpiderException.cs` |
 | 更新日志 | `src\NovelSpider\Resources\CHANGELOG.md` |
-| 版本号 | 各项目 `Properties\AssemblyInfo.cs` 和 `Configs.DisplayVersion` |
+| 版本号 | 优先运行 `scripts\bump-version.ps1`，脚本会同步 active 项目 `Properties\AssemblyInfo.cs` 和 `Configs.DisplayVersion` |
 
 ## 性能排查
 
@@ -47,6 +48,16 @@
 
 ## 发布前检查
 
+先按发布类型自动更新版本号：
+
+```powershell
+.\scripts\bump-version.ps1 -ReleaseKind BugFix -ChangelogMessage "修复 xxx 问题。"
+.\scripts\bump-version.ps1 -ReleaseKind Feature -ChangelogMessage "新增 xxx 功能。"
+.\scripts\bump-version.ps1 -ReleaseKind NetBaseline -NetBaseline 11 -ChangelogMessage "迁移到 .NET 11 基线。"
+```
+
+规则详见 `RELEASE_PROCESS.md`：BUG 修复递增最后一位小版本号，新增功能递增中间版本号，Net 基线更新时头部主版本号等于 Net 基线版本号。
+
 ```powershell
 .\scripts\build-release.ps1
 .\scripts\check-vulnerable.ps1
@@ -63,12 +74,12 @@ GitHub Actions:
 ## 开发约束
 
 - 不改 XML 规则格式，除非明确做兼容迁移。
-- 不默认启用纯内存延迟写库，避免崩溃丢章节。
+- 不默认启用章节延迟写库或本地章节数据库缓存；V10.18.5 继续使用现有 Jieqi 写库语义。
 - 新增数据库写入必须优先参数化。
 - 新增文件写入优先走统一原子写入器。
 - 不恢复 Qiwen UI 入口；若未来需要重新启用，必须另开分支并重新验证 SQL Server 依赖、发布包和配置迁移。
 - 不把归档 `NovelSpider.Local.Qiwen` 的 `Microsoft.Data.SqlClient` 版本作为 active solution 依赖状态；Qiwen 重新启用时再独立迁移和验证 SQL Server。
-- 不把本分支的 Net10/x64 改动回写到 `Modernized_Working` Net8 维护分支。
+- Net8 仅保留最终基线目录；不要恢复旧 `Modernized_Working` 维护分支，除非另开明确回退任务。
 - 大改前先封存当前可用源码和运行包。
 
 ## V10.1.0 Runtime Notes
@@ -84,6 +95,13 @@ GitHub Actions:
 - Jieqi 插章使用 LastInsertedId 减少自增 ID 查询往返；失败仍回滚当前事务。
 - 最后章节刷新使用 reader 读取单行，减少 DataTable 分配。
 
+
+## V10.18.5 Current Baseline Notes
+
+- 当前有效基线是 `10.18.5-net10-test / 10.18.5.0`，目标标签 `v10.18.5-net10`。
+- 本轮修复不恢复 Jieqi 章节 SQLite 写库缓存实验；不得继续引用 `ChapterWriteBuffer`、`BookChapterBuffer`、`jieqi-chapter-buffer.db3` 或相关 UI。
+- SQLite 日志模式仍保留：选择 SQLite 日志时不再额外写文本 `Debug.Log`，普通文本日志模式保持旧行为。
+- 后续若重新评估章节批量入库，必须作为独立设计重新实现并先做最小可回滚原型，不在 V10.18.5 维护线直接恢复章节缓存实验代码。
 
 ## V10.1.2 Changelog Notes
 
@@ -122,7 +140,3 @@ GitHub Actions:
 - V10.5.1: WinForms 现代化第二阶段整理自动生成采集规则窗体，集中输入读取、忙碌状态、保存文件名规范化，并复用本地页面抓取 HttpClient。
 - V10.5.0: WinForms 现代化第一阶段集中自动采集任务请求调度 UI 的加载、保存和规范化逻辑，清理任务保存/读取附近反编译式错误弹窗代码，保持界面行为不变。
 - V10.4.0: 自动采集任务界面提供请求调度/站点友好访问配置，可直接设置随机延时区间、UA 模式、同域并发和失败退避，不需要手工修改 XML。
-
-
-
-

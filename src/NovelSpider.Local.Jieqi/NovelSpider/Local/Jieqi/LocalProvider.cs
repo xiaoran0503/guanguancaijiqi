@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -200,11 +200,15 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 		{
 			if (item != null && item.Word.Length > 1)
 			{
-				if (keywordlist != null && keywordlist.Count > 0 && !keywordlist.Contains(item.Word))
+				if (keywordlist == null)
+				{
+					keywordlist = new List<string>();
+				}
+				if (!keywordlist.Contains(item.Word))
 				{
 					keywordlist.Add(item.Word);
 				}
-				MySqlHelper.ExecuteNonQuery(MySqlHelper.ConnectionString, CommandType.Text, "INSERT INTO `jieqi_article_tag` (	agid`,`articleid`,	agname`,`length`,`hits`) VALUES (NULL,@articleid,@tagname,@length,0)",
+				MySqlHelper.ExecuteNonQuery(MySqlHelper.ConnectionString, CommandType.Text, "INSERT INTO `jieqi_article_tag` (`tagid`,`articleid`,`tagname`,`length`,`hits`) VALUES (NULL,@articleid,@tagname,@length,0)",
 					new MySqlParameter("@articleid", novelInfo.PutID),
 					new MySqlParameter("@tagname", item.Word),
 					new MySqlParameter("@length", item.Word.Length));
@@ -232,7 +236,7 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 			bool flag2 = false;
 			if (!fileInfo.Exists)
 			{
-				SQLiteConnection.CreateFile(fileInfo.FullName);
+				// Microsoft.Data.Sqlite 在首次打开连接时自动创建数据库文件，无需 CreateFile。
 				string string_2 = "CREATE TABLE [PushLog] ([SUCCESS] INT,[REMAIN] INT,[LASTTIME] NVARCHAR(100));";
 				SQLiteHelper.ExecuteNonQuery(string_, string_2, (IDataParameter[])null);
 			}
@@ -253,7 +257,7 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 					}
 				}
 			}
-			string requestUriString = "http://data.zz.baidu.com/urls?site=" + strBaiduPushDomain + "&token=" + strBaiduPushToken;
+			string requestUriString = "https://data.zz.baidu.com/urls?site=" + Uri.EscapeDataString(strBaiduPushDomain) + "&token=" + Uri.EscapeDataString(strBaiduPushToken);
 			byte[] bytes = FormatText.GetCharset(Configs.BaseConfig.CmsEncoding, "gbk").GetBytes(urlNovelPush);
 			Encoding charset = FormatText.GetCharset(Configs.BaseConfig.CmsEncoding, "gbk");
 			using System.Net.Http.HttpClient httpClient = new System.Net.Http.HttpClient();
@@ -273,14 +277,22 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 			int num2 = jsonNode?["remain"]?.GetValue<int>() ?? 0;
 			if (!flag)
 			{
-				string string_4 = string.Concat(new object[1] { "INSERT INTO [PushLog] (SUCCESS,REMAIN,LASTTIME) values ( " + num + "," + num2 + ",'" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "')" });
-				SQLiteHelper.ExecuteNonQuery(string_, string_4, (IDataParameter[])null);
+				string string_4 = "INSERT INTO [PushLog] (SUCCESS,REMAIN,LASTTIME) values (@success,@remain,@lasttime)";
+				SQLiteHelper.ExecuteNonQuery(string_, string_4, new IDataParameter[]
+				{
+					new SqliteParameter("@success", num),
+					new SqliteParameter("@remain", num2),
+					new SqliteParameter("@lasttime", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"))
+				});
 			}
 			else
 			{
-				string text = "";
-				text = ((!flag2) ? string.Concat(new object[1] { "UPDATE [PushLog] set SUCCESS=SUCCESS+1,REMAIN=" + num2 + ",LASTTIME='" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "'" }) : string.Concat(new object[1] { "UPDATE [PushLog] set SUCCESS=1,REMAIN=" + num2 + ",LASTTIME='" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "'" }));
-				SQLiteHelper.ExecuteNonQuery(string_, text, (IDataParameter[])null);
+				string text = ((!flag2) ? "UPDATE [PushLog] set SUCCESS=SUCCESS+1,REMAIN=@remain,LASTTIME=@lasttime" : "UPDATE [PushLog] set SUCCESS=1,REMAIN=@remain,LASTTIME=@lasttime");
+				SQLiteHelper.ExecuteNonQuery(string_, text, new IDataParameter[]
+				{
+					new SqliteParameter("@remain", num2),
+					new SqliteParameter("@lasttime", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"))
+				});
 			}
 		}
 		catch (Exception)
@@ -2589,14 +2601,14 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 	{
 		try
 		{
-			string string_ = ((Configs.BaseConfig.CmsVersion == "2.4") ? "CREATE TABLE IF NOT EXISTS `jieqi_article_tag` (	agid` int(10)  primary key not  null  auto_increment,`articleid` int(10) NOT NULL,	agname` varchar(20) NOT NULL, `length` int(20) NOT NULL, `hits` int(50) DEFAULT 0 ) ENGINE = MyISAM DEFAULT CHARSET = utf8; " : "CREATE TABLE IF NOT EXISTS `jieqi_article_tag` (	agid` int(10)  primary key not  null  auto_increment,`articleid` int(10) NOT NULL,	agname` varchar(20) NOT NULL, `length` int(20) NOT NULL, `hits` int(50) DEFAULT 0 ) ENGINE = MyISAM DEFAULT CHARSET = gbk; ");
+			string string_ = ((Configs.BaseConfig.CmsVersion == "2.4") ? "CREATE TABLE IF NOT EXISTS `jieqi_article_tag` (`tagid` int(10) PRIMARY KEY NOT NULL AUTO_INCREMENT,`articleid` int(10) NOT NULL,`tagname` varchar(20) NOT NULL,`length` int(20) NOT NULL,`hits` int(50) DEFAULT 0) ENGINE = MyISAM DEFAULT CHARSET = utf8;" : "CREATE TABLE IF NOT EXISTS `jieqi_article_tag` (`tagid` int(10) PRIMARY KEY NOT NULL AUTO_INCREMENT,`articleid` int(10) NOT NULL,`tagname` varchar(20) NOT NULL,`length` int(20) NOT NULL,`hits` int(50) DEFAULT 0) ENGINE = MyISAM DEFAULT CHARSET = gbk;");
 			MySqlHelper.ExecuteNonQuery(MySqlHelper.ConnectionString, CommandType.Text, string_, (MySqlParameter[])null);
 			if (MessageBox.Show("标签表初始化完成！，是否为数据库中小说生成标签？", "", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK)
 			{
 				return;
 			}
 			string string_2 = "select `articleid`,`articlename` from `jieqi_article_article`";
-			MySqlDataReader mySqlDataReader = MySqlHelper.ExecuteReader(MySqlHelper.ConnectionString, CommandType.Text, string_2, (MySqlParameter[])null);
+			using MySqlDataReader mySqlDataReader = MySqlHelper.ExecuteReader(MySqlHelper.ConnectionString, CommandType.Text, string_2, (MySqlParameter[])null);
 			while (mySqlDataReader.Read())
 			{
 				string text = mySqlDataReader["articleid"].ToString();
@@ -2607,16 +2619,19 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 				{
 					if (item != null && item.Word.Length > 1)
 					{
-						if ((keywordlist == null || keywordlist.Count == 0) && !keywordlist.Contains(item.Word))
+						if (keywordlist == null)
+						{
+							keywordlist = new List<string>();
+						}
+						if (!keywordlist.Contains(item.Word))
 						{
 							keywordlist.Add(item.Word);
 						}
-						string string_3 = "INSERT INTO `jieqi_article_tag` (	agid`, 	agname`,`length`,`hits`) VALUES (NULL," + text + ",'" + item.Word + "'," + item.Word.Length + ",0)";
-						MySqlHelper.ExecuteNonQuery(MySqlHelper.ConnectionString, CommandType.Text, string_3, (MySqlParameter[])null);
+						string string_3 = "INSERT INTO `jieqi_article_tag` (`tagid`,`articleid`,`tagname`,`length`,`hits`) VALUES (NULL,@articleid,@tagname,@length,0)";
+						MySqlHelper.ExecuteNonQuery(MySqlHelper.ConnectionString, CommandType.Text, string_3, new MySqlParameter("@articleid", text), new MySqlParameter("@tagname", item.Word), new MySqlParameter("@length", item.Word.Length));
 					}
 				}
 			}
-			mySqlDataReader.Close();
 			MessageBox.Show("标签数据初始化完成");
 		}
 		catch (Exception)
@@ -3381,13 +3396,12 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 		string text2 = text;
 		if (keywordlist.Count <= 0)
 		{
-			string string_ = " SELECT  DISTINCT 	agname` FROM `jieqi_article_tag` ORDER by `length` DESC ";
-			MySqlDataReader mySqlDataReader = MySqlHelper.ExecuteReader(MySqlHelper.ConnectionString, CommandType.Text, string_, (MySqlParameter[])null);
+			string string_ = "SELECT DISTINCT `tagname` FROM `jieqi_article_tag` ORDER BY `length` DESC ";
+			using MySqlDataReader mySqlDataReader = MySqlHelper.ExecuteReader(MySqlHelper.ConnectionString, CommandType.Text, string_, (MySqlParameter[])null);
 			while (mySqlDataReader.Read())
 			{
 				keywordlist.Add(mySqlDataReader["tagname"].ToString());
 			}
-			mySqlDataReader.Close();
 		}
 		foreach (string item in keywordlist)
 		{
@@ -3807,36 +3821,34 @@ public class LocalProvider : ILocalProvider, IAsyncLocalProvider
 
 	public void PinyinHua(string string_0)
 	{
-		string string_1 = "select * from `jieqi_article_article` Order By `lastupdate` desc limit 1";
-		MySqlDataReader mySqlDataReader = MySqlHelper.ExecuteReader(MySqlHelper.ConnectionString, CommandType.Text, string_1, (MySqlParameter[])null);
-		if (!mySqlDataReader.Read() || mySqlDataReader.Read())
+		try
 		{
-			try
+			string string_1 = "SELECT `articlecode` FROM `jieqi_article_article` ORDER BY `lastupdate` DESC LIMIT 1";
+			using MySqlDataReader mySqlDataReader = MySqlHelper.ExecuteReader(MySqlHelper.ConnectionString, CommandType.Text, string_1, (MySqlParameter[])null);
+			if (mySqlDataReader.Read())
 			{
 				string_0 = mySqlDataReader["articlecode"].ToString();
 			}
-			catch
+		}
+		catch
+		{
+			if (MessageBox.Show("你的数据库没用对应的拼音字段，是否增加拼音字段到数据库中？", "", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) == DialogResult.OK)
 			{
-				if (MessageBox.Show("你的数据库没用对应的拼音字段，是否增加拼音字段到数据库中？", "", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) == DialogResult.OK)
-				{
-					string string_2 = "ALTER TABLE `jieqi_article_article` ADD `articlecode` varchar(200) NOT NULL DEFAULT '' AFTER `articlename` ;";
-					MySqlHelper.ExecuteReader(MySqlHelper.ConnectionString, CommandType.Text, string_2, (MySqlParameter[])null);
-				}
+				string string_2 = "ALTER TABLE `jieqi_article_article` ADD `articlecode` varchar(200) NOT NULL DEFAULT '' AFTER `articlename` ;";
+				MySqlHelper.ExecuteNonQuery(MySqlHelper.ConnectionString, CommandType.Text, string_2, (MySqlParameter[])null);
 			}
 		}
-		mySqlDataReader.Close();
 		if (MessageBox.Show("你的数据库中已经添加拼音字段，是否继续拼音化数据库里小说？", "", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) == DialogResult.OK)
 		{
-			string string_3 = "select * from jieqi_article_article";
-			MySqlDataReader mySqlDataReader2 = MySqlHelper.ExecuteReader(MySqlHelper.ConnectionString, CommandType.Text, string_3, (MySqlParameter[])null);
+			string string_3 = "SELECT `articleid`,`articlename` FROM `jieqi_article_article`";
+			using MySqlDataReader mySqlDataReader2 = MySqlHelper.ExecuteReader(MySqlHelper.ConnectionString, CommandType.Text, string_3, (MySqlParameter[])null);
 			while (mySqlDataReader2.Read())
 			{
-				string text = mySqlDataReader2["articleid"].ToString();
+				int num = Convert.ToInt32(mySqlDataReader2["articleid"]);
 				string string_4 = mySqlDataReader2["articlename"].ToString();
-				string string_5 = "UPDATE `jieqi_article_article` SET `articlecode`='" + CHz2Py.Convert4Hz2Py(string_4) + "' WHERE `articleid`=@articleid" + text.ToString();
-				MySqlHelper.ExecuteNonQuery(MySqlHelper.ConnectionString, CommandType.Text, string_5, (MySqlParameter[])null);
+				string string_5 = "UPDATE `jieqi_article_article` SET `articlecode`=@articlecode WHERE `articleid`=@articleid";
+				MySqlHelper.ExecuteNonQuery(MySqlHelper.ConnectionString, CommandType.Text, string_5, new MySqlParameter("@articlecode", CHz2Py.Convert4Hz2Py(string_4)), new MySqlParameter("@articleid", num));
 			}
-			mySqlDataReader2.Close();
 			MessageBox.Show("拼音化完成");
 		}
 	}

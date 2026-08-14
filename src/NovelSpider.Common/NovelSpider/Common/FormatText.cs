@@ -580,12 +580,19 @@ public class FormatText
 		try
 		{
 			StringBuilder sb = new StringBuilder();
-				foreach (char c in string_0)
+			foreach (char c in string_0)
+			{
+				try
 				{
-					try { ChineseChar cc = new ChineseChar(c); string py = cc.Pinyins[0]; sb.Append(py.Substring(0, py.Length - 1).ToLower()); }
-					catch { sb.Append(c); }
+					ChineseChar chineseChar = new ChineseChar(c);
+					sb.Append(StripPinyin(chineseChar.Pinyins[0]));
 				}
-				string_0 = sb.ToString();
+				catch
+				{
+					sb.Append(c);
+				}
+			}
+			string_0 = sb.ToString();
 		}
 		catch
 		{
@@ -602,18 +609,57 @@ public class FormatText
 		try
 		{
 			StringBuilder sb = new StringBuilder();
-				foreach (char c in string_0)
+			foreach (char c in string_0)
+			{
+				try
 				{
-					try { ChineseChar cc = new ChineseChar(c); sb.Append(cc.Pinyins[0].Substring(0, 1).ToLower()); }
-					catch { sb.Append(c); }
+					ChineseChar chineseChar = new ChineseChar(c);
+					sb.Append(FirstPinyinLetter(chineseChar.Pinyins[0]));
 				}
-				string_0 = sb.ToString();
+				catch
+				{
+					sb.Append(c);
+				}
+			}
+			string_0 = sb.ToString();
 		}
 		catch
 		{
 			string_0 = "";
 		}
 		return string_0;
+	}
+
+	private static string StripPinyin(string string_1)
+	{
+		if (string.IsNullOrEmpty(string_1))
+		{
+			return "";
+		}
+		StringBuilder stringBuilder = new StringBuilder();
+		foreach (char c in string_1)
+		{
+			if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
+			{
+				stringBuilder.Append(char.ToLower(c));
+			}
+		}
+		return stringBuilder.ToString();
+	}
+
+	private static string FirstPinyinLetter(string string_1)
+	{
+		if (!string.IsNullOrEmpty(string_1))
+		{
+			foreach (char c in string_1)
+			{
+				if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
+				{
+					return char.ToLower(c).ToString();
+				}
+			}
+		}
+		return "";
 	}
 
 	public static string Typesetting(string string_0)

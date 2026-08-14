@@ -12,6 +12,8 @@
 | V8.13 | net8 性能稳定与可维护性阶段 | 已加入性能 CSV，等待真实规则采集数据 |
 | V8.17 | SQL/IO 安全性能阶段 | Qiwen 下线、InsertNovel 参数化、SQLite 日志参数化、部分生成文件原子写入 |
 | V8.17.1 | 性能跟踪关闭阶段 | 默认关闭性能 CSV，保留 `NOVELSPIDER_PERFORMANCE=1` 排障开关 |
+| V10.18.2 | Net10 上一版基线 | SQLite 日志模式修复，章节数据库缓存实验已回滚，等待真实规则性能矩阵 |
+| V10.18.5 | Net10 当前有效基线 | 依赖现代化收尾（PinYinConverterCore / 内置 n-gram 分词 / Microsoft.Data.Sqlite），章节数据库缓存实验保持回滚状态，等待真实规则性能矩阵 |
 
 ## 建议测试矩阵
 
@@ -30,3 +32,5 @@
 | 2026-07-09 | V8.13 | 待填写 | 30 | 待填写 | 待填写 | 查看 `Log\Performance` | 查看 `Log\Performance` | 查看 `Log\Performance` | 待真实采集后补充 |
 | 2026-07-09 | V8.17 | 待填写 | 30/100 | 待填写 | 待填写 | 查看 `Log\Performance` | 查看 `Log\Performance` | 查看 `Log\Performance` | 发布后用真实规则补充 |
 | 2026-07-09 | V8.17.1 | `20260709.csv` | 254 | 约 68.3s | 0 | HTTP 样本含旧 HTTP/2 同步失败记录，不作为当前瓶颈 | MySQL 总计约 2.9s，P95 约 3ms | TXT 总计约 0.84s，P95 约 14ms | 性能 CSV 默认关闭 |
+| 2026-07-13 | V10.18.2 | 待填写 | 30/100 | 待填写 | 待填写 | 查看 `Log\Performance` | 章节缓存已回滚，按现有 Jieqi 写库链路记录 | 查看 TXT 写入耗时 | 上一版基线 |
+| 2026-08-14 | V10.18.5 | 待填写 | 30/100 | 待填写 | 待填写 | 查看 `Log\Performance` | 章节缓存保持回滚，按现有 Jieqi 写库链路记录 | 查看 TXT 写入耗时和编码 | 当前有效基线 |
