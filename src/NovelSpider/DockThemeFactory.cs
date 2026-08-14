@@ -12,8 +12,8 @@ public static class DockThemeFactory
 
         try
         {
-            // Use VS2015BlueTheme from DockPanelSuite.ThemeVS2015 NuGet package
-            theme = new VS2015BlueTheme();
+            // Use VS2015DarkTheme from DockPanelSuite.ThemeVS2015 NuGet package
+            theme = new VS2015DarkTheme();
         }
         catch (TypeLoadException)
         {

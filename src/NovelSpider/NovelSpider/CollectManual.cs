@@ -15,6 +15,7 @@ using NovelSpider.Local;
 using NovelSpider.Local.Jieqi;
 using NovelSpider.Target;
 using WeifenLuo.WinFormsUI.Docking;
+using Sunny.UI;
 
 namespace NovelSpider;
 
@@ -1612,7 +1613,7 @@ public class CollectManual : DockContent
 		this.手动信息本站ID = new System.Windows.Forms.ColumnHeader();
 		this.手动信息本站最新章节情况 = new System.Windows.Forms.ColumnHeader();
 		this.手动信息更新时间 = new System.Windows.Forms.ColumnHeader();
-		this.NovelMenuStrip = new System.Windows.Forms.ContextMenuStrip(this.components);
+		this.NovelMenuStrip = new Sunny.UI.UIContextMenuStrip(this.components);
 		this.toolStripMenuItem_20 = new System.Windows.Forms.ToolStripMenuItem();
 		this.toolStripSeparator_0 = new System.Windows.Forms.ToolStripSeparator();
 		this.toolStripMenuItem_19 = new System.Windows.Forms.ToolStripMenuItem();
@@ -1630,7 +1631,7 @@ public class CollectManual : DockContent
 		this.listView1 = new System.Windows.Forms.ListView();
 		this.columnHeader_12 = new System.Windows.Forms.ColumnHeader();
 		this.columnHeader_13 = new System.Windows.Forms.ColumnHeader();
-		this.LocalMenuStrip = new System.Windows.Forms.ContextMenuStrip(this.components);
+		this.LocalMenuStrip = new Sunny.UI.UIContextMenuStrip(this.components);
 		this.toolStripMenuItem_31 = new System.Windows.Forms.ToolStripMenuItem();
 		this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
 		this.toolStripMenuItem_29 = new System.Windows.Forms.ToolStripMenuItem();
@@ -1649,7 +1650,7 @@ public class CollectManual : DockContent
 		this.左手动分卷名 = new System.Windows.Forms.ColumnHeader();
 		this.左手动章节名 = new System.Windows.Forms.ColumnHeader();
 		this.左手动内容 = new System.Windows.Forms.ColumnHeader();
-		this.TargetMenuStrip = new System.Windows.Forms.ContextMenuStrip(this.components);
+		this.TargetMenuStrip = new Sunny.UI.UIContextMenuStrip(this.components);
 		this.toolStripMenuItem_6 = new System.Windows.Forms.ToolStripMenuItem();
 		this.toolStripMenuItem_34 = new System.Windows.Forms.ToolStripMenuItem();
 		this.toolStripMenuItem_7 = new System.Windows.Forms.ToolStripMenuItem();
@@ -1668,7 +1669,7 @@ public class CollectManual : DockContent
 		this.右手动章节名 = new System.Windows.Forms.ColumnHeader();
 		this.右手动更新时间 = new System.Windows.Forms.ColumnHeader();
 		this.右手动内容 = new System.Windows.Forms.ColumnHeader();
-		this.LocalMenuStrip_1 = new System.Windows.Forms.ContextMenuStrip(this.components);
+		this.LocalMenuStrip_1 = new Sunny.UI.UIContextMenuStrip(this.components);
 		this.toolStripMenuItem_12 = new System.Windows.Forms.ToolStripMenuItem();
 		this.toolStripSeparator_4 = new System.Windows.Forms.ToolStripSeparator();
 		this.toolStripMenuItem_25 = new System.Windows.Forms.ToolStripMenuItem();

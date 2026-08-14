@@ -1,3 +1,8 @@
+V10.18.6 Net10 Test    2026-08-14
+- 版本迭代为 `10.18.6.0 / 10.18.6-net10-test`。
+- UI 现代化（方案 2 渐进式，不重写 WPF）：引入依赖注入与结构化日志基础设施——`Microsoft.Extensions.DependencyInjection 10.0.11` 组合根（`AppServices.Provider`）、`Serilog 4.2.0` + `Serilog.Sinks.File` + `Serilog.Extensions.Logging` + `Serilog.Settings.Configuration` 经 `appsettings.json` 配置滚动文件日志；启用 PerMonitorV2 高 DPI（`app.manifest` + `Application.SetHighDpiMode`）；`.NET 10` 原生跟随系统主题 `Application.SetColorMode(System)`（`.NET 10` 的 `SystemColorMode` 仅含 `Classic`/`System`/`Dark`，无 `Light`，`System` 即在浅色系统下呈现浅色外观）统一菜单/工具栏外观；DockPanelSuite 停靠区切换 `VS2015Dark` 主题；引入 `SunnyUI 3.9.7` 并将 `CollectManual`/`自动采集模式` 的 `ContextMenuStrip` 替换为 `UIContextMenuStrip`，全局 `UIStyles.SetStyle(Blue)`。
+- 说明：`SunnyUI` 未提供 `MenuStrip`/`ToolStrip`/`StatusStrip` 等效控件，原生菜单/工具栏经 `.NET 10` 跟随系统主题统一处理；后续按钮/网格/分页等控件可逐步迁移至 `SunnyUI`。
+
 V10.18.5 Net10 Test    2026-08-14
 - 版本迭代为 `10.18.5.0 / 10.18.5-net10-test`。
 - 依赖现代化收尾：移除停用孤立依赖 `CHSPinYinConv`/`jieba.NET`/`System.Data.SQLite.Core`，改用受维护替代品 `PinYinConverterCore 1.0.2`（命名空间 `Microsoft.International.Converters.PinYinConverter` 与算法同原 MS 国际包，中文转拼音行为一致）、内置轻量 n-gram 分词、`Microsoft.Data.Sqlite 10.0.11`。

@@ -16,6 +16,7 @@ using NovelSpider.Entity;
 using NovelSpider.Local;
 using NovelSpider.Target;
 using WeifenLuo.WinFormsUI.Docking;
+using Sunny.UI;
 
 namespace NovelSpider;
 
@@ -2786,7 +2787,7 @@ public class 自动采集模式 : DockContent
 		System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(NovelSpider.自动采集模式));
 		this.开始 = new System.Windows.Forms.Button();
 		this.停止 = new System.Windows.Forms.Button();
-		this.TargetMenuStrip = new System.Windows.Forms.ContextMenuStrip(this.components);
+		this.TargetMenuStrip = new Sunny.UI.UIContextMenuStrip(this.components);
 		this.toolStripMenuItem_6 = new System.Windows.Forms.ToolStripMenuItem();
 		this.toolStripMenuItem_25 = new System.Windows.Forms.ToolStripMenuItem();
 		this.toolStripSeparator_2 = new System.Windows.Forms.ToolStripSeparator();
@@ -2832,7 +2833,7 @@ public class 自动采集模式 : DockContent
 		this.注意得示_16 = new System.Windows.Forms.Label();
 		this.采集方案_1 = new System.Windows.Forms.Button();
 		this.timer_0 = new System.Windows.Forms.Timer(this.components);
-		this.SaveMenuStrip = new System.Windows.Forms.ContextMenuStrip(this.components);
+		this.SaveMenuStrip = new Sunny.UI.UIContextMenuStrip(this.components);
 		this.toolStripMenuItem_3 = new System.Windows.Forms.ToolStripMenuItem();
 		this.toolStripMenuItem_0 = new System.Windows.Forms.ToolStripMenuItem();
 		this.toolStripSeparator_0 = new System.Windows.Forms.ToolStripSeparator();

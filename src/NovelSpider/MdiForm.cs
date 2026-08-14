@@ -244,7 +244,7 @@ public class MdiForm : Form
 		this.MainMenu.Location = new System.Drawing.Point(0, 0);
 		this.MainMenu.MdiWindowListItem = this.toolStripMenuItem_6;
 		this.MainMenu.Name = "MainMenu";
-		this.MainMenu.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
+		// 移除显式 System 渲染器；由 .NET 10 深色模式（Application.SetColorMode）统一处理停靠区外的原生控件
 		this.MainMenu.Size = new System.Drawing.Size(984, 25);
 		this.MainMenu.TabIndex = 0;
 		this.MainMenu.Text = "主菜单";
